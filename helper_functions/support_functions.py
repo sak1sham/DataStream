@@ -1,9 +1,15 @@
 import pandas as pd
-import time
 import json
 import datetime
+from os.path import exists
+from os import makedirs
 
 def convert_list_to_string(l):
+    '''
+        Input: list
+        Output: stringified list: str
+    '''
+    assert isinstance(l, list)
     val = "["
     for item in l:
         if(isinstance(item, list) or isinstance(item, set) or isinstance(item, tuple)):
@@ -16,9 +22,18 @@ def convert_list_to_string(l):
             item = item.strftime("%m/%d/%Y, %H:%M:%S")
         val = val + item
     val = val + ']'
+    assert isinstance(val, str)
     return val
 
 def convert_to_type(x, tp):
+    '''
+        Converts the variable 'x' to the type 'tp' defined by user in fields of migration_mapping
+        INPUT:
+            x: a variable
+            tp: str containing destined datatype
+        OUTPUT:
+            x: data type as tp
+    '''
     if((isinstance(x, str) and tp == 'string') or (isinstance(x, bool) and tp=='bool') or (isinstance(x, int) and tp=='integer') or (isinstance(x, float) and tp == 'float') or (isinstance(x, complex) and tp == 'complex')):
         return x
     if((isinstance(x, int) or isinstance(x, bool) or isinstance(x, float) or isinstance(x, complex)) and tp == 'string'):
@@ -39,13 +54,22 @@ def convert_to_type(x, tp):
             return x.strftime("%m/%d/%Y, %H:%M:%S")
     return x
 
-
 def dataframe_from_collection(current_collection_name, collection_format={}):
+    '''
+        Converts the unstructed database documents to structured pandas dataframe
+        INPUT:
+            current_collection_name: MongoDB collection object to be converted
+            collection_format: User-defined fields from migration_mapping for the collection
+        OUTPUT:
+            Pandas dataframe containing data of current_collection_name.
+    '''
     docu = []
     count = 0
     total_len = current_collection_name.count_documents({})
     print("Found", total_len, "documents.")
     for document in current_collection_name.find():
+        document['parquet_format_date_year'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).year
+        document['parquet_format_date_month'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).month
         for key, value in document.items():
             if(key == '_id'):
                 document[key] = str(document[key])
@@ -60,25 +84,26 @@ def dataframe_from_collection(current_collection_name, collection_format={}):
         count += 1
         docu.append(document)
         if(count % 10000 == 0):
-            print(count, "Documents fetched.................", int(count*100/total_len), "%")
+            print(count, "Documents fetched ...", int(count*100/total_len), "%")
             
     return pd.DataFrame(docu)
 
-def fetch_and_convert_data(database_, fetch_type = "selected", collection_name = []):
+def fetch_and_convert_data(database_, fetch_type = "selected", collection_name = [], db_name=""):
     '''
         Inputs:
-            database_: the reference to the database object from pymongo connection
-            fetch_type: 'all' for all collections and 'selected' for fetching some collections
-            collection_name: List of all collection names to fetch, along with their formats.
+            database_: PyMongo database object
+            fetch_type: 'all' (for all collections), 'selected' (for specific collections)
+            collection_name: List (all collection names and user-defined specs)
+
         Output:
             Returns nothing if success
             Error handling: returns the pd.dataframe in case of incompatibility with parquet
 
     '''
+    assert (fetch_type=='selected' or fetch_type=='all')
+
+    ## Handle the case: fetch_type=='all'; but some collections are not provided by user
     if(fetch_type == 'all'):
-        '''
-            Handle the case when fetch type is 'all' but only some of the collections are mentioneed by user
-        '''
         cnames = database_.list_collection_names()
         cnames2 = []
         for curr_collection in collection_name:
@@ -87,20 +112,23 @@ def fetch_and_convert_data(database_, fetch_type = "selected", collection_name =
         for coll in cnames:
             collection_name.append({'collection_name': coll})
 
-    '''
-        Assert: All required collections are present in collection_name variable
-        Now, iterate through all the collections and fetch the data converted into dataframe
-        Later, convert it into parquet format
-    '''
+    if not exists("./converted/" + db_name):
+        makedirs("./converted/" + db_name)
+        
+    ## All required collections are present in collection_name variable
+    ## Now, iterate through all the collections, fetch the data, convert to pandas dataframe to parquet
     for curr_collection in collection_name:
-        if('format' not in curr_collection.keys()):
-            curr_collection['format'] = {}
-        df_collection = dataframe_from_collection(database_[curr_collection['collection_name']], collection_format=curr_collection['format'])
-        print("Converted to Pandas Dataframe. Now, saving to parquet format")
-        file_name = "./converted/" + curr_collection['collection_name'] + '.parquet'
-        try:
-            df_collection.to_parquet(file_name)
-            print("Saved", file_name)
-        except:
-            return df_collection
+        ## Add empty 'field' parameter if not provided by user
+        if('fields' not in curr_collection.keys()):
+            curr_collection['fields'] = {}
+        assert ('fields' in curr_collection.keys())
 
+        df_collection = dataframe_from_collection(database_[curr_collection['collection_name']], collection_format=curr_collection['fields'])
+        assert isinstance(df_collection, pd.DataFrame)
+        
+        assert len(db_name) > 0
+        file_name = "./converted/" + db_name + "/" + curr_collection['collection_name'] + '.parquet'
+        
+        df_collection.to_parquet(file_name, engine='pyarrow', compression='snappy', partition_cols=['parquet_format_date_year', 'parquet_format_date_month'])
+        assert exists(file_name)
+        print("Saved", file_name)

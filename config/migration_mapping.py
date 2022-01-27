@@ -1,11 +1,12 @@
 list_databases = [
     {
         'db_name': 'support-service',
+        'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
         'fetch_type': 'selected',
         'collections': [
             {
                 'collection_name': 'support_form_items',
-                'format': {
+                'fields': {
                     'form_item_id': 'string',
                     'label_hi': 'string',
                     'key': 'string',
@@ -15,7 +16,7 @@ list_databases = [
             },
             {
                 'collection_name': 'support_items',
-                'format': {
+                'fields': {
                     'next_action': 'string',
                     'department': 'string',
                     'item_text_en': 'string',
@@ -24,5 +25,10 @@ list_databases = [
                 }
             }
         ]
+    },
+    {
+        'db_name': 'spar',
+        'url': 'mongodb+srv://saksham:racSIVp6VpWde0Co@scrapping.k9dmh.mongodb.net/scrapping?retryWrites=true&w=majority',
+        'fetch_type': 'all'    
     }
 ]
