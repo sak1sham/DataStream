@@ -1,0 +1,8 @@
+GET /healthcheck -------------------------------------------- returns 202 if working, else 503
+GET /fetchRecords?query= ------------------------------------ returns records with status code 202
+PUT /sync --------------------------------------------------- returns 200 after fetching new/updated records from mongo and saving to s3
+
+
+# Not required:
+PUT /addCollection?db='d'&collection='c'&struct='format' ---- Adds collection to sync scheduler and returns 200
+DELETE /removeCollection?db='d_name'&collection='c_name' ------- Removes collection from sync scheduler and returns 200
