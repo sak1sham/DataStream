@@ -19,5 +19,5 @@ Edit the ```/config/migration_mapping.py``` as per requirements.
 
 Run the following command from the main directory
 ```bash
-uvicorn main:app --reload
+python main.py
 ```

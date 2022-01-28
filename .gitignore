@@ -2,3 +2,5 @@ __pycache__
 Converted
 .ipynb_checkpoints
 environment.yml
+.DS_Store
+production.log
