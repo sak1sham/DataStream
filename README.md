@@ -21,3 +21,5 @@ Run the following command from the main directory
 ```bash
 python main.py
 ```
+
+Usage of Cron expression as per guidelines at [APScheduler docs](https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html)

@@ -1,9 +1,10 @@
-list_databases = [
+## Format for cron expression:
+## year, month, day, week, day_of_week, hour, minute, second
+mapping = [
     {
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        'time_hour': 8,
-        'time_minute': 14,
+        'cron': '* * * * * 16-17 */2 0',
         'fetch_type': 'selected',
         'collections': [
             {
@@ -30,8 +31,7 @@ list_databases = [
     },
     {
         'db_name': 'spar',
-        'time_hour': 8,
-        'time_minute': 13,
+        'cron': '* * * * * 16-17 */1 0',
         'url': 'mongodb+srv://saksham:racSIVp6VpWde0Co@scrapping.k9dmh.mongodb.net/scrapping?retryWrites=true&w=majority',
         'fetch_type': 'all'    
     }

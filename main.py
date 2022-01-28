@@ -1,13 +1,12 @@
 from fastapi import FastAPI
-import logging
 import uvicorn
 
-from config.migration_mapping import list_databases
-from helper.util import create_directories
+from config.migration_mapping import mapping
+from storage.local import create_directories
 from apscheduler.schedulers.background import BackgroundScheduler
 from mongo.util import process_db
+from helper.util import evaluate_cron
 
-logger = logging.getLogger(__name__)
 app = FastAPI(title="Migration service")
 scheduler = BackgroundScheduler()
 
@@ -24,7 +23,8 @@ def healthcheck():
     pass
 
 if __name__ == "__main__":
-    for db in list_databases:
-        scheduler.add_job(process_db, 'cron', args=[db], hour=db['time_hour'], minute=db['time_minute'])
-    create_directories(list_databases)
+    for db in mapping:
+        year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(db['cron'])
+        scheduler.add_job(process_db, 'cron', args=[db], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second)
+    create_directories(mapping)
     uvicorn.run(app)

@@ -1,27 +1,7 @@
 import pandas as pd
 import json
 import datetime
-from os.path import exists
-from os import makedirs
-import logging
-
-logging.basicConfig(filename="production.log",format='%(asctime)s %(message)s',filemode='w')
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-def create_directories(list_databases):
-    '''
-        Creates the directories to save converted files
-    '''
-    if not exists("./converted"):
-        makedirs("./converted")
-
-    for db in list_databases:
-        db_name = db['db_name']
-        if not exists("./converted/" + db_name):
-            makedirs("./converted/" + db_name)
-
-
+from helper.logger import logger
 
 def convert_list_to_string(l):
     '''
@@ -42,7 +22,6 @@ def convert_list_to_string(l):
         val = val + item
     val = val + ']'
     return val
-
 
 
 def convert_to_type(x, tp):
@@ -107,46 +86,15 @@ def dataframe_from_collection(current_collection_name, collection_format={}):
         docu.append(document)
         if(count % 10000 == 0):
             logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
-            
-    return pd.DataFrame(docu)
+    ret_df = pd.DataFrame(docu)
+    logger.info("Converted all " + str(total_len) + " documents to dataframe object")        
+    return ret_df
 
-
-
-def fetch_and_convert_data(database_, fetch_type = "selected", collection_name = [], db_name=""):
+def evaluate_cron(expression):
     '''
-        Inputs:
-            database_: PyMongo database object
-            fetch_type: 'all' (for all collections), 'selected' (for specific collections)
-            collection_name: List (all collection names and user-defined specs)
-
-        Output:
-            Returns nothing if success
-            Error handling: returns the pd.dataframe in case of incompatibility with parquet
-
+        order of values:
+            year, month, day, week, day_of_week, hour, minute, second
     '''
-
-    ## Handle the case: fetch_type=='all'; but some collections are not provided by user
-    if(fetch_type == 'all'):
-        cnames = database_.list_collection_names()
-        cnames2 = []
-        for curr_collection in collection_name:
-            cnames2.append(curr_collection['collection_name'])
-        cnames = list(set(cnames)-set(cnames2))
-        for coll in cnames:
-            collection_name.append({'collection_name': coll})
-
-    ## All required collections are present in collection_name variable
-    ## Now, iterate through all the collections, fetch the data, convert to pandas dataframe to parquet
-    for curr_collection in collection_name:
-        ## Add empty 'field' parameter if not provided by user
-        if('fields' not in curr_collection.keys()):
-            curr_collection['fields'] = {}
-
-        df_collection = dataframe_from_collection(database_[curr_collection['collection_name']], collection_format=curr_collection['fields'])
-        
-        assert len(db_name) > 0
-        file_name = "./converted/" + db_name + "/" + curr_collection['collection_name'] + '.parquet'
-        
-        df_collection.to_parquet(file_name, engine='pyarrow', compression='snappy', partition_cols=['parquet_format_date_year', 'parquet_format_date_month'])
-        logger.info("Saved" + file_name)
-
+    vals = expression.split()
+    vals = [(None if w == '?' else w) for w in vals]
+    return vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], vals[7]
