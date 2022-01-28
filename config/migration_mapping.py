@@ -2,6 +2,8 @@ list_databases = [
     {
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+        'time_hour': 8,
+        'time_minute': 14,
         'fetch_type': 'selected',
         'collections': [
             {
@@ -28,6 +30,8 @@ list_databases = [
     },
     {
         'db_name': 'spar',
+        'time_hour': 8,
+        'time_minute': 13,
         'url': 'mongodb+srv://saksham:racSIVp6VpWde0Co@scrapping.k9dmh.mongodb.net/scrapping?retryWrites=true&w=majority',
         'fetch_type': 'all'    
     }

@@ -1,0 +1,27 @@
+2022-01-28 08:12:49,115 Started server process [4507]
+2022-01-28 08:12:49,115 Waiting for application startup.
+2022-01-28 08:12:49,115 Added job "process_db" to job store "default"
+2022-01-28 08:12:49,115 Added job "process_db" to job store "default"
+2022-01-28 08:12:49,115 Scheduler started
+2022-01-28 08:12:49,116 Application startup complete.
+2022-01-28 08:12:49,116 Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+2022-01-28 08:13:00,007 Running job "process_db (trigger: cron[hour='8', minute='13'], next run at: 2022-01-28 08:13:00 IST)" (scheduled at 2022-01-28 08:13:00+05:30)
+2022-01-28 08:13:01,581 Found 52795 documents.
+2022-01-28 08:13:08,861 10000 documents fetched ... 18 %
+2022-01-28 08:13:08,981 20000 documents fetched ... 37 %
+2022-01-28 08:13:16,020 30000 documents fetched ... 56 %
+2022-01-28 08:13:16,140 40000 documents fetched ... 75 %
+2022-01-28 08:13:16,261 50000 documents fetched ... 94 %
+2022-01-28 08:13:16,653 Saved./converted/spar/products.parquet
+2022-01-28 08:13:16,677 Job "process_db (trigger: cron[hour='8', minute='13'], next run at: 2022-01-29 08:13:00 IST)" executed successfully
+2022-01-28 08:14:00,009 Running job "process_db (trigger: cron[hour='8', minute='14'], next run at: 2022-01-29 08:14:00 IST)" (scheduled at 2022-01-28 08:14:00+05:30)
+2022-01-28 08:14:00,506 Found 6 documents.
+2022-01-28 08:14:00,564 Saved./converted/support-service/support_form_items.parquet
+2022-01-28 08:14:00,602 Found 94 documents.
+2022-01-28 08:14:00,718 Saved./converted/support-service/support_items.parquet
+2022-01-28 08:14:00,720 Job "process_db (trigger: cron[hour='8', minute='14'], next run at: 2022-01-29 08:14:00 IST)" executed successfully
+2022-01-28 08:15:28,156 Shutting down
+2022-01-28 08:15:28,263 Waiting for application shutdown.
+2022-01-28 08:15:28,265 Scheduler has been shut down
+2022-01-28 08:15:28,266 Application shutdown complete.
+2022-01-28 08:15:28,266 Finished server process [4507]

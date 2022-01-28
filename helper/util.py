@@ -3,13 +3,32 @@ import json
 import datetime
 from os.path import exists
 from os import makedirs
+import logging
+
+logging.basicConfig(filename="production.log",format='%(asctime)s %(message)s',filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+def create_directories(list_databases):
+    '''
+        Creates the directories to save converted files
+    '''
+    if not exists("./converted"):
+        makedirs("./converted")
+
+    for db in list_databases:
+        db_name = db['db_name']
+        if not exists("./converted/" + db_name):
+            makedirs("./converted/" + db_name)
+
+
 
 def convert_list_to_string(l):
     '''
+        Recursively convert lists and nested lists to strings
         Input: list
         Output: stringified list: str
     '''
-    assert isinstance(l, list)
     val = "["
     for item in l:
         if(isinstance(item, list) or isinstance(item, set) or isinstance(item, tuple)):
@@ -22,8 +41,9 @@ def convert_list_to_string(l):
             item = item.strftime("%m/%d/%Y, %H:%M:%S")
         val = val + item
     val = val + ']'
-    assert isinstance(val, str)
     return val
+
+
 
 def convert_to_type(x, tp):
     '''
@@ -54,6 +74,8 @@ def convert_to_type(x, tp):
             return x.strftime("%m/%d/%Y, %H:%M:%S")
     return x
 
+
+
 def dataframe_from_collection(current_collection_name, collection_format={}):
     '''
         Converts the unstructed database documents to structured pandas dataframe
@@ -66,7 +88,7 @@ def dataframe_from_collection(current_collection_name, collection_format={}):
     docu = []
     count = 0
     total_len = current_collection_name.count_documents({})
-    print("Found", total_len, "documents.")
+    logger.info("Found " + str(total_len) + " documents.")
     for document in current_collection_name.find():
         document['parquet_format_date_year'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).year
         document['parquet_format_date_month'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).month
@@ -84,9 +106,11 @@ def dataframe_from_collection(current_collection_name, collection_format={}):
         count += 1
         docu.append(document)
         if(count % 10000 == 0):
-            print(count, "Documents fetched ...", int(count*100/total_len), "%")
+            logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
             
     return pd.DataFrame(docu)
+
+
 
 def fetch_and_convert_data(database_, fetch_type = "selected", collection_name = [], db_name=""):
     '''
@@ -100,7 +124,6 @@ def fetch_and_convert_data(database_, fetch_type = "selected", collection_name =
             Error handling: returns the pd.dataframe in case of incompatibility with parquet
 
     '''
-    assert (fetch_type=='selected' or fetch_type=='all')
 
     ## Handle the case: fetch_type=='all'; but some collections are not provided by user
     if(fetch_type == 'all'):
@@ -112,23 +135,18 @@ def fetch_and_convert_data(database_, fetch_type = "selected", collection_name =
         for coll in cnames:
             collection_name.append({'collection_name': coll})
 
-    if not exists("./converted/" + db_name):
-        makedirs("./converted/" + db_name)
-        
     ## All required collections are present in collection_name variable
     ## Now, iterate through all the collections, fetch the data, convert to pandas dataframe to parquet
     for curr_collection in collection_name:
         ## Add empty 'field' parameter if not provided by user
         if('fields' not in curr_collection.keys()):
             curr_collection['fields'] = {}
-        assert ('fields' in curr_collection.keys())
 
         df_collection = dataframe_from_collection(database_[curr_collection['collection_name']], collection_format=curr_collection['fields'])
-        assert isinstance(df_collection, pd.DataFrame)
         
         assert len(db_name) > 0
         file_name = "./converted/" + db_name + "/" + curr_collection['collection_name'] + '.parquet'
         
         df_collection.to_parquet(file_name, engine='pyarrow', compression='snappy', partition_cols=['parquet_format_date_year', 'parquet_format_date_month'])
-        assert exists(file_name)
-        print("Saved", file_name)
+        logger.info("Saved" + file_name)
+
