@@ -3,8 +3,6 @@ Converted
 .ipynb_checkpoints
 environment.yml
 .DS_Store
-*.log
+logs
 Migration Service.code-workspace
 .vscode
-redshift_connection.py
-s3_connection.py

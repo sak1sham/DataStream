@@ -4,7 +4,7 @@ mapping = [
     {
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        'cron': '* * * * * 16-17 */2 0',
+        'cron': '* * * * * 11-12 */2 0',
         'fetch_type': 'selected',
         'collections': [
             {
