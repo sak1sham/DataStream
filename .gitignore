@@ -3,6 +3,6 @@ Converted
 .ipynb_checkpoints
 environment.yml
 .DS_Store
-production.log
+*.log
 Migration Service.code-workspace
 .vscode

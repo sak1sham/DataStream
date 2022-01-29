@@ -28,11 +28,5 @@ mapping = [
                 }
             }
         ]
-    },
-    {
-        'db_name': 'spar',
-        'cron': '* * * * * 16-17 */1 0',
-        'url': 'mongodb+srv://saksham:racSIVp6VpWde0Co@scrapping.k9dmh.mongodb.net/scrapping?retryWrites=true&w=majority',
-        'fetch_type': 'all'    
     }
 ]
