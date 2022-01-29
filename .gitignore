@@ -6,3 +6,5 @@ environment.yml
 *.log
 Migration Service.code-workspace
 .vscode
+redshift_connection.py
+s3_connection.py
