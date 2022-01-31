@@ -10,13 +10,14 @@
         collection_name = name of the collection (Optional)
         fields = data types of the fields (Optional)
     
-    destination_type = 's3' or 'redshift'
+    destination_type = 's3' or 'redshift' or 'local'
 '''
 
 mapping = [
     {
         'source_type': 'mongo',
         'destination_type': 's3',
+        's3_bucket_name': 'cm-mongo-migration',
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
         'cron': '* * * * * 11-12 */2 0',
