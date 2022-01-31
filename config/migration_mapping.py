@@ -20,7 +20,7 @@ mapping = [
         's3_bucket_name': 'cm-mongo-migration',
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        'cron': '* * * * * 10-11 */2 0',
+        'cron': '* * * * * 10-19 */1 0',
         'fetch_type': 'selected',
         'collections': [
             {

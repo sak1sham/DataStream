@@ -5,8 +5,7 @@ from config.migration_mapping import mapping
 from storage.local import create_directories
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from db.mongo import process_mongodb
-from helper.util import evaluate_cron
+import pytz
 
 app = FastAPI(title="Migration service")
 scheduler = BackgroundScheduler()
@@ -25,8 +24,10 @@ def healthcheck():
 
 if __name__ == "__main__":
     create_directories(mapping)
+    from db.mongo import process_mongodb
+    from helper.util import evaluate_cron
     for db in mapping:
         year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(db['cron'])
         if(db['source_type'] == 'mongo'):
-            scheduler.add_job(process_mongodb, 'cron', args=[db], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second)
+            scheduler.add_job(process_mongodb, 'cron', args=[db], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Calcutta'))
     uvicorn.run(app)
