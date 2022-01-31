@@ -11,6 +11,9 @@
         fields = data types of the fields (Optional)
     
     destination_type = 's3' or 'redshift' or 'local'
+    S3
+        s3_bucket_name = name of s3 bucket
+    archive = query to archive records
 '''
 
 mapping = [
@@ -22,6 +25,7 @@ mapping = [
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
         'cron': '* * * * * 10-19 */1 0',
         'fetch_type': 'selected',
+        'archive': '',
         'collections': [
             {
                 'collection_name': 'support_form_items',
