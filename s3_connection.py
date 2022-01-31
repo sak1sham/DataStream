@@ -1,8 +1,10 @@
 import boto3
+from aws.credentials import credentials
+import pandas as pd
 
 bucket_name = 'cm-mongo-migration'
 
-s3 = boto3.client("s3", region_name="us-east-1", aws_access_key_id=AWS_KEY_ID, aws_secret_access_key=AWS_SECRET)
+s3 = boto3.client("s3", region_name="ap-south-1", aws_access_key_id=credentials['id'], aws_secret_access_key=credentials['key'])
 
-file_name = "requirements.txt"
-s3.upload_file(Filename=file_name, Bucket=bucket_name, Key=file_name)
+file_name = "requirements2.txt"
+s3.upload_file(Filename="temp/" + file_name, Bucket=bucket_name, Key=file_name)
