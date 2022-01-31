@@ -37,7 +37,7 @@ def save_data_to_destination(db, df_list):
             logger.info("Saved" + file_name)
 
 def process_mongodb(db):
-    print('Time to connect to db', db['db_name'])
+    logger.info('Time to connect to db', db['db_name'])
     database_ = get_data_from_source(db)
     df_list = process_data_from_source(database_=database_, collection_name=db['collections'])
     save_data_to_destination(db=db, df_list=df_list)
