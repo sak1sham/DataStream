@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from helper.util import dataframe_from_collection
 from helper.logger import logger
 import certifi
+from dst.s3 import save_to_s3
 
 def get_data_from_source(db):
     client = MongoClient(db['url'], tlsCAFile=certifi.where())
@@ -34,10 +35,13 @@ def save_data_to_destination(db, df_list):
         for dfl in df_list:
             file_name = './converted/mongo/' + db['db_name'] + "/" + dfl['collection_name'] + '.parquet'
             dfl['df_collection'].to_parquet(file_name, engine='pyarrow', compression='snappy', partition_cols=['parquet_format_date_year', 'parquet_format_date_month'])
-            logger.info("Saved" + file_name)
+            logger.info("Saved " + file_name)
+            
+    if(db['destination_type'] == 's3'):
+        save_to_s3(df_list, db)
 
 def process_mongodb(db):
-    logger.info('Time to connect to db', db['db_name'])
+    logger.info('Time to connect to db ' + db['db_name'])
     database_ = get_data_from_source(db)
     df_list = process_data_from_source(database_=database_, collection_name=db['collections'])
     save_data_to_destination(db=db, df_list=df_list)

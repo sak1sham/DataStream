@@ -6,3 +6,4 @@ Migration Service.code-workspace
 .vscode
 temp
 credentials.py
+AWSCLIV2.pkg

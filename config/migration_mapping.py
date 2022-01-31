@@ -19,7 +19,7 @@
 mapping = [
     {
         'source_type': 'mongo',
-        'destination_type': 'local',
+        'destination_type': 's3',
         's3_bucket_name': 'cm-mongo-migration',
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
