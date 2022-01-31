@@ -36,7 +36,6 @@ def fetch_and_convert_data(database_, fetch_type = "selected", collection_name =
 
         df_collection = dataframe_from_collection(database_[curr_collection['collection_name']], collection_format=curr_collection['fields'])
         
-        assert len(db_name) > 0
         file_name = "./converted/" + db_name + "/" + curr_collection['collection_name'] + '.parquet'
         
         df_collection.to_parquet(file_name, engine='pyarrow', compression='snappy', partition_cols=['parquet_format_date_year', 'parquet_format_date_month'])
