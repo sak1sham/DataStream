@@ -2,7 +2,7 @@
 ## year, month, day, week, day_of_week, hour, minute, second
 
 '''
-    source_type = 'mongo' for MongoDB
+    source_type = 'mongo' for MongoDB, 'mysql', 'api
 
     MongoDB:
         db_name = Name of the database to fetch from mongoDB

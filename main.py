@@ -5,7 +5,7 @@ from config.migration_mapping import mapping
 from storage.local import create_directories
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from mongo.util import process_db
+from db.mongo import process_db
 from helper.util import evaluate_cron
 
 app = FastAPI(title="Migration service")
