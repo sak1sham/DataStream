@@ -25,11 +25,4 @@ wr.s3.to_parquet(
     dataset = True,
     partition_cols = ['Age']
 )
-
-wr.s3.to_parquet(
-    df=df,
-    path="s3://migration-service-temp/my-file-2.parquet",
-    compression='snappy',
-    dataset = True,
-    partition_cols = ['Age']
-)'''
+'''
