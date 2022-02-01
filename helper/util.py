@@ -1,7 +1,5 @@
-import pandas as pd
 import json
 import datetime
-from helper.logger import logger
 
 def convert_list_to_string(l):
     '''
@@ -53,42 +51,6 @@ def convert_to_type(x, tp):
             return x.strftime("%m/%d/%Y, %H:%M:%S")
     return x
 
-
-
-def dataframe_from_collection(current_collection_name, collection_format={}):
-    '''
-        Converts the unstructed database documents to structured pandas dataframe
-        INPUT:
-            current_collection_name: MongoDB collection object to be converted
-            collection_format: User-defined fields from migration_mapping for the collection
-        OUTPUT:
-            Pandas dataframe containing data of current_collection_name.
-    '''
-    docu = []
-    count = 0
-    total_len = current_collection_name.count_documents({})
-    logger.info("Found " + str(total_len) + " documents.")
-    for document in current_collection_name.find():
-        document['parquet_format_date_year'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).year
-        document['parquet_format_date_month'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).month
-        for key, value in document.items():
-            if(key == '_id'):
-                document[key] = str(document[key])
-            elif(key in collection_format.keys()):
-                document[key] = convert_to_type(document[key], collection_format[key])
-            elif(isinstance(document[key], int) or isinstance(document[key], float) or isinstance(document[key], complex)):
-                document[key] = str(document[key])
-            elif(isinstance(document[key], list)):
-                document[key] = convert_list_to_string(document[key])
-            elif(isinstance(document[key], bool)):
-                document[key] = str(document[key])
-        count += 1
-        docu.append(document)
-        if(count % 10000 == 0):
-            logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
-    ret_df = pd.DataFrame(docu)
-    logger.info("Converted all " + str(total_len) + " documents to dataframe object")        
-    return ret_df
 
 def evaluate_cron(expression):
     '''

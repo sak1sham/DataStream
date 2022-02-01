@@ -5,7 +5,6 @@
         db_name = Name of the database to fetch from mongoDB
         url = connection url for the database 
         cron = cron expression for scheduling. Format for cron expression: (year, month, day, week, day_of_week, hour, minute, second) as per https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html
-        fetch_type = 'all' (to fetch all collections), 'selected' (to fetch some collections)
         collections = list of collections to fetch from db_name with their properties (Optional)
         collection_name = name of the collection (Optional)
         fields = data types of the fields (Optional)
@@ -20,11 +19,10 @@ mapping = [
     {
         'source_type': 'mongo',
         'destination_type': 's3',
-        's3_bucket_name': 'cm-mongo-migration',
+        's3_bucket_name': 'migration-service-temp',
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        'cron': '* * * * * 10-19 */1 0',
-        'fetch_type': 'selected',
+        'cron': '* * * * * 9-19 */1 0',
         'archive': '',
         'collections': [
             {
