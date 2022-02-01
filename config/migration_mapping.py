@@ -23,6 +23,7 @@ mapping = [
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
         'cron': '* * * * * 9-19 */1 0',
+        'bookmark': '',
         'archive': '',
         'collections': [
             {
@@ -48,3 +49,9 @@ mapping = [
         ]
     }
 ]
+
+encryption_store = {
+    'url': 'mongodb+srv://sak1sham:abcd@cluster0.azvu4.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+    'db_name': 'migration_update_check',
+    'collection_name': 'migration_update_check'
+}

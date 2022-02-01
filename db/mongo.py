@@ -5,16 +5,44 @@ import certifi
 from dst.s3 import save_to_s3
 import pandas as pd
 import datetime
+from config.migration_mapping import encryption_store
+import json
+import hashlib
 
-def dataframe_from_collection(current_collection_name, collection_format={}):
+def check_if_present():
+    pass
+
+def dataframe_from_collection(current_collection, collection_unique_id, collection_format={}):
     '''
         Converts the unstructed database documents to structured pandas dataframe
     '''
     docu = []
+    docu_update = []
     count = 0
-    total_len = current_collection_name.count_documents({})
+    total_len = current_collection.count_documents({})
     logger.info("Found " + str(total_len) + " documents.")
-    for document in current_collection_name.find():
+    client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
+    db_encr = client_encr[encryption_store['db_name']]
+    collection_encr = db_encr[encryption_store['collection_name']]
+
+    for document in current_collection.find():
+        document_to_be_encrypted = document.copy()
+        document_to_be_encrypted['_id'] = str(document_to_be_encrypted['_id'])
+        encr = {
+            'collection': collection_unique_id,
+            'map_id': document['_id'],
+            'document_sha': hashlib.sha256(json.dumps(document_to_be_encrypted).encode()).hexdigest()
+        }
+        updation = False
+        previous_records = collection_encr.find_one({'collection': collection_unique_id, 'map_id': document['_id']})
+        if(previous_records):
+            if(previous_records['document_sha'] == encr['document_sha']):
+                continue     # No updation in this record
+            else:
+                updation = True     # This record has been updated
+                collection_encr.delete_one({'collection': collection_unique_id, 'map_id': document['_id']})
+        
+        collection_encr.insert_one(encr)
         document['parquet_format_date_year'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).year
         document['parquet_format_date_month'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).month
         for key, value in document.items():
@@ -29,18 +57,28 @@ def dataframe_from_collection(current_collection_name, collection_format={}):
             elif(isinstance(document[key], bool)):
                 document[key] = str(document[key])
         count += 1
-        docu.append(document)
+        if(not updation):
+            docu.append(document)
+        else:
+            docu_update.append(document)
         if(count % 10000 == 0):
             logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
+    
+    logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     ret_df = pd.DataFrame(docu)
-    logger.info("Converted all " + str(total_len) + " documents to dataframe object")        
-    return ret_df
+    ret_df_update = pd.DataFrame(docu_update)
+    logger.info("Converted " + str(count) + " documents to dataframe objects")
+    logger.info("Number of new records to be inserted " + str(ret_df.shape[0]))        
+    logger.info("Number of records to be updated " + str(ret_df_update.shape[0]))        
+    return ret_df, ret_df_update
 
 def get_data_from_source(db):
     client = MongoClient(db['url'], tlsCAFile=certifi.where())
     if('collections' not in db.keys()):
         db['collections'] = []
     database_ = client[db['db_name']]
+    for curr_collection in db['collections']:
+        curr_collection['collection_unique_id'] = db['db_name'] + '-|-' + curr_collection['collection_name']
     return database_
 
 def process_data_from_source(database_, collection_name = []):
@@ -48,8 +86,8 @@ def process_data_from_source(database_, collection_name = []):
     for curr_collection in collection_name:
         if('fields' not in curr_collection.keys()):
             curr_collection['fields'] = {}
-        df_collection = dataframe_from_collection(database_[curr_collection['collection_name']], collection_format=curr_collection['fields'])
-        df_list.append({'collection_name': curr_collection['collection_name'], 'df_collection': df_collection})
+        df_collection, df_collection_update = dataframe_from_collection(database_[curr_collection['collection_name']], collection_unique_id=curr_collection['collection_unique_id'], collection_format=curr_collection['fields'])
+        df_list.append({'collection_name': curr_collection['collection_name'], 'df_collection': df_collection, 'df_collection_update': df_collection_update})
     return df_list
     
 def save_data_to_destination(db, df_list):
