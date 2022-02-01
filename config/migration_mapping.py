@@ -16,14 +16,37 @@
 '''
 
 mapping = [
+    
     {
         'source_type': 'mongo',
         'destination_type': 's3',
         's3_bucket_name': 'migration-service-temp',
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        'cron': '* * * * * 9-19 */1 0',
-        'bookmark': '',
+        'cron': '* * * * * 9-23 15 0',
+        'archive': '',
+        'collections': [
+            {
+                'collection_name': 'support_tickets_rating',
+                'fields': {
+                    'ticket_id': 'string',
+                    'reopen_at': 'string',
+                    'rating': 'integer',
+                    '__v': 'integer',
+                },
+                'bookmark': "updatedAt"
+            }
+        ]
+    }
+]
+'''
+{
+        'source_type': 'mongo',
+        'destination_type': 's3',
+        's3_bucket_name': 'migration-service-temp',
+        'db_name': 'support-service',
+        'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+        'cron': '* * * * * 9-23 */1 0',
         'archive': '',
         'collections': [
             {
@@ -34,7 +57,8 @@ mapping = [
                     'key': 'string',
                     'input_type': 'string',
                     'input_params': 'string'
-                }
+                },
+                'bookmark': False
             },
             {
                 'collection_name': 'support_items',
@@ -44,11 +68,12 @@ mapping = [
                     'item_text_en': 'string',
                     'priority': 'integer',
                     'item_text': 'string'
-                }
+                },
+                'bookmark': False
             }
         ]
-    }
-]
+    },'''
+
 
 encryption_store = {
     'url': 'mongodb+srv://sak1sham:abcd@cluster0.azvu4.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
