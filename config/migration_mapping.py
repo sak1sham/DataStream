@@ -8,6 +8,8 @@
         collections = list of collections to fetch from db_name with their properties (Optional)
         collection_name = name of the collection (Optional)
         fields = data types of the fields (Optional)
+        bookmark = False or some string value for field_name, which represents updation check date (Compulsory)
+        
     
     destination_type = 's3' or 'redshift'
     S3
@@ -16,7 +18,6 @@
 '''
 
 mapping = [
-    
     {
         'source_type': 'mongo',
         'destination_type': 's3',
@@ -39,8 +40,9 @@ mapping = [
         ]
     }
 ]
+
 '''
-{
+    {
         'source_type': 'mongo',
         'destination_type': 's3',
         's3_bucket_name': 'migration-service-temp',
@@ -72,7 +74,8 @@ mapping = [
                 'bookmark': False
             }
         ]
-    },'''
+    },
+'''
 
 
 encryption_store = {
