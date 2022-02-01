@@ -9,7 +9,7 @@
         collection_name = name of the collection (Optional)
         fields = data types of the fields (Optional)
     
-    destination_type = 's3' or 'redshift' or 'local'
+    destination_type = 's3' or 'redshift'
     S3
         s3_bucket_name = name of s3 bucket
     archive = query to archive records
