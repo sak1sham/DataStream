@@ -18,7 +18,7 @@ def save_to_s3(df_list, db):
             logger.info("Saved " + file_name + " with " + str(dfl['df_collection'].shape[0]) + " records.")
         else:
             logger.info("No insertions done.")
-        
+
         for i in range(dfl['df_collection_update'].shape[0]):
             file_name_u = s3_location + dfl['collection_name'] + "/" + "parquet_format_date_year=" + dfl['df_collection_update'].iloc[i]['parquet_format_date_year'] + "/parquet_format_date_month=" + dfl['df_collection_update'].iloc[i]['parquet_format_date_month'] + "/"
             df_to_be_updated = wr.s3.read_parquet(
