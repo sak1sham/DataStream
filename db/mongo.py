@@ -37,7 +37,7 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
         encr = {
             'collection': collection_unique_id,
             'map_id': document['_id'],
-            'document_sha': hashlib.sha256(json.dumps(document_to_be_encrypted, default=str).encode()).hexdigest()
+            'document_sha': hashlib.sha1(json.dumps(document_to_be_encrypted, default=str).encode()).hexdigest()
         }
         updation = False
         if(not curr_collection_schema['bookmark']):
