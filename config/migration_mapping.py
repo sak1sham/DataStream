@@ -24,51 +24,23 @@ mapping = [
         's3_bucket_name': 'migration-service-temp',
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        'cron': '* * * * * 10 3 0',
+        'cron': '* * * * * 14 42 0',
         'archive': '',
         'collections': [
             {
-                'collection_name': 'support_form_items',
-                'fields': {
-                    'form_item_id': 'string',
-                    'label_hi': 'string',
-                    'key': 'string',
-                    'input_type': 'string',
-                    'input_params': 'string'
-                },
-                'bookmark': False
-            },
-            {
-                'collection_name': 'support_items',
-                'fields': {
-                    'next_action': 'string',
-                    'department': 'string',
-                    'item_text_en': 'string',
-                    'priority': 'integer',
-                    'item_text': 'string'
-                },
-                'bookmark': False
-            }
-        ]
-    },
-    {
-        'source_type': 'mongo',
-        'destination_type': 's3',
-        's3_bucket_name': 'migration-service-temp',
-        'db_name': 'support-service',
-        'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        'cron': '* * * * * 10 4 0',
-        'archive': '',
-        'collections': [
-            {
-                'collection_name': 'support_tickets_rating',
+                'collection_name': 'support_ticket_conversations',
                 'fields': {
                     'ticket_id': 'string',
-                    'reopen_at': 'string',
-                    'rating': 'integer',
-                    '__v': 'integer',
+                    'body': 'string',
+                    'body_text': 'string',
+                    'freshdesk_user_id': 'integer',
+                    'from_email': 'string',
+                    'created_at': 'string',
+                    'updated_at': 'string',
+                    '__v': 'integer'
                 },
-                'bookmark': "updatedAt"
+                'bookmark': 'updated_at',
+                'bookmark_format': '2021-12-06T10:35:56Z'
             }
         ]
     }

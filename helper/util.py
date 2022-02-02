@@ -52,6 +52,12 @@ def convert_to_type(x, tp):
     return x
 
 
+def convert_to_datetime(x, format):
+    if(isinstance(x, datetime.datetime)):
+        return x
+    x = datetime.datetime.strptime(x, format)
+    return x
+
 def evaluate_cron(expression):
     '''
         order of values:

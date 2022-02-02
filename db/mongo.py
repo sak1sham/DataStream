@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from helper.util import convert_list_to_string, convert_to_type
+from helper.util import convert_list_to_string, convert_to_type, convert_to_datetime
 from helper.logger import logger
 import certifi
 from dst.s3 import save_to_s3
@@ -8,9 +8,9 @@ import datetime
 from config.migration_mapping import encryption_store
 import json
 import hashlib
+import pytz
 
-def check_if_present():
-    pass
+utc_tz = pytz.UTC
 
 def dataframe_from_collection(current_collection, collection_unique_id, collection_format={}, curr_collection_schema={}):
     '''
@@ -21,37 +21,72 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
     count = 0
     total_len = current_collection.count_documents({})
     logger.info("Total " + str(total_len) + " documents present in collection.")
+
+    ## Fetching encryption database
+    ## Encryption database is used to store hashes of records in case bookmark is absent
     client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
     db_encr = client_encr[encryption_store['db_name']]
     collection_encr = db_encr[encryption_store['collection_name']]
-    collection_documents = current_collection.find()
-    if(curr_collection_schema['bookmark']):
-        if('last_run_cron_job' not in curr_collection_schema.keys()):
-            curr_collection_schema['last_run_cron_job'] = datetime.datetime(1602, 8, 20)
-        collection_documents = current_collection.find({curr_collection_schema['bookmark']: {"$gt": curr_collection_schema['last_run_cron_job']}})
-        curr_collection_schema['last_run_cron_job'] = datetime.datetime.now()
-    logger.info("Fetched all candidate documents from collection.")
-    for document in collection_documents:
-        updation = False
-        if(not curr_collection_schema['bookmark']):
-            document_to_be_encrypted = document.copy()
-            document_to_be_encrypted['_id'] = str(document_to_be_encrypted['_id'])
-            encr = {
-                'collection': collection_unique_id,
-                'map_id': document['_id'],
-                'document_sha': hashlib.sha256(json.dumps(document_to_be_encrypted, default=str).encode()).hexdigest()
-            }
-            previous_records = collection_encr.find_one({'collection': collection_unique_id, 'map_id': document['_id']})
-            if(previous_records):
-                if(previous_records['document_sha'] == encr['document_sha']):
-                    continue     # No updation in this record
-                else:
-                    updation = True     # This record has been updated
-                    collection_encr.delete_one({'collection': collection_unique_id, 'map_id': document['_id']})
-            collection_encr.insert_one(encr)
-
+ 
+    if('last_run_cron_job' not in curr_collection_schema.keys()):
+        curr_collection_schema['last_run_cron_job'] = utc_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
+    
+    for document in current_collection.find():
         document['parquet_format_date_year'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).year
         document['parquet_format_date_month'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).month
+        
+        updation = False
+        insertion_time = document['_id'].generation_time
+        if(insertion_time < curr_collection_schema['last_run_cron_job']):
+            # Document of this _id would already be transferred
+            # Now we need to check if any updation has been performed
+            # If bookmark present, use it
+            # If not, store a hash 
+            if(curr_collection_schema['bookmark']):
+                # In case there is bookmark present for comparison
+                if('bookmark_format' not in curr_collection_schema.keys()):
+                    if(convert_to_datetime(document[curr_collection_schema['bookmark']], curr_collection_schema['bookmark_format']) <= curr_collection_schema['last_run_cron_job']):
+                        continue
+                    else:
+                        updation = True
+                else:
+                    if(document[curr_collection_schema['bookmark']] <= curr_collection_schema['last_run_cron_job']):
+                        continue
+                    else:
+                        updation = True
+            else:
+                # In case bookmark is not available
+                # We will store a hash to check for updation
+                document['_id'] = str(document['_id'])
+                encr = {
+                    'collection': collection_unique_id,
+                    'map_id': document['_id'],
+                    'document_sha': hashlib.sha256(json.dumps(document, default=str).encode()).hexdigest()
+                }
+                previous_records = collection_encr.find_one({'collection': collection_unique_id, 'map_id': document['_id']})
+                if(previous_records):
+                    if(previous_records['document_sha'] == encr['document_sha']):
+                        continue     # No updation in this record
+                    else:
+                        updation = True     # This record has been updated
+                        collection_encr.delete_one({'collection': collection_unique_id, 'map_id': document['_id']})
+                        collection_encr.insert_one(encr)
+                else:
+                    collection_encr.insert_one(encr)
+        else:
+            ## Document has not been seen before
+            if(curr_collection_schema['bookmark']):
+                pass
+            else:
+                # We need to store hash if bookmark is absent
+                document['_id'] = str(document['_id'])
+                encr = {
+                    'collection': collection_unique_id,
+                    'map_id': document['_id'],
+                    'document_sha': hashlib.sha256(json.dumps(document, default=str).encode()).hexdigest()
+                }
+                collection_encr.insert_one(encr)
+
         for key, value in document.items():
             if(key == '_id'):
                 document[key] = str(document[key])
@@ -68,9 +103,10 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
             docu.append(document)
         else:
             docu_update.append(document)
-        if(count % 500 == 0):
+        if(count % 10000 == 0):
             logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     
+    curr_collection_schema['last_run_cron_job'] = datetime.datetime.now()
     logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     ret_df = pd.DataFrame(docu)
     ret_df_update = pd.DataFrame(docu_update)
