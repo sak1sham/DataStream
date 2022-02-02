@@ -24,7 +24,7 @@ mapping = [
         's3_bucket_name': 'migration-service-temp',
         'db_name': 'support-service',
         'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        'cron': '* * * * * 16 28 0',
+        'cron': '* * * * * 17 23 0',
         'archive': '',
         'collections': [
             {
