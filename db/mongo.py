@@ -107,7 +107,8 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
             logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     
     curr_collection_schema['last_run_cron_job'] = datetime.datetime.now()
-    logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
+    if(total_len > 0):
+        logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     ret_df = pd.DataFrame(docu)
     ret_df_update = pd.DataFrame(docu_update)
     logger.info("Converted " + str(count) + " documents to dataframe objects")

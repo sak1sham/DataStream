@@ -1,5 +1,6 @@
 import json
 import datetime
+from helper.logger import logger
 
 def convert_list_to_string(l):
     '''
@@ -36,7 +37,11 @@ def convert_to_type(x, tp):
     if((isinstance(x, int) or isinstance(x, bool) or isinstance(x, float) or isinstance(x, complex)) and tp == 'string'):
         return str(x)
     if(isinstance(x, str) and tp == 'integer'):
-        return int(x)
+        try:
+            return int(x)
+        except:
+            logger.info("Can't convert string \"" + str(x) + "\" to integer.")
+            return x
     if(isinstance(x, str) and tp=='bool'):
         return x=='True'
     if(isinstance(x, bool) and tp=='integer'):
