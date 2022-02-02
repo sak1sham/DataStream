@@ -32,15 +32,15 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
         curr_collection_schema['last_run_cron_job'] = datetime.datetime.now()
     logger.info("Fetched all candidate documents from collection.")
     for document in collection_documents:
-        document_to_be_encrypted = document.copy()
-        document_to_be_encrypted['_id'] = str(document_to_be_encrypted['_id'])
-        encr = {
-            'collection': collection_unique_id,
-            'map_id': document['_id'],
-            'document_sha': hashlib.sha1(json.dumps(document_to_be_encrypted, default=str).encode()).hexdigest()
-        }
         updation = False
         if(not curr_collection_schema['bookmark']):
+            document_to_be_encrypted = document.copy()
+            document_to_be_encrypted['_id'] = str(document_to_be_encrypted['_id'])
+            encr = {
+                'collection': collection_unique_id,
+                'map_id': document['_id'],
+                'document_sha': hashlib.sha256(json.dumps(document_to_be_encrypted, default=str).encode()).hexdigest()
+            }
             previous_records = collection_encr.find_one({'collection': collection_unique_id, 'map_id': document['_id']})
             if(previous_records):
                 if(previous_records['document_sha'] == encr['document_sha']):
@@ -48,8 +48,8 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
                 else:
                     updation = True     # This record has been updated
                     collection_encr.delete_one({'collection': collection_unique_id, 'map_id': document['_id']})
-        
-        collection_encr.insert_one(encr)
+            collection_encr.insert_one(encr)
+
         document['parquet_format_date_year'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).year
         document['parquet_format_date_month'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).month
         for key, value in document.items():
@@ -68,7 +68,7 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
             docu.append(document)
         else:
             docu_update.append(document)
-        if(count % 5 == 0):
+        if(count % 500 == 0):
             logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     
     logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
