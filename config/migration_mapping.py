@@ -26,7 +26,7 @@ load_dotenv()
             },
             'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
             'bookmark_format': '' (optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"),
-            'archive': '',
+            'archive': "Mongodb_query" or False,
             'cron': '* * * * * 7-19 */1 0' (as per guidelines at https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html - (year, month, day, week, day_of_week, hour, minute, second))
         }
     ]
@@ -46,7 +46,7 @@ mapping = [
         'collections': [
             {
                 'collection_name': 'leader_kyc',
-                'archive': '',
+                'archive': False,
                 'cron': '* * * * * 7-19 */1 0'
             },
             {
@@ -59,7 +59,7 @@ mapping = [
                     'input_params': 'string',
                 },
                 'bookmark': False,
-                'archive': '',
+                'archive': False,
                 'cron': '* * * * * 7-19 */1 0',
             },
             {
@@ -75,7 +75,7 @@ mapping = [
                     'next_item_id': 'string'
                 },
                 'bookmark': False,
-                'archive': '',
+                'archive': False,
                 'cron': '* * * * * 7-19 */1 0'
             },
             {
@@ -87,7 +87,7 @@ mapping = [
                     'list_subheading_priority': 'string'
                 },
                 'bookmark': False,
-                'archive': '',
+                'archive': False,
                 'cron': '* * * * * 7-19 */1 0'
             },
             {
@@ -104,7 +104,7 @@ mapping = [
                 },
                 'bookmark': 'updated_at',
                 'bookmark_format': '%Y-%m-%dT%H:%M:%S.%fZ',
-                'archive': '',
+                'archive': False,
                 'cron': '* * * * * 7-19 */1 0'
             },
             {
@@ -126,7 +126,7 @@ mapping = [
                     'csat_status': 'string'
                 },
                 'bookmark': 'updated_at',
-                'archive': '',
+                'archive': False,
                 'cron': '* * * * * 7-19 */1 0'
             },
             {
@@ -138,12 +138,12 @@ mapping = [
                     '__v': 'string',
                 },
                 'bookmark': 'updated_at',
-                'archive': '',
+                'archive': False,
                 'cron': '* * * * * 7-19 */1 0'
             },
             {
                 'collection_name': 'webhook_error_logs',
-                'archive': '',
+                'archive': False,
                 'cron': '* * * * * 7-19 */1 0'
             }
         ]

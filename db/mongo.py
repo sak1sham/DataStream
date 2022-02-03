@@ -127,14 +127,15 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
     return ret_df_insert, ret_df_update
 
 def get_data_from_source(db, collection_name):
-    try:
+    #try:
         client = MongoClient(db['source']['url'], tlsCAFile=certifi.where())
         database_ = client[db['source']['db_name']]
         target_collection = database_[collection_name]
+        print(target_collection)
         return target_collection
-    except:
-        log_writer("Unable to connect to MongoDB collection " + db['source']['db_name'] + "." + collection_name)
-        return None
+    #except:
+    #    log_writer("Unable to connect to MongoDB collection " + db['source']['db_name'] + "." + collection_name)
+    #    return None
 
 def process_data_from_source(db_collection, collection):
     try:
