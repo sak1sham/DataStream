@@ -38,6 +38,8 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
     ## Encryption database is used to store hashes of records in case bookmark is absent
     
     collection_encr = get_data_from_encr_db()
+    if(collection_encr is None):
+        return None, None
 
     if('last_run_cron_job' not in curr_collection_schema.keys()):
         curr_collection_schema['last_run_cron_job'] = IST_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
@@ -136,14 +138,17 @@ def get_data_from_source(db, collection_name):
         return None
 
 def process_data_from_source(db_collection, collection):
-    #try:
+    try:
         if('fields' not in collection.keys()):
             collection['fields'] = {}
         df_insert, df_update = dataframe_from_collection(db_collection, collection_unique_id=collection['collection_unique_id'], collection_format=collection['fields'], curr_collection_schema = collection)
-        return {'collection_name': collection['collection_name'], 'df_insert': df_insert, 'df_update': df_update}
-    #except:
-    #    logger.info("Caught some exception while processing MongoDB collection " + collection['collection_unique_id'])
-    #    return None
+        if(df_insert is not None and df_update is not None):
+            return {'collection_name': collection['collection_name'], 'df_insert': df_insert, 'df_update': df_update}
+        else:
+            return None
+    except:
+        logger.info("Caught some exception while processing MongoDB collection " + collection['collection_unique_id'])
+        return None
     
 def save_data_to_destination(db, processed_collection):
     if(db['destination']['destination_type'] == 's3'):

@@ -1,20 +1,32 @@
-'''
-    source_type = 'mongo' for MongoDB, 'mysql', 'api
+import os
+from dotenv import load_dotenv
 
-    MongoDB:
-        db_name = Name of the database to fetch from mongoDB
-        url = connection url for the database 
-        cron = cron expression for scheduling. Format for cron expression: (year, month, day, week, day_of_week, hour, minute, second) as per https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html
-        collections = list of collections to fetch from db_name with their properties (Optional)
-        collection_name = name of the collection (Optional)
-        fields = data types of the fields (Optional)
-        bookmark = False or some string value for field_name, which represents updation check date (Compulsory)
-        bookmark_format = If bookmark field contains dates as strings, provide a string format of the format. Ex- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"
-    
-    destination_type = 's3' or 'redshift'
-    S3
-        s3_bucket_name = name of s3 bucket
-    archive = query to archive records
+load_dotenv()
+
+'''
+    migration mapping is a list of DS for data-pipeline start points. Structure of each DS:
+    'source': {
+        'source_type': 'mongo' or 'mysql' or 'api',
+        'url': ''
+        'db_name': ''
+    },
+    'destination': {
+        'destination_type': 's3' or 'redshift',
+        's3_bucket_name': ''
+    }
+    'collections': [
+        {
+            'collection_name': '',
+            'fields': {
+                'field_1': 'integer' or 'string'
+                ...
+            },
+            'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
+            'bookmark_format': '' (optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"),
+            'archive': '',
+            'cron': '* * * * * 7-19 */1 0' (as per guidelines at https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html - (year, month, day, week, day_of_week, hour, minute, second))
+        }
+    ]
 '''
 
 mapping = [
@@ -136,12 +148,7 @@ mapping = [
 ]
 
 encryption_store = {
-    'url': 'mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-    'db_name': 'migration_update_check',
-    'collection_name': 'migration_update_check'
-}
-encryption_store = {
-    'url': 'mongodb+srv://sak1sham:abcd@cluster0.azvu4.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-    'db_name': 'migration_update_check',
-    'collection_name': 'migration_update_check'
+    'url': os.getenv('ENCR_MONGO_URL'),
+    'db_name': os.getenv('DB_NAME'),
+    'collection_name': os.getenv('COLLECTION_NAME')
 }
