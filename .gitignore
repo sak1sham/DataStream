@@ -7,3 +7,4 @@ Migration Service.code-workspace
 temp
 credentials.py
 AWSCLIV2.pkg
+.env

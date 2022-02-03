@@ -1,6 +1,9 @@
 import os
-from dotenv import load_dotenv
+import datetime
+import pytz
+IST_tz = pytz.timezone('Asia/Kolkata')
 
+from dotenv import load_dotenv
 load_dotenv()
 
 '''
@@ -57,7 +60,7 @@ mapping = [
                 },
                 'bookmark': False,
                 'archive': '',
-                'cron': '* * * * * 7-19 */1 0'
+                'cron': '* * * * * 7-19 */1 0',
             },
             {
                 'collection_name': 'support_items',

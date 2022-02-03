@@ -74,7 +74,7 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
                 encr = {
                     'collection': collection_unique_id,
                     'map_id': document['_id'],
-                    'document_sha': hashlib.sha256(json.dumps(OrderedDict(sorted(document)), default=str).encode()).hexdigest()
+                    'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
                 }
                 previous_records = collection_encr.find_one({'collection': collection_unique_id, 'map_id': document['_id']})
                 if(previous_records):
@@ -94,12 +94,12 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
                 encr = {
                     'collection': collection_unique_id,
                     'map_id': document['_id'],
-                    'document_sha': hashlib.sha256(json.dumps(document, default=str).encode()).hexdigest()
+                    'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
                 }
                 collection_encr.insert_one(encr)
             # If bookmark is present, and document has not been seen before, we will go with flow and updation = False
 
-        for key, value in document.items():
+        for key, _ in document.items():
             if(key == '_id'):
                 document[key] = str(document[key])
             elif(key in collection_format.keys()):
