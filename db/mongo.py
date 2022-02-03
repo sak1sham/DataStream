@@ -9,14 +9,26 @@ from config.migration_mapping import encryption_store
 import json
 import hashlib
 import pytz
+from collections import OrderedDict
 
-utc_tz = pytz.UTC
+IST_tz = pytz.timezone('Asia/Kolkata')
+
+def get_data_from_encr_db():
+    try:
+        client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
+        db_encr = client_encr[encryption_store['db_name']]
+        collection_encr = db_encr[encryption_store['collection_name']]
+        logger.info("Successfully connected to encryption database.")
+        return collection_encr
+    except:
+        logger.info("Unable to connect to encryption store database.")
+        return None
 
 def dataframe_from_collection(current_collection, collection_unique_id, collection_format={}, curr_collection_schema={}):
     '''
         Converts the unstructed database documents to structured pandas dataframe
     '''
-    docu = []
+    docu_insert = []
     docu_update = []
     count = 0
     total_len = current_collection.count_documents({})
@@ -24,44 +36,43 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
 
     ## Fetching encryption database
     ## Encryption database is used to store hashes of records in case bookmark is absent
-    client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
-    db_encr = client_encr[encryption_store['db_name']]
-    collection_encr = db_encr[encryption_store['collection_name']]
- 
+    
+    collection_encr = get_data_from_encr_db()
+
     if('last_run_cron_job' not in curr_collection_schema.keys()):
-        curr_collection_schema['last_run_cron_job'] = utc_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
+        curr_collection_schema['last_run_cron_job'] = IST_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
     
     for document in current_collection.find():
-        document['parquet_format_date_year'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).year
-        document['parquet_format_date_month'] = (document['_id'].generation_time - datetime.timedelta(hours=5, minutes=30)).month
+        insertion_time = IST_tz.normalize(document['_id'].generation_time.astimezone(IST_tz))
+        document['parquet_format_date_year'] = insertion_time.year
+        document['parquet_format_date_month'] = insertion_time.month
         
         updation = False
-        insertion_time = document['_id'].generation_time
         if(insertion_time < curr_collection_schema['last_run_cron_job']):
-            # Document of this _id would already be transferred
-            # Now we need to check if any updation has been performed
-            # If bookmark present, use it
-            # If not, store a hash 
+            # Document of this _id would already be present at destination, we need to check for updation
             if(curr_collection_schema['bookmark']):
-                # In case there is bookmark present for comparison
+                # Use bookmark for comparison of updation time
                 if('bookmark_format' not in curr_collection_schema.keys()):
-                    if(convert_to_datetime(document[curr_collection_schema['bookmark']], curr_collection_schema['bookmark_format']) <= curr_collection_schema['last_run_cron_job']):
+                    if(document[curr_collection_schema['bookmark']] <= curr_collection_schema['last_run_cron_job']):
+                        # No updation has been performed since last cron job
                         continue
                     else:
+                        # The document has changed. Need to update destination
                         updation = True
                 else:
-                    if(document[curr_collection_schema['bookmark']] <= curr_collection_schema['last_run_cron_job']):
+                    if(convert_to_datetime(document[curr_collection_schema['bookmark']], curr_collection_schema['bookmark_format']) <= curr_collection_schema['last_run_cron_job']):
+                        # No updation has been performed since last cron job
                         continue
                     else:
+                        # The document has changed. Need to update destination
                         updation = True
             else:
-                # In case bookmark is not available
-                # We will store a hash to check for updation
+                # No bookmark => We will store a hash to check for updation
                 document['_id'] = str(document['_id'])
                 encr = {
                     'collection': collection_unique_id,
                     'map_id': document['_id'],
-                    'document_sha': hashlib.sha256(json.dumps(document, default=str).encode()).hexdigest()
+                    'document_sha': hashlib.sha256(json.dumps(OrderedDict(sorted(document)), default=str).encode()).hexdigest()
                 }
                 previous_records = collection_encr.find_one({'collection': collection_unique_id, 'map_id': document['_id']})
                 if(previous_records):
@@ -75,10 +86,8 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
                     collection_encr.insert_one(encr)
         else:
             ## Document has not been seen before
-            if(curr_collection_schema['bookmark']):
-                pass
-            else:
-                # We need to store hash if bookmark is absent
+            if(not curr_collection_schema['bookmark']):
+                # We need to store hash if bookmark is not present
                 document['_id'] = str(document['_id'])
                 encr = {
                     'collection': collection_unique_id,
@@ -86,6 +95,7 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
                     'document_sha': hashlib.sha256(json.dumps(document, default=str).encode()).hexdigest()
                 }
                 collection_encr.insert_one(encr)
+            # If bookmark is present, and document has not been seen before, we will go with flow and updation = False
 
         for key, value in document.items():
             if(key == '_id'):
@@ -100,49 +110,55 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
                 document[key] = str(document[key])
         count += 1
         if(not updation):
-            docu.append(document)
+            docu_insert.append(document)
         else:
             docu_update.append(document)
         if(count % 10000 == 0):
             logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     
-    curr_collection_schema['last_run_cron_job'] = datetime.datetime.now()
-    if(total_len > 0):
-        logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
-    ret_df = pd.DataFrame(docu)
+    curr_collection_schema['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
+    logger.info(str(count) + " documents fetched.")
+    ret_df_insert = pd.DataFrame(docu_insert)
     ret_df_update = pd.DataFrame(docu_update)
-    logger.info("Converted " + str(count) + " documents to dataframe objects")
-    logger.info("Number of new records to be inserted " + str(ret_df.shape[0]))        
-    logger.info("Number of records to be updated " + str(ret_df_update.shape[0]))        
-    return ret_df, ret_df_update
+    logger.info("Converted " + str(count) + " collections to dataframe.")
+    logger.info("Insertions: " + str(ret_df_insert.shape[0]))        
+    logger.info("Updations: " + str(ret_df_update.shape[0]))        
+    return ret_df_insert, ret_df_update
 
-def get_data_from_source(db):
-    client = MongoClient(db['url'], tlsCAFile=certifi.where())
-    if('collections' not in db.keys()):
-        db['collections'] = []
-    database_ = client[db['db_name']]
-    for curr_collection in db['collections']:
-        curr_collection['collection_unique_id'] = db['db_name'] + '-|-' + curr_collection['collection_name']
-    return database_
+def get_data_from_source(db, collection_name):
+    try:
+        client = MongoClient(db['source']['url'], tlsCAFile=certifi.where())
+        database_ = client[db['source']['db_name']]
+        target_collection = database_[collection_name]
+        return target_collection
+    except:
+        logger.info("Unable to connect to MongoDB collection " + db['source']['db_name'] + "." + collection_name)
+        return None
 
-def process_data_from_source(database_, collection_name = []):
-    df_list = []
-    for curr_collection in collection_name:
-        if('fields' not in curr_collection.keys()):
-            curr_collection['fields'] = {}
-        df_collection, df_collection_update = dataframe_from_collection(database_[curr_collection['collection_name']], collection_unique_id=curr_collection['collection_unique_id'], collection_format=curr_collection['fields'], curr_collection_schema = curr_collection)
-        df_list.append({'collection_name': curr_collection['collection_name'], 'df_collection': df_collection, 'df_collection_update': df_collection_update})
-    return df_list
+def process_data_from_source(db_collection, collection):
+    #try:
+        if('fields' not in collection.keys()):
+            collection['fields'] = {}
+        df_insert, df_update = dataframe_from_collection(db_collection, collection_unique_id=collection['collection_unique_id'], collection_format=collection['fields'], curr_collection_schema = collection)
+        return {'collection_name': collection['collection_name'], 'df_insert': df_insert, 'df_update': df_update}
+    #except:
+    #    logger.info("Caught some exception while processing MongoDB collection " + collection['collection_unique_id'])
+    #    return None
     
-def save_data_to_destination(db, df_list):
-    if(db['destination_type'] == 's3'):
-        save_to_s3(df_list, db)
+def save_data_to_destination(db, processed_collection):
+    if(db['destination']['destination_type'] == 's3'):
+        save_to_s3(processed_collection, db_source=db['source'], db_destination=db['destination'])
 
-def process_mongodb(db):
-    logger.info('Time to connect to db ' + db['db_name'])
-    database_ = get_data_from_source(db)
-    logger.info('Fetched data from database ' + str(db['db_name']) + ".")
-    df_list = process_data_from_source(database_=database_, collection_name=db['collections'])
-    logger.info('Processed data from database ' + str(db['db_name']) + ". Attempting to save.")
-    save_data_to_destination(db=db, df_list=df_list)
-    logger.info('Saved data from database ' + str(db['db_name']) + ": Success")
+def process_mongo_collection(db, collection):
+    logger.info('Migrating ' + collection['collection_unique_id'])
+    db_collection = get_data_from_source(db, collection['collection_name'])
+    if(db_collection is not None):
+        logger.info('Fetched data for ' + collection['collection_unique_id'])
+        processed_collection = process_data_from_source(db_collection=db_collection, collection=collection)
+        if(processed_collection is not None):
+            logger.info('Processed data for ' + collection['collection_unique_id'])
+            try:
+                save_data_to_destination(db=db, processed_collection=processed_collection)
+                logger.info('Successfully saved data for ' + collection['collection_unique_id'])
+            except:
+                logger.info('Caught some exception while saving data from ' + collection['collection_unique_id'])

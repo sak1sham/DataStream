@@ -18,17 +18,21 @@
 '''
 
 mapping = [
-    {
-        'source_type': 'mongo',
-        'destination_type': 's3',
-        's3_bucket_name': 'migration-service-temp',
-        'db_name': 'support-service',
-        'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        'cron': '* * * * * 17 23 0',
-        'archive': '',
+    {   
+        'source': {
+            'source_type': 'mongo',
+            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+            'db_name': 'support-service',
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp-2',
+        },
         'collections': [
             {
-                'collection_name': 'leader_kyc'
+                'collection_name': 'leader_kyc',
+                'archive': '',
+                'cron': '* * * * * 7-19 */1 0'
             },
             {
                 'collection_name': 'support_form_items',
@@ -39,7 +43,9 @@ mapping = [
                     'input_type': 'string',
                     'input_params': 'string',
                 },
-                'bookmark': False
+                'bookmark': False,
+                'archive': '',
+                'cron': '* * * * * 7-19 */1 0'
             },
             {
                 'collection_name': 'support_items',
@@ -53,7 +59,9 @@ mapping = [
                     'item_type': 'string',
                     'next_item_id': 'string'
                 },
-                'bookmark': False
+                'bookmark': False,
+                'archive': '',
+                'cron': '* * * * * 7-19 */1 0'
             },
             {
                 'collection_name': 'support_list',
@@ -64,6 +72,8 @@ mapping = [
                     'list_subheading_priority': 'string'
                 },
                 'bookmark': False,
+                'archive': '',
+                'cron': '* * * * * 7-19 */1 0'
             },
             {
                 'collection_name': 'support_ticket_conversations',
@@ -78,7 +88,9 @@ mapping = [
                     '__v': 'string'
                 },
                 'bookmark': 'updated_at',
-                'bookmark_format': '%Y-%m-%dT%H:%M:%S.%fZ'
+                'bookmark_format': '%Y-%m-%dT%H:%M:%S.%fZ',
+                'archive': '',
+                'cron': '* * * * * 7-19 */1 0'
             },
             {
                 'collection_name': 'support_tickets',
@@ -98,7 +110,9 @@ mapping = [
                     '__v': 'string',
                     'csat_status': 'string'
                 },
-                'bookmark': 'updated_at'
+                'bookmark': 'updated_at',
+                'archive': '',
+                'cron': '* * * * * 7-19 */1 0'
             },
             {
                 'collection_name': 'support_tickets_rating',
@@ -108,10 +122,14 @@ mapping = [
                     'rating': 'string',
                     '__v': 'string',
                 },
-                'bookmark': 'updated_at'
+                'bookmark': 'updated_at',
+                'archive': '',
+                'cron': '* * * * * 7-19 */1 0'
             },
             {
-                'collection_name': 'webhook_error_logs'
+                'collection_name': 'webhook_error_logs',
+                'archive': '',
+                'cron': '* * * * * 7-19 */1 0'
             }
         ]
     }
@@ -119,6 +137,11 @@ mapping = [
 
 encryption_store = {
     'url': 'mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+    'db_name': 'migration_update_check',
+    'collection_name': 'migration_update_check'
+}
+encryption_store = {
+    'url': 'mongodb+srv://sak1sham:abcd@cluster0.azvu4.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
     'db_name': 'migration_update_check',
     'collection_name': 'migration_update_check'
 }
