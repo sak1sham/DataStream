@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from helper.util import convert_list_to_string, convert_to_type, convert_to_datetime
-from helper.logger import logger
+from helper.logger import log_writer
 import certifi
 from dst.s3 import save_to_s3
 import pandas as pd
@@ -9,7 +9,6 @@ from config.migration_mapping import encryption_store
 import json
 import hashlib
 import pytz
-from collections import OrderedDict
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -18,10 +17,10 @@ def get_data_from_encr_db():
         client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
         db_encr = client_encr[encryption_store['db_name']]
         collection_encr = db_encr[encryption_store['collection_name']]
-        logger.info("Successfully connected to encryption database.")
+        log_writer("Successfully connected to encryption database.")
         return collection_encr
     except:
-        logger.info("Unable to connect to encryption store database.")
+        log_writer("Unable to connect to encryption store database.")
         return None
 
 def dataframe_from_collection(current_collection, collection_unique_id, collection_format={}, curr_collection_schema={}):
@@ -32,7 +31,7 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
     docu_update = []
     count = 0
     total_len = current_collection.count_documents({})
-    logger.info("Total " + str(total_len) + " documents present in collection.")
+    log_writer("Total " + str(total_len) + " documents present in collection.")
 
     ## Fetching encryption database
     ## Encryption database is used to store hashes of records in case bookmark is absent
@@ -116,15 +115,15 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
         else:
             docu_update.append(document)
         if(count % 10000 == 0):
-            logger.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
+            log_writer(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     
     curr_collection_schema['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
-    logger.info(str(count) + " documents fetched.")
+    log_writer(str(count) + " documents fetched.")
     ret_df_insert = pd.DataFrame(docu_insert)
     ret_df_update = pd.DataFrame(docu_update)
-    logger.info("Converted " + str(count) + " collections to dataframe.")
-    logger.info("Insertions: " + str(ret_df_insert.shape[0]))        
-    logger.info("Updations: " + str(ret_df_update.shape[0]))        
+    log_writer("Converted " + str(count) + " collections to dataframe.")
+    log_writer("Insertions: " + str(ret_df_insert.shape[0]))        
+    log_writer("Updations: " + str(ret_df_update.shape[0]))        
     return ret_df_insert, ret_df_update
 
 def get_data_from_source(db, collection_name):
@@ -134,7 +133,7 @@ def get_data_from_source(db, collection_name):
         target_collection = database_[collection_name]
         return target_collection
     except:
-        logger.info("Unable to connect to MongoDB collection " + db['source']['db_name'] + "." + collection_name)
+        log_writer("Unable to connect to MongoDB collection " + db['source']['db_name'] + "." + collection_name)
         return None
 
 def process_data_from_source(db_collection, collection):
@@ -147,7 +146,7 @@ def process_data_from_source(db_collection, collection):
         else:
             return None
     except:
-        logger.info("Caught some exception while processing MongoDB collection " + collection['collection_unique_id'])
+        log_writer("Caught some exception while processing MongoDB collection " + collection['collection_unique_id'])
         return None
     
 def save_data_to_destination(db, processed_collection):
@@ -155,15 +154,15 @@ def save_data_to_destination(db, processed_collection):
         save_to_s3(processed_collection, db_source=db['source'], db_destination=db['destination'])
 
 def process_mongo_collection(db, collection):
-    logger.info('Migrating ' + collection['collection_unique_id'])
+    log_writer('Migrating ' + collection['collection_unique_id'])
     db_collection = get_data_from_source(db, collection['collection_name'])
     if(db_collection is not None):
-        logger.info('Fetched data for ' + collection['collection_unique_id'])
+        log_writer('Fetched data for ' + collection['collection_unique_id'])
         processed_collection = process_data_from_source(db_collection=db_collection, collection=collection)
         if(processed_collection is not None):
-            logger.info('Processed data for ' + collection['collection_unique_id'])
+            log_writer('Processed data for ' + collection['collection_unique_id'])
             try:
                 save_data_to_destination(db=db, processed_collection=processed_collection)
-                logger.info('Successfully saved data for ' + collection['collection_unique_id'])
+                log_writer('Successfully saved data for ' + collection['collection_unique_id'])
             except:
-                logger.info('Caught some exception while saving data from ' + collection['collection_unique_id'])
+                log_writer('Caught some exception while saving data from ' + collection['collection_unique_id'])
