@@ -7,7 +7,6 @@ from helper.util import convert_list_to_string, convert_to_type, convert_to_date
 import certifi
 import datetime
 from config.migration_mapping import encryption_store
-import json
 import hashlib
 import pytz
 
@@ -30,17 +29,17 @@ def distribute_records(collection_encr, df, table_unique_id):
     df_update = pd.DataFrame({})
     for i in range(df.shape[0]):
         encr = {
-            'collection': table_unique_id,
+            'table': table_unique_id,
             'map_id': df.iloc[i].unique_migration_record_id,
-            'document_sha': hashlib.sha256(convert_list_to_string(df.loc[i, :].values.tolist()).encode()).hexdigest()
+            'record_sha': hashlib.sha256(convert_list_to_string(df.loc[i, :].values.tolist()).encode()).hexdigest()
         }
-        previous_records = collection_encr.find_one({'collection': table_unique_id, 'map_id': df.iloc[i].unique_migration_record_id})
+        previous_records = collection_encr.find_one({'table': table_unique_id, 'map_id': df.iloc[i].unique_migration_record_id})
         if(previous_records):
-            if(previous_records['document_sha'] == encr['document_sha']):
+            if(previous_records['record_sha'] == encr['record_sha']):
                 continue
             else:
                 df_update = df_update.append(df.loc[i, :])
-                collection_encr.delete_one({'collection': table_unique_id, 'map_id': df.iloc[i].unique_migration_record_id})
+                collection_encr.delete_one({'table': table_unique_id, 'map_id': df.iloc[i].unique_migration_record_id})
                 collection_encr.insert_one(encr)
         else:
             df_insert = df_insert.append(df.loc[i, :])
@@ -67,8 +66,6 @@ def filter_df(df, table_mapping={}):
             df['parquet_format_date_year'] = df[table_mapping['partition_col']].apply(lambda x: convert_to_datetime(x, table_mapping['partition_col_format'])).year
             df['parquet_format_date_month'] = df[table_mapping['partition_col']].apply(lambda x: convert_to_datetime(x, table_mapping['partition_col_format'])).month
 
-    df_insert = pd.DataFrame({})
-    df_update = pd.DataFrame({})
     df_consider = df
     if(table_mapping['bookmark']):
         # Use bookmark for comparison of updation time
