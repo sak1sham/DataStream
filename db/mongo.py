@@ -155,11 +155,11 @@ def process_data_from_source(db_collection, collection):
             collection['fields'] = {}
         df_insert, df_update = dataframe_from_collection(mongodb_collection = db_collection, collection_mapping = collection)
         if(df_insert is not None and df_update is not None):
-            return {'collection_name': collection['collection_name'], 'df_insert': df_insert, 'df_update': df_update}
+            return {'name': collection['collection_name'], 'df_insert': df_insert, 'df_update': df_update}
         else:
             return None
     except:
-        log_writer("Caught some exception while processing MongoDB collection " + collection['collection_unique_id'])
+        log_writer("Caught some exception while processing " + collection['collection_unique_id'])
         return None
     
 def save_data_to_destination(db, processed_collection):

@@ -16,7 +16,22 @@ load_dotenv()
     'destination': {
         'destination_type': 's3' or 'redshift',
         's3_bucket_name': ''
-    }
+    },
+    (IF SOURCE IS SQL)
+    'tables': [
+        {
+            'table_name': '',
+            'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
+            'bookmark_format': '' (optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"),
+            'uniqueness': string or list of unique specifiers for records (Optional, needed if bookmark is False)
+            'archive': "Mongodb_query" or False,
+            'cron': '* * * * * 7-19 */1 0' (as per guidelines at https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html - (year, month, day, week, day_of_week, hour, minute, second))
+            'to_partition': True or False (Default),
+            'partition_col': False or '' name of the datetime column
+            'partition_col_format': '' (Optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z")
+        }
+    ],
+    (IF SOURCE IS MONGODB)
     'collections': [
         {
             'collection_name': '',
@@ -28,7 +43,7 @@ load_dotenv()
             'bookmark_format': '' (optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"),
             'archive': "Mongodb_query" or False,
             'cron': '* * * * * 7-19 */1 0' (as per guidelines at https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html - (year, month, day, week, day_of_week, hour, minute, second))
-            'to_partition': True (Default) or False,
+            'to_partition': True or False (Default),
             'partition_col': False or '' name of the datetime column
             'partition_col_format': '' (Optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z")
         }
@@ -36,6 +51,28 @@ load_dotenv()
 '''
 
 mapping = [
+    {
+        'source': {
+            'source_type': 'sql',
+            'url': 'postgresql://localhost/postgres',
+            'db_name': 'postgres',
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp-2',
+        },
+        'tables': [
+            {
+                'table_name': 'phonebook',
+                'uniqueness': 'firstname',
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 7-21 */1 10',
+                'to_partition': False,
+                'partition_col': False
+            }
+        ]
+    },
     {   
         'source': {
             'source_type': 'mongo',
