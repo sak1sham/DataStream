@@ -1,4 +1,3 @@
-from fileinput import filename
 import awswrangler as wr
 from helper.logger import log_writer
 
@@ -8,7 +7,7 @@ def save_to_s3(processed_collection, db_source, db_destination):
     partition_cols = []
     if('parquet_format_date_year' in processed_collection['df_insert']):
         partition_cols = ['parquet_format_date_year', 'parquet_format_date_month']
-    log_writer("Attempting to insert at " + file_name)
+    log_writer("Attempting to insert " + str(processed_collection['df_insert'].memory_usage(index=True).sum()) + " bytes at " + file_name)
     try:
         if(processed_collection['df_insert'].shape[0] > 0):
             wr.s3.to_parquet(
@@ -22,7 +21,7 @@ def save_to_s3(processed_collection, db_source, db_destination):
     except:
         log_writer("Caught some exception while trying to insert records at " + file_name)
     
-    log_writer("Attempting to update records at " + file_name)    
+    log_writer("Attempting to update " + str(processed_collection['df_update'].memory_usage(index=True).sum()) + " bytes at " + file_name)    
     try:
         file_name_u = s3_location + processed_collection['collection_name'] + "/"
         for i in range(processed_collection['df_update'].shape[0]):
@@ -42,4 +41,4 @@ def save_to_s3(processed_collection, db_source, db_destination):
             )
         log_writer(str(processed_collection['df_update'].shape[0]) + " updations done for " + file_name)
     except:
-        log_writer("Caught some exceptions while saving updated records to " + file_name + ". However, some updations might still have been done :)")
+        log_writer("Caught some exceptions while updating records for " + file_name + ". However, some updations might still have been completed.")

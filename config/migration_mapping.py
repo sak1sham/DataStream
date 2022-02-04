@@ -67,6 +67,7 @@ mapping = [
                 'bookmark': False,
                 'archive': False,
                 'cron': '* * * * * 7-19 */1 0',
+                'to_partition': False,
                 'partition_col': False
             },
             {

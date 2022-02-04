@@ -144,14 +144,13 @@ def get_data_from_source(db, collection_name):
         client = MongoClient(db['source']['url'], tlsCAFile=certifi.where())
         database_ = client[db['source']['db_name']]
         target_collection = database_[collection_name]
-        #print(target_collection)
         return target_collection
     except:
         log_writer("Unable to connect to mongo:" + db['source']['db_name'] + ":" + collection_name)
         return None
 
 def process_data_from_source(db_collection, collection):
-    #try:
+    try:
         if('fields' not in collection.keys()):
             collection['fields'] = {}
         df_insert, df_update = dataframe_from_collection(mongodb_collection = db_collection, collection_mapping = collection)
@@ -159,9 +158,9 @@ def process_data_from_source(db_collection, collection):
             return {'collection_name': collection['collection_name'], 'df_insert': df_insert, 'df_update': df_update}
         else:
             return None
-    #except:
-    #    log_writer("Caught some exception while processing MongoDB collection " + collection['collection_unique_id'])
-    #    return None
+    except:
+        log_writer("Caught some exception while processing MongoDB collection " + collection['collection_unique_id'])
+        return None
     
 def save_data_to_destination(db, processed_collection):
     if(db['destination']['destination_type'] == 's3'):

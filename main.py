@@ -9,6 +9,10 @@ from db.mongo import process_mongo_collection
 from helper.logger import log_writer
 from helper.util import evaluate_cron
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 app = FastAPI(title="Migration service")
 scheduler = BackgroundScheduler()
 
@@ -38,4 +42,4 @@ if __name__ == "__main__":
                 if(curr_collection['collection_unique_id'] in sys.argv[1:]):
                     scheduler.add_job(process_mongo_collection, 'cron', args=[db, curr_collection], id=curr_collection['collection_unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Calcutta'))
     log_writer('Added job(s) to the scheduler.')
-    uvicorn.run(app)
+    uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))
