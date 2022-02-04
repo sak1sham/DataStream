@@ -1,6 +1,6 @@
 import json
 import datetime
-from helper.logger import logger
+from helper.logger import log_writer, logger
 
 def convert_list_to_string(l):
     '''
@@ -60,8 +60,12 @@ def convert_to_type(x, tp):
 def convert_to_datetime(x, format):
     if(isinstance(x, datetime.datetime)):
         return x
-    x = datetime.datetime.strptime(x, format)
-    return x
+    try:
+        x = datetime.datetime.strptime(x, format)
+        return x
+    except:
+        log_writer("Unable to convert " + x + " to format specified: \"" + format + "\". Returning 20-8-1602 00:00:00")
+        return datetime.datetime(1602, 8, 20, 0, 0, 0, 0)
 
 def evaluate_cron(expression):
     '''

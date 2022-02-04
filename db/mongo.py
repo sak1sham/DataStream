@@ -23,14 +23,16 @@ def get_data_from_encr_db():
         log_writer("Unable to connect to encryption store database.")
         return None
 
-def dataframe_from_collection(current_collection, collection_unique_id, collection_format={}, curr_collection_schema={}):
+def dataframe_from_collection(mongodb_collection, collection_mapping={}):
     '''
         Converts the unstructed database documents to structured pandas dataframe
     '''
+    collection_unique_id=collection_mapping['collection_unique_id']
+    collection_fields=collection_mapping['fields']
     docu_insert = []
     docu_update = []
     count = 0
-    total_len = current_collection.count_documents({})
+    total_len = mongodb_collection.count_documents({})
     log_writer("Total " + str(total_len) + " documents present in collection.")
 
     ## Fetching encryption database
@@ -40,28 +42,39 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
     if(collection_encr is None):
         return None, None
 
-    if('last_run_cron_job' not in curr_collection_schema.keys()):
-        curr_collection_schema['last_run_cron_job'] = IST_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
+    if('last_run_cron_job' not in collection_mapping.keys()):
+        collection_mapping['last_run_cron_job'] = IST_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
     
-    for document in current_collection.find():
+    for document in mongodb_collection.find():
         insertion_time = IST_tz.normalize(document['_id'].generation_time.astimezone(IST_tz))
-        document['parquet_format_date_year'] = insertion_time.year
-        document['parquet_format_date_month'] = insertion_time.month
-        
+        if('to_partition' not in collection_mapping.keys() or collection_mapping['to_partition']):
+            if('partition_col' not in collection_mapping.keys() or not collection_mapping['partition_col']):
+                document['parquet_format_date_year'] = insertion_time.year
+                document['parquet_format_date_month'] = insertion_time.month
+            else:
+                if('partition_col_format' not in collection_mapping.keys() or not collection_mapping['partition_col_format']):
+                    document['parquet_format_date_year'] = document[collection_mapping['partition_col']].year
+                    document['parquet_format_date_month'] = document[collection_mapping['partition_col']].month
+                else:
+                    document['parquet_format_date_year'] = convert_to_datetime(document[collection_mapping['partition_col']], collection_mapping['partition_col_format']).year
+                    document['parquet_format_date_month'] = convert_to_datetime(document[collection_mapping['partition_col']], collection_mapping['partition_col_format']).month
+            collection_fields['parquet_format_date_year'] = 'integer'
+            collection_fields['parquet_format_date_month'] = 'integer'
+
         updation = False
-        if(insertion_time < curr_collection_schema['last_run_cron_job']):
+        if(insertion_time < collection_mapping['last_run_cron_job']):
             # Document of this _id would already be present at destination, we need to check for updation
-            if(curr_collection_schema['bookmark']):
+            if(collection_mapping['bookmark']):
                 # Use bookmark for comparison of updation time
-                if('bookmark_format' not in curr_collection_schema.keys()):
-                    if(document[curr_collection_schema['bookmark']] <= curr_collection_schema['last_run_cron_job']):
+                if('bookmark_format' not in collection_mapping.keys()):
+                    if(document[collection_mapping['bookmark']] <= collection_mapping['last_run_cron_job']):
                         # No updation has been performed since last cron job
                         continue
                     else:
                         # The document has changed. Need to update destination
                         updation = True
                 else:
-                    if(convert_to_datetime(document[curr_collection_schema['bookmark']], curr_collection_schema['bookmark_format']) <= curr_collection_schema['last_run_cron_job']):
+                    if(convert_to_datetime(document[collection_mapping['bookmark']], collection_mapping['bookmark_format']) <= collection_mapping['last_run_cron_job']):
                         # No updation has been performed since last cron job
                         continue
                     else:
@@ -87,7 +100,7 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
                     collection_encr.insert_one(encr)
         else:
             ## Document has not been seen before
-            if(not curr_collection_schema['bookmark']):
+            if(not collection_mapping['bookmark']):
                 # We need to store hash if bookmark is not present
                 document['_id'] = str(document['_id'])
                 encr = {
@@ -101,8 +114,8 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
         for key, _ in document.items():
             if(key == '_id'):
                 document[key] = str(document[key])
-            elif(key in collection_format.keys()):
-                document[key] = convert_to_type(document[key], collection_format[key])
+            elif(key in collection_fields.keys()):
+                document[key] = convert_to_type(document[key], collection_fields[key])
             elif(isinstance(document[key], int) or isinstance(document[key], float) or isinstance(document[key], complex)):
                 document[key] = str(document[key])
             elif(isinstance(document[key], list)):
@@ -117,7 +130,7 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
         if(count % 10000 == 0):
             log_writer(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     
-    curr_collection_schema['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
+    collection_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
     log_writer(str(count) + " documents fetched.")
     ret_df_insert = pd.DataFrame(docu_insert)
     ret_df_update = pd.DataFrame(docu_update)
@@ -127,28 +140,28 @@ def dataframe_from_collection(current_collection, collection_unique_id, collecti
     return ret_df_insert, ret_df_update
 
 def get_data_from_source(db, collection_name):
-    #try:
+    try:
         client = MongoClient(db['source']['url'], tlsCAFile=certifi.where())
         database_ = client[db['source']['db_name']]
         target_collection = database_[collection_name]
-        print(target_collection)
+        #print(target_collection)
         return target_collection
-    #except:
-    #    log_writer("Unable to connect to MongoDB collection " + db['source']['db_name'] + "." + collection_name)
-    #    return None
+    except:
+        log_writer("Unable to connect to mongo:" + db['source']['db_name'] + ":" + collection_name)
+        return None
 
 def process_data_from_source(db_collection, collection):
-    try:
+    #try:
         if('fields' not in collection.keys()):
             collection['fields'] = {}
-        df_insert, df_update = dataframe_from_collection(db_collection, collection_unique_id=collection['collection_unique_id'], collection_format=collection['fields'], curr_collection_schema = collection)
+        df_insert, df_update = dataframe_from_collection(mongodb_collection = db_collection, collection_mapping = collection)
         if(df_insert is not None and df_update is not None):
             return {'collection_name': collection['collection_name'], 'df_insert': df_insert, 'df_update': df_update}
         else:
             return None
-    except:
-        log_writer("Caught some exception while processing MongoDB collection " + collection['collection_unique_id'])
-        return None
+    #except:
+    #    log_writer("Caught some exception while processing MongoDB collection " + collection['collection_unique_id'])
+    #    return None
     
 def save_data_to_destination(db, processed_collection):
     if(db['destination']['destination_type'] == 's3'):

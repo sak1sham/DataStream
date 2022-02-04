@@ -28,6 +28,9 @@ load_dotenv()
             'bookmark_format': '' (optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"),
             'archive': "Mongodb_query" or False,
             'cron': '* * * * * 7-19 */1 0' (as per guidelines at https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html - (year, month, day, week, day_of_week, hour, minute, second))
+            'to_partition': True (Default) or False,
+            'partition_col': False or '' name of the datetime column
+            'partition_col_format': '' (Optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z")
         }
     ]
 '''
@@ -46,8 +49,11 @@ mapping = [
         'collections': [
             {
                 'collection_name': 'leader_kyc',
+                'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 7-19 */1 0'
+                'cron': '* * * * * 7-19 */1 0',
+                'to_partition': False,
+                'partition_col': False
             },
             {
                 'collection_name': 'support_form_items',
@@ -61,6 +67,7 @@ mapping = [
                 'bookmark': False,
                 'archive': False,
                 'cron': '* * * * * 7-19 */1 0',
+                'partition_col': False
             },
             {
                 'collection_name': 'support_items',
@@ -76,7 +83,8 @@ mapping = [
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 7-19 */1 0'
+                'cron': '* * * * * 7-19 */1 0',
+                'partition_col': False
             },
             {
                 'collection_name': 'support_list',
@@ -88,7 +96,8 @@ mapping = [
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 7-19 */1 0'
+                'cron': '* * * * * 7-19 */1 0',
+                'partition_col': False
             },
             {
                 'collection_name': 'support_ticket_conversations',
@@ -105,7 +114,8 @@ mapping = [
                 'bookmark': 'updated_at',
                 'bookmark_format': '%Y-%m-%dT%H:%M:%S.%fZ',
                 'archive': False,
-                'cron': '* * * * * 7-19 */1 0'
+                'cron': '* * * * * 7-19 */1 0',
+                'partition_col': False
             },
             {
                 'collection_name': 'support_tickets',
@@ -127,7 +137,8 @@ mapping = [
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 7-19 */1 0'
+                'cron': '* * * * * 7-19 */1 0',
+                'partition_col': False
             },
             {
                 'collection_name': 'support_tickets_rating',
@@ -139,12 +150,15 @@ mapping = [
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 7-19 */1 0'
+                'cron': '* * * * * 7-19 */1 0',
+                'partition_col': False
             },
             {
                 'collection_name': 'webhook_error_logs',
+                'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 7-19 */1 0'
+                'cron': '* * * * * 7-19 */1 0',
+                'partition_col': False
             }
         ]
     }
