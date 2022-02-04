@@ -13,10 +13,10 @@ logger.info('Created logger directories and started logger')
 write_mode = os.getenv('RUN_MODE')
 if(write_mode is None or not (write_mode == '1' or write_mode=='2')):
     logger.info("Invalid RUN_MODE in .env file. Setting to default 1: print mode")
-    write_mode = '2'
+    write_mode = '1'
 
 def log_writer(x):
-    if(write_mode == '1'):
+    if(write_mode == '2'):
         logger.info(x)
-    elif(write_mode == '2'):
+    elif(write_mode == '1'):
         print(x)
