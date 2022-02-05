@@ -21,6 +21,8 @@ load_dotenv()
     'tables': [
         {
             'table_name': '',
+            'bookmark_creation': False or 'field_name' (optional, for example - 'created_at'),
+            'bookmark_creation_format': '' (optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"),
             'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
             'bookmark_format': '' (optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"),
             'uniqueness': string or list of unique specifiers for records (Optional, needed if bookmark is False)
@@ -65,6 +67,7 @@ mapping = [
             {
                 'table_name': 'phonebook',
                 'uniqueness': 'firstname',
+                'bookmark_creation': False,
                 'bookmark': False,
                 'archive': False,
                 'cron': '* * * * * 7-21 */1 10',

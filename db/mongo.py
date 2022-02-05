@@ -47,7 +47,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
     
     for document in mongodb_collection.find():
         insertion_time = IST_tz.normalize(document['_id'].generation_time.astimezone(IST_tz))
-        if('to_partition' not in collection_mapping.keys() or collection_mapping['to_partition']):
+        if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):
             if('partition_col' not in collection_mapping.keys() or not collection_mapping['partition_col']):
                 document['parquet_format_date_year'] = insertion_time.year
                 document['parquet_format_date_month'] = insertion_time.month

@@ -57,6 +57,9 @@ def filter_df(df, table_mapping={}):
 
     if('last_run_cron_job' not in table_mapping.keys()):
         table_mapping['last_run_cron_job'] = IST_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
+    
+    last_run_cron_job = table_mapping['last_run_cron_job']
+    table_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
 
     if('to_partition' in table_mapping.keys() and table_mapping['to_partition']):
         if('partition_col_format' not in table_mapping.keys() or not table_mapping['partition_col_format']):
@@ -67,21 +70,50 @@ def filter_df(df, table_mapping={}):
             df['parquet_format_date_month'] = df[table_mapping['partition_col']].apply(lambda x: convert_to_datetime(x, table_mapping['partition_col_format'])).month
 
     df_consider = df
+    df_insert = pd.DataFrame({})
+    df_update = pd.DataFrame({})
+    
+    if('uniqueness' not in table_mapping):
+        # If unique keys are not specified by user, consider entire rows are unique keys
+        table_mapping['uniqueness'] = df.columns.values.tolist()
+    if(isinstance(table_mapping['uniqueness'], str)):
+        table_mapping['uniqueness'] = [table_mapping['uniqueness']]
+    df['unique_migration_record_id'] = df[table_mapping['uniqueness']].astype(str).sum(1)
+
     if(table_mapping['bookmark']):
         # Use bookmark for comparison of updation time
         if('bookmark_format' not in table_mapping.keys()):
-            df_consider = df[df[table_mapping['bookmark']] > table_mapping['last_run_cron_job']]
+            df_consider = df[df[table_mapping['bookmark']] > last_run_cron_job]
         else:
-            df_consider = df[df[table_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_format'])) > table_mapping['last_run_cron_job']]
-    
-    table_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
-    
-    if(isinstance(table_mapping['uniqueness'], str)):
-        table_mapping['uniqueness'] = [table_mapping['uniqueness']]
-    df_consider['unique_migration_record_id'] = df_consider[table_mapping['uniqueness']].astype(str).sum(1)
+            df_consider = df[df[table_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_format'])) > last_run_cron_job]
+        # Now, df_consider = insert_records + update_records
+        if(table_mapping['bookmark_creation']):
+            # Further used to divide into creation and updation subsets
+            if('bookmark_creation_format' not in table_mapping.keys()):
+                df_insert = df_consider[df_consider[table_mapping['bookmark_creation']] > last_run_cron_job]
+                df_update = df_consider[df_consider[table_mapping['bookmark_creation']] <= last_run_cron_job]
+            else:
+                df_insert = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) > last_run_cron_job]
+                df_update = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) <= last_run_cron_job]
+        else:
+            # Need to check hashing, need to distribute manually
+            df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
+    else:
+        # Bookmark of updation is not present
+        if(table_mapping['bookmark_creation']):
+            # First separate out creation subset, then use hashing to separate out updation from rest
+            if('bookmark_creation_format' not in table_mapping.keys()):
+                df_insert = df[df[table_mapping['bookmark_creation']] > last_run_cron_job]
+                df_consider = df[df[table_mapping['bookmark_creation']] <= last_run_cron_job]
+                _, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
+            else:
+                df_insert = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) > last_run_cron_job]
+                df_consider = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) <= last_run_cron_job]
+                _, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
+        else:
+            # Need to distribute every record manually
+            df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
 
-    df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
-    
     log_writer("All records processed.")
     log_writer("Insertions: " + str(df_insert.shape[0]))        
     log_writer("Updations: " + str(df_update.shape[0]))        
