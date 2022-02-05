@@ -6,52 +6,6 @@ IST_tz = pytz.timezone('Asia/Kolkata')
 from dotenv import load_dotenv
 load_dotenv()
 
-'''
-    migration mapping is a list of DS for data-pipeline start points. Structure of each DS:
-    'source': {
-        'source_type': 'mongo' or 'mysql' or 'api',
-        'url': ''
-        'db_name': ''
-    },
-    'destination': {
-        'destination_type': 's3' or 'redshift',
-        's3_bucket_name': ''
-    },
-    (IF SOURCE IS SQL)
-    'tables': [
-        {
-            'table_name': '',
-            'bookmark_creation': False or 'field_name' (optional, for example - 'created_at'),
-            'bookmark_creation_format': '' (optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"),
-            'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
-            'bookmark_format': '' (optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"),
-            'uniqueness': string or list of unique specifiers for records (Optional, needed if bookmark is False)
-            'archive': "Mongodb_query" or False,
-            'cron': '* * * * * 7-19 */1 0' (as per guidelines at https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html - (year, month, day, week, day_of_week, hour, minute, second))
-            'to_partition': True or False (Default),
-            'partition_col': False or '' name of the datetime column
-            'partition_col_format': '' (Optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z")
-        }
-    ],
-    (IF SOURCE IS MONGODB)
-    'collections': [
-        {
-            'collection_name': '',
-            'fields': {
-                'field_1': 'integer' or 'string'
-                ...
-            },
-            'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
-            'bookmark_format': '' (optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"),
-            'archive': "Mongodb_query" or False,
-            'cron': '* * * * * 7-19 */1 0' (as per guidelines at https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html - (year, month, day, week, day_of_week, hour, minute, second))
-            'to_partition': True or False (Default),
-            'partition_col': False or '' name of the datetime column
-            'partition_col_format': '' (Optional, for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z")
-        }
-    ]
-'''
-
 mapping = [
     {
         'source': {
