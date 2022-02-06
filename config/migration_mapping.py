@@ -19,14 +19,15 @@ mapping = [
         },
         'tables': [
             {
-                'table_name': 'phonebook',
-                'uniqueness': 'firstname',
+                'table_name': 'phonebook2',
+                'uniqueness': 'Name',
                 'bookmark_creation': False,
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 7-21 */1 10',
-                'to_partition': False,
-                'partition_col': False
+                'cron': '* * * * * 7-21 */1 30',
+                'to_partition': True,
+                'partition_col': 'DOB',
+                'partition_col_format': '%Y-%m-%dT%H:%M:%SZ'
             }
         ]
     },
@@ -78,7 +79,7 @@ mapping = [
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 7-19 */1 0',
+                'cron': '* * * * * 7-19 */1 10',
                 'partition_col': False
             },
             {

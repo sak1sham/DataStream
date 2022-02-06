@@ -38,8 +38,8 @@ If source is SQL, we need to provide a field ```tables```, which is a list of ta
     'archive': "SQL_query" or False,
     'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
     'to_partition': True or False (Default),
-    'partition_col': False or '' name of the datetime column,
-    'partition_col_format': '' (Optional, Refer Notes 2),
+    'partition_col': False or '' name of the column (str or list of str),
+    'partition_col_format': '' (Optional, Refer Notes 4),
     'last_run_cron_job': Datetime object with a specified timezone (Optional)
 }
 ```
@@ -49,16 +49,17 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
 {
     'collection_name': '',
     'fields': {
-        'field_1': 'integer' or 'string'
+        'field_1': 'int' (Refer Notes 3),
+        'field_2': 'complex', 
         ...
-    },
+    } (Optional),
     'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
     'bookmark_format': '' (optional, Refer Notes 2),
     'archive': "Mongodb_query" or False,
     'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
     'to_partition': True or False (Default),
-    'partition_col': False or '' name of the datetime column,
-    'partition_col_format': '' (Optional, Refer Notes 2),
+    'partition_col': False or '' name of the field (str or list of str),
+    'partition_col_format': '' (Optional, Refer Notes 4),
     'last_run_cron_job': Datetime object with a specified timezone (Optional)
 }
 ```
@@ -70,7 +71,21 @@ Writing Cron expression as per guidelines at [APScheduler docs](https://apschedu
 
 For example: '* * * * * 7-19 */1 0' represents every minute between 7AM to 7PM.
 
-## 2. Writing data_formats
+## 2. Writing datetime formats
 Date formats shall be written in pythonic way. Refer [this link](https://www.tutorialspoint.com/python/time_strptime.htm)
 
 for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"
+
+## 3. Specifying data types in MongoDB fields
+Only specify if the field belongs to one of the following category:
+1. 'int'
+2. 'bool'
+3. 'float'
+4. 'complex'
+5. 'datetime'
+
+Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string.
+
+## 4. Partition Columns formats
+
+'int' or 'str' (Default) or 'datetime' or datetime formats (Refer Notes 2) like "%Y-%m-%dT%H:%M:%S.%fZ", or list of formats for different columns.

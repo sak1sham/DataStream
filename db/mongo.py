@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from helper.util import convert_list_to_string, convert_to_type, convert_to_datetime
+from helper.util import convert_list_to_string, convert_to_type, convert_to_datetime, convert_json_to_string
 from helper.logger import log_writer
 import certifi
 from dst.s3 import save_to_s3
@@ -8,7 +8,7 @@ import datetime
 import json
 import hashlib
 import pytz
-from encr_db import get_data_from_encr_db
+from db.encr_db import get_data_from_encr_db
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -26,29 +26,79 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
 
     ## Fetching encryption database
     ## Encryption database is used to store hashes of records in case bookmark is absent
-    
     collection_encr = get_data_from_encr_db()
     if(collection_encr is None):
         return None, None
 
     if('last_run_cron_job' not in collection_mapping.keys()):
         collection_mapping['last_run_cron_job'] = IST_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
-    
+
+    if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):
+        if('partition_col' not in collection_mapping.keys() or not collection_mapping['partition_col']):
+            log_writer("Partition_col not specified in " + collection_mapping['collection_unique_id'] + ". Making partition using _id.")
+            collection_mapping['partition_col'] = ['_id']
+            collection_mapping['partition_col_format'] = ['datetime']
+        if(isinstance(collection_mapping['partition_col'], str)):
+            collection_mapping['partition_col'] = [collection_mapping['partition_col']]
+        if('partition_col_format' not in collection_mapping.keys()):
+            collection_mapping['partition_col_format'] = []
+        if(isinstance(collection_mapping['partition_col_format'], str)):
+            collection_mapping['partition_col_format'] = [collection_mapping['partition_col_format']]
+        while(len(collection_mapping['partition_col']) > len(collection_mapping['partition_col_format'])):
+            collection_mapping['partition_col_format'] = collection_mapping['partition_col_format'].append('str')
+        # Now, there is a 1-1 mapping of partition_col and partition_col_format. Now, we need to partition.
+
+    collection_mapping['partition_for_parquet'] = []
+    if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):
+        for i in range(len(collection_mapping['partition_col'])):
+            col = collection_mapping['partition_col'][i]
+            col_form = collection_mapping['partition_col_format'][i]
+            parq_col = "parquet_format_" + col
+            if(col == '_id'):
+                collection_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                collection_fields[parq_col + "_year"] = 'int'
+                collection_fields[parq_col + "_month"] = 'int'
+                collection_fields[parq_col + "_day"] = 'int'
+            if(col_form == 'str'):
+                collection_mapping['partition_for_parquet'].extend([parq_col])
+            elif(col_form == 'int'):
+                collection_mapping['partition_for_parquet'].extend([parq_col])
+                collection_fields[parq_col] = 'int'
+            elif(col_form == 'datetime'):
+                collection_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                collection_fields[parq_col + "_year"] = 'int'
+                collection_fields[parq_col + "_month"] = 'int'
+                collection_fields[parq_col + "_day"] = 'int'
+            else:
+                collection_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                collection_fields[parq_col + "_year"] = 'int'
+                collection_fields[parq_col + "_month"] = 'int'
+                collection_fields[parq_col + "_day"] = 'int'
+
     for document in mongodb_collection.find():
         insertion_time = IST_tz.normalize(document['_id'].generation_time.astimezone(IST_tz))
         if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):
-            if('partition_col' not in collection_mapping.keys() or not collection_mapping['partition_col']):
-                document['parquet_format_date_year'] = insertion_time.year
-                document['parquet_format_date_month'] = insertion_time.month
-            else:
-                if('partition_col_format' not in collection_mapping.keys() or not collection_mapping['partition_col_format']):
-                    document['parquet_format_date_year'] = document[collection_mapping['partition_col']].year
-                    document['parquet_format_date_month'] = document[collection_mapping['partition_col']].month
+            for i in range(len(collection_mapping['partition_col'])):
+                col = collection_mapping['partition_col'][i]
+                col_form = collection_mapping['partition_col_format'][i]
+                parq_col = "parquet_format_" + col
+                if(col == '_id'):
+                    document[parq_col + "_year"] = insertion_time.year
+                    document[parq_col + "_month"] = insertion_time.month
+                    document[parq_col + "_day"] = insertion_time.day
+                if(col_form == 'str'):
+                    document[parq_col] = str(document[col])
+                elif(col_form == 'int'):
+                    document[parq_col] = int(document[col])
+                elif(col_form == 'datetime'):
+                    document[parq_col + "_year"] = document[col].year
+                    document[parq_col + "_month"] = document[col].month
+                    document[parq_col + "_day"] = document[col].day
                 else:
-                    document['parquet_format_date_year'] = convert_to_datetime(document[collection_mapping['partition_col']], collection_mapping['partition_col_format']).year
-                    document['parquet_format_date_month'] = convert_to_datetime(document[collection_mapping['partition_col']], collection_mapping['partition_col_format']).month
-            collection_fields['parquet_format_date_year'] = 'integer'
-            collection_fields['parquet_format_date_month'] = 'integer'
+                    temp = convert_to_datetime(document[col], col_form)
+                    document[parq_col + "_year"] = temp.year
+                    document[parq_col + "_month"] = temp.month
+                    document[parq_col + "_day"] = temp.day
 
         updation = False
         if(insertion_time < collection_mapping['last_run_cron_job']):
@@ -105,11 +155,13 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
                 document[key] = str(document[key])
             elif(key in collection_fields.keys()):
                 document[key] = convert_to_type(document[key], collection_fields[key])
-            elif(isinstance(document[key], int) or isinstance(document[key], float) or isinstance(document[key], complex)):
-                document[key] = str(document[key])
             elif(isinstance(document[key], list)):
                 document[key] = convert_list_to_string(document[key])
-            elif(isinstance(document[key], bool)):
+            elif(isinstance(document[key], dict)):
+                document[key] = convert_json_to_string(document[key])
+            elif(isinstance(document[key], datetime.datetime)):
+                document[key] = document[key].strftime("%Y-%m-%dT%H:%M:%S")
+            else:
                 document[key] = str(document[key])
         count += 1
         if(not updation):
@@ -151,9 +203,9 @@ def process_data_from_source(db_collection, collection):
         log_writer("Caught some exception while processing " + collection['collection_unique_id'])
         return None
     
-def save_data_to_destination(db, processed_collection):
+def save_data_to_destination(db, processed_collection, partition):
     if(db['destination']['destination_type'] == 's3'):
-        save_to_s3(processed_collection, db_source=db['source'], db_destination=db['destination'])
+        save_to_s3(processed_collection, db_source=db['source'], db_destination=db['destination'], c_partition=partition)
 
 def process_mongo_collection(db, collection):
     log_writer('Migrating ' + collection['collection_unique_id'])
@@ -164,7 +216,7 @@ def process_mongo_collection(db, collection):
         if(processed_collection is not None):
             log_writer('Processed data for ' + collection['collection_unique_id'])
             try:
-                save_data_to_destination(db=db, processed_collection=processed_collection)
+                save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
                 log_writer('Successfully saved data for ' + collection['collection_unique_id'])
             except:
                 log_writer('Caught some exception while saving data from ' + collection['collection_unique_id'])

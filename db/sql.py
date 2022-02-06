@@ -6,7 +6,7 @@ from helper.util import convert_list_to_string, convert_to_datetime
 import datetime
 import hashlib
 import pytz
-from encr_db import get_data_from_encr_db
+from db.encr_db import get_data_from_encr_db
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -47,14 +47,40 @@ def filter_df(df, table_mapping={}):
     
     last_run_cron_job = table_mapping['last_run_cron_job']
     table_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
-
+    table_mapping['partition_for_parquet'] = []
     if('to_partition' in table_mapping.keys() and table_mapping['to_partition']):
-        if('partition_col_format' not in table_mapping.keys() or not table_mapping['partition_col_format']):
-            df['parquet_format_date_year'] = df[table_mapping['partition_col']].year
-            df['parquet_format_date_month'] = df[table_mapping['partition_col']].month
+        if('partition_col' in table_mapping.keys()):
+            if(isinstance(table_mapping['partition_col'], str)):
+                table_mapping['partition_col'] = [table_mapping['partition_col']]
+            if('partition_col_format' not in table_mapping.keys()):
+                table_mapping['partition_col_format'] = ['str']
+            if(isinstance(table_mapping['partition_col_format'], str)):
+                table_mapping['partition_col_format'] = [table_mapping['partition_col_format']]
+            while(len(table_mapping['partition_col']) > len(table_mapping['partition_col_format'])):
+                table_mapping['partition_col_format'] = table_mapping['partition_col_format'].append('str')
+            # Now, there is a 1-1 mapping of partition_col and partition_col_format. Now, we need to partition.
+            for i in range(len(table_mapping['partition_col'])):
+                col = table_mapping['partition_col'][i].lower()
+                col_form = table_mapping['partition_col_format'][i]
+                parq_col = "parquet_format_" + col
+                if(col_form == 'str'):
+                    table_mapping['partition_for_parquet'].extend([parq_col])
+                    df[parq_col] = df[col].astype(str)
+                elif(col_form == 'int'):
+                    table_mapping['partition_for_parquet'].extend([parq_col])
+                    df[parq_col] = df[col].astype(int)
+                elif(col_form == 'datetime'):
+                    df[parq_col + "_year"] = df[col].dt.year
+                    df[parq_col + "_month"] = df[col].dt.month
+                    df[parq_col + "_day"] = df[col].dt.day
+                else:
+                    table_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    temp = df[col].apply(lambda x: convert_to_datetime(x, col_form))
+                    df[parq_col + "_year"] = temp.dt.year
+                    df[parq_col + "_month"] = temp.dt.month
+                    df[parq_col + "_day"] = temp.dt.day
         else:
-            df['parquet_format_date_year'] = df[table_mapping['partition_col']].apply(lambda x: convert_to_datetime(x, table_mapping['partition_col_format'])).year
-            df['parquet_format_date_month'] = df[table_mapping['partition_col']].apply(lambda x: convert_to_datetime(x, table_mapping['partition_col_format'])).month
+            log_writer("Unable to find partition_col in " + table_mapping['table_unique_id'] + ". Continuing without partitioning")
 
     df_consider = df
     df_insert = pd.DataFrame({})
@@ -65,6 +91,7 @@ def filter_df(df, table_mapping={}):
         table_mapping['uniqueness'] = df.columns.values.tolist()
     if(isinstance(table_mapping['uniqueness'], str)):
         table_mapping['uniqueness'] = [table_mapping['uniqueness']]
+    table_mapping['uniqueness'] = [x.lower() for x in table_mapping['uniqueness']]
     df['unique_migration_record_id'] = df[table_mapping['uniqueness']].astype(str).sum(1)
 
     if(table_mapping['bookmark']):
@@ -103,7 +130,7 @@ def filter_df(df, table_mapping={}):
 
     log_writer("All records processed.")
     log_writer("Insertions: " + str(df_insert.shape[0]))        
-    log_writer("Updations: " + str(df_update.shape[0]))        
+    log_writer("Updations: " + str(df_update.shape[0])) 
     return df_insert, df_update
 
 
@@ -120,19 +147,19 @@ def get_data(db, table_name):
         return None
 
 def process_data(df, table):
-    try:
+    #try:
         df_insert, df_update = filter_df(df=df, table_mapping=table)
         if(df_insert is not None and df_update is not None):
             return {'name': table['table_name'], 'df_insert': df_insert, 'df_update': df_update}
         else:
             return None
-    except:
-        log_writer("Caught some exception while processing " + table['table_unique_id'])
-        return None
+    #except:
+    #    log_writer("Caught some exception while processing " + table['table_unique_id'])
+    #    return None
 
-def save_data(db, processed_table):
+def save_data(db, processed_table, partition):
     if(db['destination']['destination_type'] == 's3'):
-        save_to_s3(processed_table, db_source=db['source'], db_destination=db['destination'])
+        save_to_s3(processed_table, db_source=db['source'], db_destination=db['destination'], c_partition=partition)
 
 def process_sql_table(db, table):
     df = get_data(db, table['table_name'])
@@ -142,7 +169,7 @@ def process_sql_table(db, table):
         if(processed_table is not None):
             log_writer('Processed data for ' + table['table_unique_id'])
             try:
-                save_data(db=db, processed_table=processed_table)
+                save_data(db=db, processed_table=processed_table, partition=table['partition_for_parquet'])
                 log_writer('Successfully saved data for ' + table['table_unique_id'])
             except:
                 log_writer('Caught some exception while saving data from ' + table['table_unique_id'])
