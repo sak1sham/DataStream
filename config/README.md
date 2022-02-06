@@ -34,7 +34,7 @@ If source is SQL, we need to provide a field ```tables```, which is a list of ta
     'bookmark_creation_format': '' (optional, Refer Notes 2),
     'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
     'bookmark_format': '' (optional, Refer Notes 2),
-    'uniqueness': string or list of unique specifiers for records (Optional),
+    'primary_keys': string or list of unique specifiers for records (Optional),
     'archive': "SQL_query" or False,
     'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
     'to_partition': True or False (Default),
