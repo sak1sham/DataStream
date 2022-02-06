@@ -20,7 +20,7 @@ mapping = [
         'tables': [
             {
                 'table_name': 'phonebook2',
-                'uniqueness': 'Name',
+                'primary_keys': 'Name',
                 'bookmark_creation': False,
                 'bookmark': False,
                 'archive': False,

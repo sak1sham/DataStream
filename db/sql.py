@@ -86,13 +86,13 @@ def filter_df(df, table_mapping={}):
     df_insert = pd.DataFrame({})
     df_update = pd.DataFrame({})
     
-    if('uniqueness' not in table_mapping):
+    if('primary_keys' not in table_mapping):
         # If unique keys are not specified by user, consider entire rows are unique keys
-        table_mapping['uniqueness'] = df.columns.values.tolist()
-    if(isinstance(table_mapping['uniqueness'], str)):
-        table_mapping['uniqueness'] = [table_mapping['uniqueness']]
-    table_mapping['uniqueness'] = [x.lower() for x in table_mapping['uniqueness']]
-    df['unique_migration_record_id'] = df[table_mapping['uniqueness']].astype(str).sum(1)
+        table_mapping['primary_keys'] = df.columns.values.tolist()
+    if(isinstance(table_mapping['primary_keys'], str)):
+        table_mapping['primary_keys'] = [table_mapping['primary_keys']]
+    table_mapping['primary_keys'] = [x.lower() for x in table_mapping['primary_keys']]
+    df['unique_migration_record_id'] = df[table_mapping['primary_keys']].astype(str).sum(1)
 
     if(table_mapping['bookmark']):
         # Use bookmark for comparison of updation time
