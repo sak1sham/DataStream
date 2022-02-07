@@ -89,6 +89,7 @@ def filter_df(df, table_mapping={}):
     if('primary_keys' not in table_mapping):
         # If unique keys are not specified by user, consider entire rows are unique keys
         table_mapping['primary_keys'] = df.columns.values.tolist()
+        log_writer("Unable to find primary_keys in " + str(table_mapping['table_unique_id']) + " mapping. Taking entire records into consideration.")
     if(isinstance(table_mapping['primary_keys'], str)):
         table_mapping['primary_keys'] = [table_mapping['primary_keys']]
     table_mapping['primary_keys'] = [x.lower() for x in table_mapping['primary_keys']]
@@ -133,7 +134,6 @@ def filter_df(df, table_mapping={}):
     log_writer("Updations: " + str(df_update.shape[0])) 
     return df_insert, df_update
 
-
 def get_data(db, table_name):
     try:
         engine = create_engine(db['source']['url'])
@@ -147,15 +147,15 @@ def get_data(db, table_name):
         return None
 
 def process_data(df, table):
-    #try:
+    try:
         df_insert, df_update = filter_df(df=df, table_mapping=table)
         if(df_insert is not None and df_update is not None):
             return {'name': table['table_name'], 'df_insert': df_insert, 'df_update': df_update}
         else:
             return None
-    #except:
-    #    log_writer("Caught some exception while processing " + table['table_unique_id'])
-    #    return None
+    except:
+        log_writer("Caught some exception while processing " + table['table_unique_id'])
+        return None
 
 def save_data(db, processed_table, partition):
     if(db['destination']['destination_type'] == 's3'):
@@ -173,3 +173,4 @@ def process_sql_table(db, table):
                 log_writer('Successfully saved data for ' + table['table_unique_id'])
             except:
                 log_writer('Caught some exception while saving data from ' + table['table_unique_id'])
+    log_writer("Migration for " + table['table_unique_id'] + " ended.")

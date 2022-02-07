@@ -15,6 +15,12 @@ IST_tz = pytz.timezone('Asia/Kolkata')
 def dataframe_from_collection(mongodb_collection, collection_mapping={}):
     '''
         Converts the unstructed database documents to structured pandas dataframe
+        INPUT:
+            mongodb_collection: Pymongo collection
+            collection_mapping: Full collection mapping as provided in migration_mapping.py
+        OUTPUT:
+            df_insert: New Records to insert at destination (pandas.DataFrame)
+            df_update: Updations to be done in existing records at destination (pandas.DataFrame)
     '''
     collection_unique_id=collection_mapping['collection_unique_id']
     collection_fields=collection_mapping['fields']
@@ -24,6 +30,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
     total_len = mongodb_collection.count_documents({})
     log_writer("Total " + str(total_len) + " documents present in collection.")
     one_percent = total_len//100
+
     ## Fetching encryption database
     ## Encryption database is used to store hashes of records in case bookmark is absent
     collection_encr = get_data_from_encr_db()
@@ -35,7 +42,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
 
     if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):
         if('partition_col' not in collection_mapping.keys() or not collection_mapping['partition_col']):
-            log_writer("Partition_col not specified in " + collection_mapping['collection_unique_id'] + ". Making partition using _id.")
+            log_writer("Partition_col not specified in " + collection_mapping['collection_unique_id'] + "\'s mapping. Making partition using _id.")
             collection_mapping['partition_col'] = ['_id']
             collection_mapping['partition_col_format'] = ['datetime']
         if(isinstance(collection_mapping['partition_col'], str)):
@@ -75,7 +82,11 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
                 collection_fields[parq_col + "_month"] = 'int'
                 collection_fields[parq_col + "_day"] = 'int'
 
-    for document in mongodb_collection.find():
+    all_documents = mongodb_collection.find()
+    last_run_cron_job = collection_mapping['last_run_cron_job']
+    collection_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
+
+    for document in all_documents:
         insertion_time = IST_tz.normalize(document['_id'].generation_time.astimezone(IST_tz))
         if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):
             for i in range(len(collection_mapping['partition_col'])):
@@ -101,19 +112,19 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
                     document[parq_col + "_day"] = temp.day
 
         updation = False
-        if(insertion_time < collection_mapping['last_run_cron_job']):
+        if(insertion_time < last_run_cron_job):
             # Document of this _id would already be present at destination, we need to check for updation
-            if(collection_mapping['bookmark']):
+            if('bookmark' in collection_mapping.keys() and collection_mapping['bookmark']):
                 # Use bookmark for comparison of updation time
                 if('bookmark_format' not in collection_mapping.keys()):
-                    if(document[collection_mapping['bookmark']] <= collection_mapping['last_run_cron_job']):
+                    if(document[collection_mapping['bookmark']] <= last_run_cron_job):
                         # No updation has been performed since last cron job
                         continue
                     else:
                         # The document has changed. Need to update destination
                         updation = True
                 else:
-                    if(convert_to_datetime(document[collection_mapping['bookmark']], collection_mapping['bookmark_format']) <= collection_mapping['last_run_cron_job']):
+                    if(convert_to_datetime(document[collection_mapping['bookmark']], collection_mapping['bookmark_format']) <= last_run_cron_job):
                         # No updation has been performed since last cron job
                         continue
                     else:
@@ -148,7 +159,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
                     'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
                 }
                 collection_encr.insert_one(encr)
-            # If bookmark is present, and document has not been seen before, we will go with flow and updation = False
+            # If bookmark is present, and document has not been seen before, we will insert the document with updation = False
 
         for key, _ in document.items():
             if(key == '_id'):
@@ -162,7 +173,11 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
             elif(isinstance(document[key], datetime.datetime)):
                 document[key] = document[key].strftime("%Y-%m-%dT%H:%M:%S")
             else:
-                document[key] = str(document[key])
+                try:
+                    document[key] = str(document[key])
+                except:
+                    log_writer("Unidentified datatype at id:" + str(document['_id']) + " in " + str(collection_unique_id) + ". Saving empty string.")
+                    document[key] = ""
         count += 1
         if(not updation):
             docu_insert.append(document)
@@ -171,7 +186,6 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
         if(one_percent > 0 and count % one_percent == 0):
             log_writer(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     
-    collection_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
     log_writer(str(count) + " documents fetched.")
     ret_df_insert = pd.DataFrame(docu_insert)
     ret_df_update = pd.DataFrame(docu_update)
@@ -220,3 +234,4 @@ def process_mongo_collection(db, collection):
                 log_writer('Successfully saved data for ' + collection['collection_unique_id'])
             except:
                 log_writer('Caught some exception while saving data from ' + collection['collection_unique_id'])
+    log_writer("Migration for " + collection['collection_unique_id'] + " ended.")

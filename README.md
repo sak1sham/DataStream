@@ -10,26 +10,27 @@
 1. Modify the ```config/migration_mapping.py``` file as per requirements.
 Documentation to write the migration_mapping is provided in [Migration Mapping Documentation](config/README.md)
 
-2. Build docker image
-```bash
-docker build -t migration_service .
+2. Modify the ```CMD``` command in ```Dockerfile``` as per requirements. Also, set the environment variables in ```docker-compose.yml``` file.
 ```
-
-3. Set up ```.env``` file:
-
-This service might require a temporary database connection to store some encrypted records. For that, connection with a mongodb server is required. AWS credentials are required to access the s3 buckets or redshift.
-```
-ENCR_MONGO_URL=<Temporary Mongo DB URL to store encrypted records>
-DB_NAME=<Name of Temporary Mongo DB>
-COLLECTION_NAME=<Name of Temporary Mongo DB Collection>
-RUN_MODE=<1 for printing in console or 2 for creating log files>
-PORT=<Port to run uvicorn server>
-HOST=<Host for uvicorn server>
+ENCR_MONGO_URL=<Temp_Mongo_DB_URL>
+DB_NAME=<Temp_Mongo_DB_Name>
+COLLECTION_NAME=<Temp_Mongo_DB_Collection_Name>
+DEBUG_MODE=<INTEGER>
+PORT=<Uvicorn_Server_Port>
+HOST=<Uvicorn_Server_Host>
 AWS_ACCESS_KEY_ID=<AWS_ACCESS_KEY_ID>
 AWS_SECRET_ACCESS_KEY=<AWS_SECRET_ACCESS_KEY>
 ```
 
-4. Run the docker image while providing the ```.env``` file
+- ENCR_MONGO_URL, DB_NAME, COLLECTION_NAME: Some records from your source_database are saved temprarily (SHA256 encrypted) in a temporary mongoDB collection. These parameters specify the credentials and names for that temporary Mongo Database.
+- DEBUG_MODE: 1 for printing the logs in console, and 2 for saving it to ```/logs/production.log``` file
+- PORT, HOST: needed to run uvicorn server
+- AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY: Credentials to save files to destination.
+
+3. Use docker-compose to run service
 ```bash
-docker run --env-file ./.env migration_service
+docker-compose build
+```
+```bash
+docker-compose up
 ```
