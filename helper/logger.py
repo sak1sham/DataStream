@@ -10,7 +10,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.info('Created logger directories and started logger')
 
-write_mode = os.getenv('RUN_MODE')
+write_mode = os.getenv('DEBUG_MODE')
 if(write_mode is None or not (write_mode == '1' or write_mode=='2')):
     logger.info("Invalid RUN_MODE in .env file. Setting to default 1: print mode")
     write_mode = '1'

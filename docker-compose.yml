@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ENCR_MONGO_URL=mongodb+srv://sak1sham:abcd@cluster0.azvu4.mongodb.net/myFirstDatabase?retryWrites=true&w=majority
+      - DB_NAME=migration_update_check
+      - COLLECTION_NAME=migration_update_check
+      - DEBUG_MODE=1
+      - PORT=8000
+      - HOST=0.0.0.0
+      - AWS_ACCESS_KEY_ID=AKIA3RSHCMQMTLUCYGU2
+      - AWS_SECRET_ACCESS_KEY=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
+

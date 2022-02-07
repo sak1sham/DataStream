@@ -23,7 +23,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
     count = 0
     total_len = mongodb_collection.count_documents({})
     log_writer("Total " + str(total_len) + " documents present in collection.")
-
+    one_percent = total_len//100
     ## Fetching encryption database
     ## Encryption database is used to store hashes of records in case bookmark is absent
     collection_encr = get_data_from_encr_db()
@@ -168,7 +168,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
             docu_insert.append(document)
         else:
             docu_update.append(document)
-        if(count % 10000 == 0):
+        if(one_percent > 0 and count % one_percent == 0):
             log_writer(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     
     collection_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
