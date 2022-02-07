@@ -7,6 +7,8 @@ import datetime
 import hashlib
 import pytz
 from db.encr_db import get_data_from_encr_db
+import psycopg2
+import pandas.io.sql as sqlio
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -47,6 +49,8 @@ def filter_df(df, table_mapping={}):
     
     last_run_cron_job = table_mapping['last_run_cron_job']
     table_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
+    if('is_dump' in table_mapping.keys() and table_mapping['is_dump']):
+        df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
     table_mapping['partition_for_parquet'] = []
     if('to_partition' in table_mapping.keys() and table_mapping['to_partition']):
         if('partition_col' in table_mapping.keys()):
@@ -85,66 +89,85 @@ def filter_df(df, table_mapping={}):
     df_consider = df
     df_insert = pd.DataFrame({})
     df_update = pd.DataFrame({})
-    
-    if('primary_keys' not in table_mapping):
-        # If unique keys are not specified by user, consider entire rows are unique keys
-        table_mapping['primary_keys'] = df.columns.values.tolist()
-        log_writer("Unable to find primary_keys in " + str(table_mapping['table_unique_id']) + " mapping. Taking entire records into consideration.")
-    if(isinstance(table_mapping['primary_keys'], str)):
-        table_mapping['primary_keys'] = [table_mapping['primary_keys']]
-    table_mapping['primary_keys'] = [x.lower() for x in table_mapping['primary_keys']]
-    df['unique_migration_record_id'] = df[table_mapping['primary_keys']].astype(str).sum(1)
 
-    if(table_mapping['bookmark']):
-        # Use bookmark for comparison of updation time
-        if('bookmark_format' not in table_mapping.keys()):
-            df_consider = df[df[table_mapping['bookmark']] > last_run_cron_job]
-        else:
-            df_consider = df[df[table_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_format'])) > last_run_cron_job]
-        # Now, df_consider = insert_records + update_records
-        if(table_mapping['bookmark_creation']):
-            # Further used to divide into creation and updation subsets
-            if('bookmark_creation_format' not in table_mapping.keys()):
-                df_insert = df_consider[df_consider[table_mapping['bookmark_creation']] > last_run_cron_job]
-                df_update = df_consider[df_consider[table_mapping['bookmark_creation']] <= last_run_cron_job]
+    if('is_dump' not in table_mapping.keys() or not table_mapping['is_dump']):
+        if('primary_keys' not in table_mapping):
+            # If unique keys are not specified by user, consider entire rows are unique keys
+            table_mapping['primary_keys'] = df.columns.values.tolist()
+            log_writer("Unable to find primary_keys in " + str(table_mapping['table_unique_id']) + " mapping. Taking entire records into consideration.")
+        if(isinstance(table_mapping['primary_keys'], str)):
+            table_mapping['primary_keys'] = [table_mapping['primary_keys']]
+        table_mapping['primary_keys'] = [x.lower() for x in table_mapping['primary_keys']]
+        df['unique_migration_record_id'] = df[table_mapping['primary_keys']].astype(str).sum(1)
+
+    if('is_dump' not in table_mapping.keys() or not table_mapping['is_dump']):
+        if('bookmark' in table_mapping.keys() and table_mapping['bookmark']):
+            # Use bookmark for comparison of updation time
+            if('bookmark_format' not in table_mapping.keys()):
+                df_consider = df[df[table_mapping['bookmark']] > last_run_cron_job]
             else:
-                df_insert = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) > last_run_cron_job]
-                df_update = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) <= last_run_cron_job]
+                df_consider = df[df[table_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_format'])) > last_run_cron_job]
+            # Now, df_consider = insert_records + update_records
+            if('bookmark_creation' in table_mapping.keys() and table_mapping['bookmark_creation']):
+                # Further used to divide into creation and updation subsets
+                if('bookmark_creation_format' not in table_mapping.keys()):
+                    df_insert = df_consider[df_consider[table_mapping['bookmark_creation']] > last_run_cron_job]
+                    df_update = df_consider[df_consider[table_mapping['bookmark_creation']] <= last_run_cron_job]
+                else:
+                    df_insert = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) > last_run_cron_job]
+                    df_update = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) <= last_run_cron_job]
+            else:
+                # Need to check hashing, need to distribute manually
+                df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
         else:
-            # Need to check hashing, need to distribute manually
-            df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
+            # Bookmark of updation is not present
+            if('bookmark_creation' in table_mapping.keys() and table_mapping['bookmark_creation']):
+                # First separate out creation subset, then use hashing to separate out updation from rest
+                if('bookmark_creation_format' not in table_mapping.keys()):
+                    df_insert = df[df[table_mapping['bookmark_creation']] > last_run_cron_job]
+                    df_consider = df[df[table_mapping['bookmark_creation']] <= last_run_cron_job]
+                    _, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
+                else:
+                    df_insert = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) > last_run_cron_job]
+                    df_consider = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) <= last_run_cron_job]
+                    _, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
+            else:
+                # Need to distribute every record manually
+                df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
     else:
-        # Bookmark of updation is not present
-        if(table_mapping['bookmark_creation']):
-            # First separate out creation subset, then use hashing to separate out updation from rest
-            if('bookmark_creation_format' not in table_mapping.keys()):
-                df_insert = df[df[table_mapping['bookmark_creation']] > last_run_cron_job]
-                df_consider = df[df[table_mapping['bookmark_creation']] <= last_run_cron_job]
-                _, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
-            else:
-                df_insert = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) > last_run_cron_job]
-                df_consider = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) <= last_run_cron_job]
-                _, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
-        else:
-            # Need to distribute every record manually
-            df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
-
+        # to_dump is set to True, just dump it !!
+        df_insert = df_consider
+        df_update = pd.DataFrame({})
     log_writer("All records processed.")
     log_writer("Insertions: " + str(df_insert.shape[0]))        
     log_writer("Updations: " + str(df_update.shape[0])) 
     return df_insert, df_update
 
 def get_data(db, table_name):
-    try:
-        engine = create_engine(db['source']['url'])
-        metadata = MetaData()
-        table = Table(table_name, metadata, autoload=True, autoload_with=engine)
-        stmt = select([table])
-        df = pd.read_sql(stmt, engine)
-        return df
-    except:
-        log_writer("Unable to connect sql:" + db['source']['db_name'] + ":" + table_name)
-        return None
+    if('username' not in db['source'].keys()):
+        try:
+            engine = create_engine(db['source']['url'])
+            metadata = MetaData()
+            table = Table(table_name, metadata, autoload=True, autoload_with=engine)
+            stmt = select([table])
+            df = pd.read_sql(stmt, engine)
+            return df
+        except:
+            log_writer("Unable to connect sql:" + db['source']['db_name'] + ":" + table_name)
+            return None
+    else:
+        try:
+            conn = psycopg2.connect(
+                host=db['source']['url'],
+                database=db['source']['db_name'],
+                user=db['source']['username'],
+                password=db['source']['password'])            
+            select_query = "SELECT * FROM " + table_name
+            df = sqlio.read_sql_query(select_query, conn)
+            return df
+        except:
+            log_writer("Unable to connect sql:" + db['source']['db_name'] + ":" + table_name)
+            return None
 
 def process_data(df, table):
     try:
@@ -162,6 +185,7 @@ def save_data(db, processed_table, partition):
         save_to_s3(processed_table, db_source=db['source'], db_destination=db['destination'], c_partition=partition)
 
 def process_sql_table(db, table):
+    log_writer('Migrating ' + table['table_unique_id'])
     df = get_data(db, table['table_name'])
     if(df is not None):
         log_writer('Fetched data for ' + table['table_unique_id'])

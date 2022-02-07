@@ -1,6 +1,5 @@
 import awswrangler as wr
 from helper.logger import log_writer
-from functools import cmp_to_key
 
 def save_to_s3(processed_data, db_source, db_destination, c_partition):
     s3_location = "s3://" + db_destination['s3_bucket_name'] + "/" + db_source['source_type'] + "/" + db_source['db_name'] + "/"
@@ -8,6 +7,7 @@ def save_to_s3(processed_data, db_source, db_destination, c_partition):
     partition_cols = c_partition
     log_writer("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes at " + file_name)
     try:
+        print(processed_data['df_insert'])
         if(processed_data['df_insert'].shape[0] > 0):
             wr.s3.to_parquet(
                 df = processed_data['df_insert'],

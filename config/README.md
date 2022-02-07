@@ -13,7 +13,9 @@ Migration mapping is a list of specifications for each pipeline. Each specificat
 'source': {
     'source_type': 'mongo' or 'mysql' or 'api',
     'url': '' (the url to connect to the data source)
-    'db_name': '' (name of dabatase for mongoDB and SQL sources)
+    'db_name': '' (name of dabatase for mongoDB and SQL sources),
+    'username': '' (Optional),
+    'password': '' (Optional)
 },
 ```
 
@@ -30,9 +32,9 @@ If source is SQL, we need to provide a field ```tables```, which is a list of ta
 ```
 {
     'table_name': str,
-    'bookmark_creation': False or 'field_name' (optional, for example - 'created_at'),
+    'bookmark_creation': False or 'field_name' (optional, Default=False, for example - 'created_at'),
     'bookmark_creation_format': '' (optional, Refer Notes 2),
-    'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
+    'bookmark': False or 'field_name' (optional, Default=False, for example - 'updated_at'),
     'bookmark_format': '' (optional, Refer Notes 2),
     'primary_keys': string or list of unique specifiers for records (Optional),
     'archive': "SQL_query" or False,
@@ -41,6 +43,7 @@ If source is SQL, we need to provide a field ```tables```, which is a list of ta
     'partition_col': False or '' name of the column (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 4),
     'last_run_cron_job': Datetime object with a specified timezone (Optional)
+    'is_dump': False (Optional, Default=False, Refer Notes 5)
 }
 ```
 
@@ -89,3 +92,7 @@ Other standard types are taken care of. Lists and dictionaries are stringified. 
 ## 4. Partition Columns formats
 
 'int' or 'str' (Default) or 'datetime' or datetime formats (Refer Notes 2) like "%Y-%m-%dT%H:%M:%S.%fZ", or list of formats for different columns.
+
+## 5. Data Dumping
+
+True or False. If set to true, it adds a column 'migration_snapshot_date' to data, which stores the datetime of migration. Without updation checks, it simply dumps the data into destination. If set to true, one can also partition data based on 'migration_snapshot_date'.
