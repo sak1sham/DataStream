@@ -17,7 +17,7 @@ mapping = [
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp-2'
+            's3_bucket_name': 'data-migration-server'
         },
         'tables':[
             {
