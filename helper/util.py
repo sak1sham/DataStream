@@ -1,6 +1,7 @@
 import json
 import datetime
-from helper.logger import log_writer
+import logging
+logging.getLogger().setLevel(logging.INFO)
 
 def convert_list_to_string(l):
     '''
@@ -46,31 +47,31 @@ def convert_to_type(x, tp):
             x = x.lower() in ['true', '1', 't', 'y', 'yes']
             return x
         else:
-            log_writer("Unable to convert " + str(type(x)) + " to boolean. Returning true.")
+            logging.warning("Unable to convert " + str(type(x)) + " to boolean. Returning true.")
             return True
     elif(tp == 'int'):
         try:
             return int(x)
         except:
-            log_writer("Unable to convert " + str(type(x)) + " to int. Returning 1")
+            logging.warning("Unable to convert " + str(type(x)) + " to int. Returning 1")
             return 1
     elif(tp == 'float'):
         try:
             return float(x)
         except:
-            log_writer("Unable to convert " + str(type(x)) + " to float. Returning 1.0")
+            logging.warning("Unable to convert " + str(type(x)) + " to float. Returning 1.0")
             return 1.0
     elif(tp == 'complex'):
         try:
             return complex(x)
         except:
-            log_writer("Unable to convert " + str(type(x)) + " to complex. Returning 1+0j")
+            logging.warning("Unable to convert " + str(type(x)) + " to complex. Returning 1+0j")
             return 1+0j
     elif(tp == "datetime"):
         if(isinstance(x, datetime.datetime)):
             return x
         else:
-            log_writer("Unable to convert " + str(type(x)) + " to datetime. Returning datetime.datetime(1602, 8, 20, 0, 0, 0, 0)")
+            logging.warning("Unable to convert " + str(type(x)) + " to datetime. Returning datetime.datetime(1602, 8, 20, 0, 0, 0, 0)")
             return datetime.datetime(1602, 8, 20, 0, 0, 0, 0)
     else:
         # Convert to string
@@ -84,7 +85,7 @@ def convert_to_type(x, tp):
             try:
                 return str(x)
             except:
-                log_writer("Unable to convert " + str(type(x)) + " to string. Returning empty string \"\"")
+                logging.warning("Unable to convert " + str(type(x)) + " to string. Returning empty string \"\"")
                 return ""
 
 def convert_to_datetime(x, format):
@@ -96,7 +97,7 @@ def convert_to_datetime(x, format):
         x = datetime.datetime.strptime(x, format)
         return x
     except:
-        log_writer("Unable to convert " + x + " to format specified: \"" + format + "\". Returning 20-8-1602 00:00:00")
+        logging.warning("Unable to convert " + x + " to format specified: \"" + format + "\". Returning 20-8-1602 00:00:00")
         return datetime.datetime(1602, 8, 20, 0, 0, 0, 0)
 
 def convert_json_to_string(x):

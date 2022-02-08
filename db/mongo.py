@@ -1,6 +1,8 @@
 from pymongo import MongoClient
 from helper.util import convert_list_to_string, convert_to_type, convert_to_datetime, convert_json_to_string
-from helper.logger import log_writer
+import logging
+logging.getLogger().setLevel(logging.INFO)
+
 import certifi
 from dst.s3 import save_to_s3
 import pandas as pd
@@ -28,7 +30,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
     docu_update = []
     count = 0
     total_len = mongodb_collection.count_documents({})
-    log_writer("Total " + str(total_len) + " documents present in collection.")
+    logging.info("Total " + str(total_len) + " documents present in collection.")
     one_percent = total_len//100
 
     ## Fetching encryption database
@@ -41,7 +43,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
 
     if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):
         if('partition_col' not in collection_mapping.keys() or not collection_mapping['partition_col']):
-            log_writer("Partition_col not specified in " + collection_mapping['collection_unique_id'] + "\'s mapping. Making partition using _id.")
+            logging.info("Partition_col not specified in " + collection_mapping['collection_unique_id'] + "\'s mapping. Making partition using _id.")
             collection_mapping['partition_col'] = ['_id']
             collection_mapping['partition_col_format'] = ['datetime']
         if(isinstance(collection_mapping['partition_col'], str)):
@@ -184,7 +186,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
                 try:
                     document[key] = str(document[key])
                 except:
-                    log_writer("Unidentified datatype at id:" + str(document['_id']) + " in " + str(collection_unique_id) + ". Saving empty string.")
+                    logging.error("Unidentified datatype at id:" + str(document['_id']) + " in " + str(collection_unique_id) + ". Saving empty string.")
                     document[key] = ""
         count += 1
         if(not updation):
@@ -192,14 +194,14 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
         else:
             docu_update.append(document)
         if(one_percent > 0 and count % one_percent == 0):
-            log_writer(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
+            logging.info(str(count)+ " documents fetched ... " + str(int(count*100/total_len)) + " %")
     
-    log_writer(str(count) + " documents fetched.")
+    logging.info(str(count) + " documents fetched.")
     ret_df_insert = pd.DataFrame(docu_insert)
     ret_df_update = pd.DataFrame(docu_update)
-    log_writer("Converted " + str(count) + " collections to dataframe.")
-    log_writer("Insertions: " + str(ret_df_insert.shape[0]))        
-    log_writer("Updations: " + str(ret_df_update.shape[0]))        
+    logging.info("Converted " + str(count) + " collections to dataframe.")
+    logging.info("Insertions: " + str(ret_df_insert.shape[0]))        
+    logging.info("Updations: " + str(ret_df_update.shape[0]))        
     return ret_df_insert, ret_df_update
 
 def get_data_from_source(db, collection_name):
@@ -209,7 +211,7 @@ def get_data_from_source(db, collection_name):
         target_collection = database_[collection_name]
         return target_collection
     except:
-        log_writer("Unable to connect to mongo:" + db['source']['db_name'] + ":" + collection_name)
+        logging.error("Unable to connect to mongo:" + db['source']['db_name'] + ":" + collection_name)
         return None
 
 def process_data_from_source(db_collection, collection):
@@ -222,7 +224,7 @@ def process_data_from_source(db_collection, collection):
         else:
             return None
     except:
-        log_writer("Caught some exception while processing " + collection['collection_unique_id'])
+        logging.error("Caught some exception while processing " + collection['collection_unique_id'])
         return None
     
 def save_data_to_destination(db, processed_collection, partition):
@@ -230,16 +232,16 @@ def save_data_to_destination(db, processed_collection, partition):
         save_to_s3(processed_collection, db_source=db['source'], db_destination=db['destination'], c_partition=partition)
 
 def process_mongo_collection(db, collection):
-    log_writer('Migrating ' + collection['collection_unique_id'])
+    logging.info('Migrating ' + collection['collection_unique_id'])
     db_collection = get_data_from_source(db, collection['collection_name'])
     if(db_collection is not None):
-        log_writer('Fetched data for ' + collection['collection_unique_id'])
+        logging.info('Fetched data for ' + collection['collection_unique_id'])
         processed_collection = process_data_from_source(db_collection=db_collection, collection=collection)
         if(processed_collection is not None):
-            log_writer('Processed data for ' + collection['collection_unique_id'])
+            logging.info('Processed data for ' + collection['collection_unique_id'])
             try:
                 save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
-                log_writer('Successfully saved data for ' + collection['collection_unique_id'])
+                logging.info('Successfully saved data for ' + collection['collection_unique_id'])
             except:
-                log_writer('Caught some exception while saving data from ' + collection['collection_unique_id'])
-    log_writer("Migration for " + collection['collection_unique_id'] + " ended.")
+                logging.error('Caught some exception while saving data from ' + collection['collection_unique_id'])
+    logging.info("Migration for " + collection['collection_unique_id'] + " ended.")

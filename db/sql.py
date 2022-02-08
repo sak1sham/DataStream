@@ -1,6 +1,8 @@
 from sqlalchemy import create_engine, Table, MetaData, select
 import pandas as pd
-from helper.logger import log_writer
+import logging
+logging.getLogger().setLevel(logging.INFO)
+
 from dst.s3 import save_to_s3
 from helper.util import convert_list_to_string, convert_to_datetime
 import datetime
@@ -36,7 +38,7 @@ def distribute_records(collection_encr, df, table_unique_id):
     return df_insert, df_update
 
 def filter_df(df, table_mapping={}):
-    log_writer("Total " + str(df.shape[0]) + " records present in table.")
+    logging.info("Total " + str(df.shape[0]) + " records present in table.")
 
     ## Fetching encryption database
     ## Encryption database is used to store hashes of records in case bookmark is absent
@@ -83,7 +85,7 @@ def filter_df(df, table_mapping={}):
                     df[parq_col + "_month"] = temp.dt.month
                     df[parq_col + "_day"] = temp.dt.day
         else:
-            log_writer("Unable to find partition_col in " + table_mapping['table_unique_id'] + ". Continuing without partitioning")
+            logging.warning("Unable to find partition_col in " + table_mapping['table_unique_id'] + ". Continuing without partitioning")
 
     df_consider = df
     df_insert = pd.DataFrame({})
@@ -93,7 +95,7 @@ def filter_df(df, table_mapping={}):
         if('primary_keys' not in table_mapping):
             # If unique keys are not specified by user, consider entire rows are unique keys
             table_mapping['primary_keys'] = df.columns.values.tolist()
-            log_writer("Unable to find primary_keys in " + str(table_mapping['table_unique_id']) + " mapping. Taking entire records into consideration.")
+            logging.warning("Unable to find primary_keys in " + str(table_mapping['table_unique_id']) + " mapping. Taking entire records into consideration.")
         if(isinstance(table_mapping['primary_keys'], str)):
             table_mapping['primary_keys'] = [table_mapping['primary_keys']]
         table_mapping['primary_keys'] = [x.lower() for x in table_mapping['primary_keys']]
@@ -137,9 +139,9 @@ def filter_df(df, table_mapping={}):
         # to_dump is set to True, just dump it !!
         df_insert = df_consider
         df_update = pd.DataFrame({})
-    log_writer("All records processed.")
-    log_writer("Insertions: " + str(df_insert.shape[0]))        
-    log_writer("Updations: " + str(df_update.shape[0])) 
+    logging.info("All records processed.")
+    logging.info("Insertions: " + str(df_insert.shape[0]))        
+    logging.info("Updations: " + str(df_update.shape[0])) 
     return df_insert, df_update
 
 def get_data(db, table_name):
@@ -152,7 +154,7 @@ def get_data(db, table_name):
             df = pd.read_sql(stmt, engine)
             return df
         except:
-            log_writer("Unable to connect sql:" + db['source']['db_name'] + ":" + table_name)
+            logging.error("Unable to connect sql:" + db['source']['db_name'] + ":" + table_name)
             return None
     else:
         try:
@@ -165,7 +167,7 @@ def get_data(db, table_name):
             df = sqlio.read_sql_query(select_query, conn)
             return df
         except:
-            log_writer("Unable to connect sql:" + db['source']['db_name'] + ":" + table_name)
+            logging.error("Unable to connect sql:" + db['source']['db_name'] + ":" + table_name)
             return None
 
 def process_data(df, table):
@@ -176,7 +178,7 @@ def process_data(df, table):
         else:
             return None
     except:
-        log_writer("Caught some exception while processing " + table['table_unique_id'])
+        logging.error("Caught some exception while processing " + table['table_unique_id'])
         return None
 
 def save_data(db, processed_table, partition):
@@ -184,16 +186,16 @@ def save_data(db, processed_table, partition):
         save_to_s3(processed_table, db_source=db['source'], db_destination=db['destination'], c_partition=partition)
 
 def process_sql_table(db, table):
-    log_writer('Migrating ' + table['table_unique_id'])
+    logging.info('Migrating ' + table['table_unique_id'])
     df = get_data(db, table['table_name'])
     if(df is not None):
-        log_writer('Fetched data for ' + table['table_unique_id'])
+        logging.info('Fetched data for ' + table['table_unique_id'])
         processed_table = process_data(df=df, table=table)
         if(processed_table is not None):
-            log_writer('Processed data for ' + table['table_unique_id'])
+            logging.info('Processed data for ' + table['table_unique_id'])
             try:
                 save_data(db=db, processed_table=processed_table, partition=table['partition_for_parquet'])
-                log_writer('Successfully saved data for ' + table['table_unique_id'])
+                logging.info('Successfully saved data for ' + table['table_unique_id'])
             except:
-                log_writer('Caught some exception while saving data from ' + table['table_unique_id'])
-    log_writer("Migration for " + table['table_unique_id'] + " ended.")
+                logging.error('Caught some exception while saving data from ' + table['table_unique_id'])
+    logging.info("Migration for " + table['table_unique_id'] + " ended.")

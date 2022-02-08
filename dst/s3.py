@@ -1,13 +1,13 @@
 import awswrangler as wr
-from helper.logger import log_writer
+import logging
+logging.getLogger().setLevel(logging.INFO)
 
 def save_to_s3(processed_data, db_source, db_destination, c_partition):
     s3_location = "s3://" + db_destination['s3_bucket_name'] + "/" + db_source['source_type'] + "/" + db_source['db_name'] + "/"
     file_name = s3_location + processed_data['name'] + "/"
     partition_cols = c_partition
-    log_writer("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes at " + file_name)
+    logging.info("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes at " + file_name)
     try:
-        print(processed_data['df_insert'])
         if(processed_data['df_insert'].shape[0] > 0):
             wr.s3.to_parquet(
                 df = processed_data['df_insert'],
@@ -16,11 +16,11 @@ def save_to_s3(processed_data, db_source, db_destination, c_partition):
                 dataset = True,
                 partition_cols = partition_cols
             )
-        log_writer("Inserted " + str(processed_data['df_insert'].shape[0]) + " records at " + file_name)
+        logging.info("Inserted " + str(processed_data['df_insert'].shape[0]) + " records at " + file_name)
     except:
-        log_writer("Caught some exception while trying to insert records at " + file_name)
+        logging.error("Caught some exception while trying to insert records at " + file_name)
     
-    log_writer("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes at " + file_name)    
+    logging.info("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes at " + file_name)    
     try:
         file_name_u = s3_location + processed_data['name'] + "/"
         for i in range(processed_data['df_update'].shape[0]):
@@ -38,6 +38,6 @@ def save_to_s3(processed_data, db_source, db_destination, c_partition):
                 compression = 'snappy',
                 dataset = True,
             )
-        log_writer(str(processed_data['df_update'].shape[0]) + " updations done for " + file_name)
+        logging.info(str(processed_data['df_update'].shape[0]) + " updations done for " + file_name)
     except:
-        log_writer("Caught some exceptions while updating records for " + file_name + ". However, some updations might still have been completed.")
+        logging.error("Caught some exceptions while updating records for " + file_name + ". However, some updations might still have been completed.")
