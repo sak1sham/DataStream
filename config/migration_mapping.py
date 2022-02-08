@@ -2,7 +2,6 @@ import os
 import datetime
 import pytz
 IST_tz = pytz.timezone('Asia/Kolkata')
-
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -22,12 +21,111 @@ mapping = [
         'tables':[
             {
                 'table_name': 'localities_live',
-                'cron': '* * * * * * */1 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
                 'is_dump': True
             }
+        ]
+    },
+    {
+        'source': {
+            'source_type': 'mongo',
+            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+            'db_name': 'support-service'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'data-migration-server'
+        },
+        'collections': [
+            {
+                'collection_name': 'leader_kyc',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 15 0 0',
+                'to_partition': True
+            },
+            {
+                'collection_name': 'support_form_items',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 17 28 0',
+                'to_partition': True,
+                'is_dump': True,
+                'partition_col': 'migration_snapshot_date'
+            },
+            {
+                'collection_name': 'support_items',
+                'fields': {
+                    'priority': 'int',
+                },
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 15 0 0',
+                'to_partition': True
+            },
+            {
+                'collection_name': 'support_list',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 15 0 0',
+                'to_partition': True
+            },
+            {
+                'collection_name': 'support_ticket_conversations',
+                'fields': {
+                    'incoming': 'bool',
+                    'private': 'bool',
+                    'freshdesk_user_id': 'int',
+                    '__v': 'int'
+                },
+                'bookmark': 'updated_at',
+                'bookmark_format': '%Y-%m-%dT%H:%M:%SZ',
+                'archive': False,
+                'cron': '* * * * * 15 0 0',
+                'to_partition': True,
+            },
+            {
+                'collection_name': 'support_tickets',
+                'fields': {
+                    'spam': 'bool',
+                    'priority': 'int',
+                    'source': 'int',
+                    'status': 'int',
+                    'is_escalated': 'bool',
+                    'nr_escalated': 'bool',
+                    'fr_escalated': 'bool',
+                    '__v': 'int'
+                },
+                'bookmark': 'updated_at',
+                'archive': False,
+                'cron': '* * * * * 16 59 00',
+                'to_partition': True,
+            },
+            {
+                'collection_name': 'support_tickets_rating',
+                'fields': {
+                    'rating': 'int',
+                    '__v': 'int'
+                },
+                'bookmark': 'updatedAt',
+                'archive': False,
+                'cron': '* * * * * 15 0 0',
+                'to_partition': True,
+            },
+            {
+                'collection_name': 'webhook_error_logs',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 15 0 0',
+                'to_partition': True
+            },
         ]
     }
 ]

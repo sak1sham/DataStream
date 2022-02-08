@@ -6,7 +6,7 @@ from helper.util import convert_list_to_string, convert_to_datetime
 import datetime
 import hashlib
 import pytz
-from db.encr_db import get_data_from_encr_db
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 import psycopg2
 import pandas.io.sql as sqlio
 
@@ -44,11 +44,7 @@ def filter_df(df, table_mapping={}):
     if(collection_encr is None):
         return None, None
 
-    if('last_run_cron_job' not in table_mapping.keys()):
-        table_mapping['last_run_cron_job'] = IST_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
-    
-    last_run_cron_job = table_mapping['last_run_cron_job']
-    table_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
+    last_run_cron_job = get_last_run_cron_job(collection_encr, table_mapping['table_unique_id'])
     
     if('is_dump' in table_mapping.keys() and table_mapping['is_dump']):
         df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)

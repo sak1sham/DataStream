@@ -1,3 +1,4 @@
+from pydoc import doc
 from pymongo import MongoClient
 from helper.util import convert_list_to_string, convert_to_type, convert_to_datetime, convert_json_to_string
 from helper.logger import log_writer
@@ -8,7 +9,7 @@ import datetime
 import json
 import hashlib
 import pytz
-from db.encr_db import get_data_from_encr_db
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -37,8 +38,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
     if(collection_encr is None):
         return None, None
 
-    if('last_run_cron_job' not in collection_mapping.keys()):
-        collection_mapping['last_run_cron_job'] = IST_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
+    last_run_cron_job = get_last_run_cron_job(collection_encr, collection_mapping['collection_unique_id'])
 
     if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):
         if('partition_col' not in collection_mapping.keys() or not collection_mapping['partition_col']):
@@ -48,7 +48,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
         if(isinstance(collection_mapping['partition_col'], str)):
             collection_mapping['partition_col'] = [collection_mapping['partition_col']]
         if('partition_col_format' not in collection_mapping.keys()):
-            collection_mapping['partition_col_format'] = []
+            collection_mapping['partition_col_format'] = ['str']
         if(isinstance(collection_mapping['partition_col_format'], str)):
             collection_mapping['partition_col_format'] = [collection_mapping['partition_col_format']]
         while(len(collection_mapping['partition_col']) > len(collection_mapping['partition_col_format'])):
@@ -61,12 +61,20 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
             col = collection_mapping['partition_col'][i]
             col_form = collection_mapping['partition_col_format'][i]
             parq_col = "parquet_format_" + col
-            if(col == '_id'):
+            if(col == 'migration_snapshot_date'):
+                col_form ='datetime'
+                collection_fields[col] = 'datetime'
+                collection_mapping['partition_col_format'][i] = 'datetime'
                 collection_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                 collection_fields[parq_col + "_year"] = 'int'
                 collection_fields[parq_col + "_month"] = 'int'
                 collection_fields[parq_col + "_day"] = 'int'
-            if(col_form == 'str'):
+            elif(col == '_id'):
+                collection_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                collection_fields[parq_col + "_year"] = 'int'
+                collection_fields[parq_col + "_month"] = 'int'
+                collection_fields[parq_col + "_day"] = 'int'
+            elif(col_form == 'str'):
                 collection_mapping['partition_for_parquet'].extend([parq_col])
             elif(col_form == 'int'):
                 collection_mapping['partition_for_parquet'].extend([parq_col])
@@ -83,12 +91,12 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
                 collection_fields[parq_col + "_day"] = 'int'
 
     all_documents = mongodb_collection.find()
-    last_run_cron_job = collection_mapping['last_run_cron_job']
-    collection_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
 
     for document in all_documents:
         insertion_time = IST_tz.normalize(document['_id'].generation_time.astimezone(IST_tz))
-        if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):
+        if('is_dump' in collection_mapping.keys() and collection_mapping['is_dump']):
+            document['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
+        if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition'] and 'partition_col' in collection_mapping.keys()):        
             for i in range(len(collection_mapping['partition_col'])):
                 col = collection_mapping['partition_col'][i]
                 col_form = collection_mapping['partition_col_format'][i]
@@ -97,7 +105,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
                     document[parq_col + "_year"] = insertion_time.year
                     document[parq_col + "_month"] = insertion_time.month
                     document[parq_col + "_day"] = insertion_time.day
-                if(col_form == 'str'):
+                elif(col_form == 'str'):
                     document[parq_col] = str(document[col])
                 elif(col_form == 'int'):
                     document[parq_col] = int(document[col])
@@ -112,54 +120,55 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}):
                     document[parq_col + "_day"] = temp.day
 
         updation = False
-        if(insertion_time < last_run_cron_job):
-            # Document of this _id would already be present at destination, we need to check for updation
-            if('bookmark' in collection_mapping.keys() and collection_mapping['bookmark']):
-                # Use bookmark for comparison of updation time
-                if('bookmark_format' not in collection_mapping.keys()):
-                    if(document[collection_mapping['bookmark']] <= last_run_cron_job):
-                        # No updation has been performed since last cron job
-                        continue
+        if('is_dump' not in collection_mapping.keys() or not collection_mapping['is_dump']):
+            if(insertion_time < last_run_cron_job):
+                # Document of this _id would already be present at destination, we need to check for updation
+                if('bookmark' in collection_mapping.keys() and collection_mapping['bookmark']):
+                    # Use bookmark for comparison of updation time
+                    if('bookmark_format' not in collection_mapping.keys()):
+                        if(document[collection_mapping['bookmark']] <= last_run_cron_job):
+                            # No updation has been performed since last cron job
+                            continue
+                        else:
+                            # The document has changed. Need to update destination
+                            updation = True
                     else:
-                        # The document has changed. Need to update destination
-                        updation = True
+                        if(convert_to_datetime(document[collection_mapping['bookmark']], collection_mapping['bookmark_format']) <= last_run_cron_job):
+                            # No updation has been performed since last cron job
+                            continue
+                        else:
+                            # The document has changed. Need to update destination
+                            updation = True
                 else:
-                    if(convert_to_datetime(document[collection_mapping['bookmark']], collection_mapping['bookmark_format']) <= last_run_cron_job):
-                        # No updation has been performed since last cron job
-                        continue
+                    # No bookmark => We will store a hash to check for updation
+                    document['_id'] = str(document['_id'])
+                    encr = {
+                        'collection': collection_unique_id,
+                        'map_id': document['_id'],
+                        'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
+                    }
+                    previous_records = collection_encr.find_one({'collection': collection_unique_id, 'map_id': document['_id']})
+                    if(previous_records):
+                        if(previous_records['document_sha'] == encr['document_sha']):
+                            continue     # No updation in this record
+                        else:
+                            updation = True     # This record has been updated
+                            collection_encr.delete_one({'collection': collection_unique_id, 'map_id': document['_id']})
+                            collection_encr.insert_one(encr)
                     else:
-                        # The document has changed. Need to update destination
-                        updation = True
-            else:
-                # No bookmark => We will store a hash to check for updation
-                document['_id'] = str(document['_id'])
-                encr = {
-                    'collection': collection_unique_id,
-                    'map_id': document['_id'],
-                    'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
-                }
-                previous_records = collection_encr.find_one({'collection': collection_unique_id, 'map_id': document['_id']})
-                if(previous_records):
-                    if(previous_records['document_sha'] == encr['document_sha']):
-                        continue     # No updation in this record
-                    else:
-                        updation = True     # This record has been updated
-                        collection_encr.delete_one({'collection': collection_unique_id, 'map_id': document['_id']})
                         collection_encr.insert_one(encr)
-                else:
+            else:
+                ## Document has not been seen before
+                if(not collection_mapping['bookmark']):
+                    # We need to store hash if bookmark is not present
+                    document['_id'] = str(document['_id'])
+                    encr = {
+                        'collection': collection_unique_id,
+                        'map_id': document['_id'],
+                        'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
+                    }
                     collection_encr.insert_one(encr)
-        else:
-            ## Document has not been seen before
-            if(not collection_mapping['bookmark']):
-                # We need to store hash if bookmark is not present
-                document['_id'] = str(document['_id'])
-                encr = {
-                    'collection': collection_unique_id,
-                    'map_id': document['_id'],
-                    'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
-                }
-                collection_encr.insert_one(encr)
-            # If bookmark is present, and document has not been seen before, we will insert the document with updation = False
+                # If bookmark is present, and document has not been seen before, we will insert the document with updation = False
 
         for key, _ in document.items():
             if(key == '_id'):
@@ -205,7 +214,7 @@ def get_data_from_source(db, collection_name):
         return None
 
 def process_data_from_source(db_collection, collection):
-    try:
+    #try:
         if('fields' not in collection.keys()):
             collection['fields'] = {}
         df_insert, df_update = dataframe_from_collection(mongodb_collection = db_collection, collection_mapping = collection)
@@ -213,9 +222,9 @@ def process_data_from_source(db_collection, collection):
             return {'name': collection['collection_name'], 'df_insert': df_insert, 'df_update': df_update}
         else:
             return None
-    except:
-        log_writer("Caught some exception while processing " + collection['collection_unique_id'])
-        return None
+    #except:
+    #    log_writer("Caught some exception while processing " + collection['collection_unique_id'])
+    #    return None
     
 def save_data_to_destination(db, processed_collection, partition):
     if(db['destination']['destination_type'] == 's3'):

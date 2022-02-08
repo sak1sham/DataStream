@@ -8,6 +8,8 @@ def convert_list_to_string(l):
         Input: list
         Output: stringified list: str
     '''
+    if(l is None):
+        return None
     val = "["
     for item in l:
         if(isinstance(item, list) or isinstance(item, set) or isinstance(item, tuple)):
@@ -33,6 +35,8 @@ def convert_to_type(x, tp):
         OUTPUT:
             x: data type as tp
     '''
+    if(x is None):
+        return x
     if(tp == 'bool'):
         if(isinstance(x, bool)):
             return x
@@ -84,6 +88,8 @@ def convert_to_type(x, tp):
                 return ""
 
 def convert_to_datetime(x, format):
+    if(x is None):
+        return x
     if(isinstance(x, datetime.datetime)):
         return x
     try:
@@ -99,6 +105,8 @@ def convert_json_to_string(x):
         Input: dict
         Output: stringified dict: str
     '''
+    if(x is None):
+        return x
     for item, value in x.items():
         if(isinstance(value, list) or isinstance(value, set) or isinstance(value, tuple)):
             x[item] = convert_list_to_string(list(x[item]))

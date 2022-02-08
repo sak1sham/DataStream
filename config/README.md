@@ -42,7 +42,6 @@ If source is SQL, we need to provide a field ```tables```, which is a list of ta
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the column (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 4),
-    'last_run_cron_job': Datetime object with a specified timezone (Optional)
     'is_dump': False (Optional, Default=False, Refer Notes 5)
 }
 ```
@@ -63,7 +62,6 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the field (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 4),
-    'last_run_cron_job': Datetime object with a specified timezone (Optional)
 }
 ```
 
@@ -85,9 +83,8 @@ Only specify if the field belongs to one of the following category:
 2. 'bool'
 3. 'float'
 4. 'complex'
-5. 'datetime'
 
-Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string.
+Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string. By default, datetime is converted to strings in MongoDB. If the source data is consistent, one can also provide a 'datetime' category to keep fields in datetime format. However, it's not recommended, and might result in errors.
 
 ## 4. Partition Columns formats
 
