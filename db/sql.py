@@ -49,8 +49,10 @@ def filter_df(df, table_mapping={}):
     
     last_run_cron_job = table_mapping['last_run_cron_job']
     table_mapping['last_run_cron_job'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
+    
     if('is_dump' in table_mapping.keys() and table_mapping['is_dump']):
         df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
+    
     table_mapping['partition_for_parquet'] = []
     if('to_partition' in table_mapping.keys() and table_mapping['to_partition']):
         if('partition_col' in table_mapping.keys()):
@@ -74,6 +76,7 @@ def filter_df(df, table_mapping={}):
                     table_mapping['partition_for_parquet'].extend([parq_col])
                     df[parq_col] = df[col].astype(int)
                 elif(col_form == 'datetime'):
+                    table_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                     df[parq_col + "_year"] = df[col].dt.year
                     df[parq_col + "_month"] = df[col].dt.month
                     df[parq_col + "_day"] = df[col].dt.day

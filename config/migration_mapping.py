@@ -25,6 +25,7 @@ mapping = [
                 'cron': '* * * * * * */1 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
                 'is_dump': True
             }
         ]
