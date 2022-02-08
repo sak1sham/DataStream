@@ -1,4 +1,3 @@
-from pydoc import doc
 from pymongo import MongoClient
 from helper.util import convert_list_to_string, convert_to_type, convert_to_datetime, convert_json_to_string
 from helper.logger import log_writer
@@ -214,7 +213,7 @@ def get_data_from_source(db, collection_name):
         return None
 
 def process_data_from_source(db_collection, collection):
-    #try:
+    try:
         if('fields' not in collection.keys()):
             collection['fields'] = {}
         df_insert, df_update = dataframe_from_collection(mongodb_collection = db_collection, collection_mapping = collection)
@@ -222,9 +221,9 @@ def process_data_from_source(db_collection, collection):
             return {'name': collection['collection_name'], 'df_insert': df_insert, 'df_update': df_update}
         else:
             return None
-    #except:
-    #    log_writer("Caught some exception while processing " + collection['collection_unique_id'])
-    #    return None
+    except:
+        log_writer("Caught some exception while processing " + collection['collection_unique_id'])
+        return None
     
 def save_data_to_destination(db, processed_collection, partition):
     if(db['destination']['destination_type'] == 's3'):

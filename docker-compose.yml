@@ -8,7 +8,7 @@ services:
       - ENCR_MONGO_URL=mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority
       - DB_NAME=migration_update_check
       - COLLECTION_NAME=migration_update_check
-      - DEBUG_MODE=1
+      - DEBUG_MODE=2
       - PORT=8000
       - HOST=0.0.0.0
       - AWS_ACCESS_KEY_ID=AKIA3RSHCMQMTLUCYGU2

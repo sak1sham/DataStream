@@ -1,7 +1,4 @@
 import os
-import datetime
-import pytz
-IST_tz = pytz.timezone('Asia/Kolkata')
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -45,7 +42,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 0 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
             {
@@ -53,7 +50,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 17 28 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -65,7 +62,7 @@ mapping = [
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 0 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
             {
@@ -73,7 +70,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 0 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
             {
@@ -85,9 +82,9 @@ mapping = [
                     '__v': 'int'
                 },
                 'bookmark': 'updated_at',
-                'bookmark_format': '%Y-%m-%dT%H:%M:%SZ',
+                'bookmark_format': '%Y-%m-%dT%H:%M:%S.%fZ',
                 'archive': False,
-                'cron': '* * * * * 15 0 0',
+                'cron': '* * * * * 23 0 0',
                 'to_partition': True,
             },
             {
@@ -104,7 +101,7 @@ mapping = [
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 16 59 00',
+                'cron': '* * * * * 22 5 0',
                 'to_partition': True,
             },
             {
@@ -115,7 +112,7 @@ mapping = [
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 15 0 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True,
             },
             {
@@ -123,7 +120,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 0 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
         ]
