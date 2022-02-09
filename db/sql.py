@@ -144,8 +144,9 @@ def filter_df(df, table_mapping={}):
 
     return df_insert, df_update
 
-def get_number_of_records(db, table_name):
-    table_name['last_run_cron_job'] = get_last_run_cron_job(get_data_from_encr_db(), table_name['table_unique_id'])
+def get_number_of_records(db, table_name, table):
+    encr_db = get_data_from_encr_db()
+    table['last_run_cron_job'] = get_last_run_cron_job(encr_db, table['table_unique_id'])
     if('username' not in db['source'].keys()):
         try:
             engine = create_engine(db['source']['url'])
@@ -205,7 +206,7 @@ def save_data(db, processed_table, partition):
 
 def process_sql_table(db, table):
     logging.info('Migrating ' + table['table_unique_id'])
-    total_len = get_number_of_records(db, table['table_name'])
+    total_len = get_number_of_records(db, table['table_name'], table)
     batch_size = 10000
 
     if(total_len is not None and total_len > 0):
