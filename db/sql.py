@@ -156,7 +156,7 @@ def get_number_of_records(db, table_name, table):
             logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
             return None
     else:
-        #try:
+        try:
             conn = psycopg2.connect(
                 host=db['source']['url'],
                 database=db['source']['db_name'],
@@ -164,13 +164,11 @@ def get_number_of_records(db, table_name, table):
                 password=db['source']['password'])            
             cursor = conn.cursor()
             total_records = cursor.execute("SELECT count(*) from " + table_name + ";", [])
-            print(total_records)
             total_records = cursor.fetchone()[0]
-            print(total_records)
             return total_records
-        #except:
-        #    logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
-        #    return None
+        except:
+            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
+            return None
 
 def get_data(db, table_name, batch_size=0, start=0):
     if('username' not in db['source'].keys()):
