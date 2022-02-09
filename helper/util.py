@@ -126,6 +126,9 @@ def evaluate_cron(expression):
         order of values:
             year, month, day, week, day_of_week, hour, minute, second
     '''
+    if(expression is None):
+        logging.warning("Cron Expression Not Specified. Unable to run job")
+        expression =  '1602 * * * * * */5 0'
     vals = expression.split()
     vals = [(None if w == '?' else w) for w in vals]
     return vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], vals[7]
