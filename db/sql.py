@@ -148,15 +148,15 @@ def get_number_of_records(db, table_name, table):
     encr_db = get_data_from_encr_db()
     table['last_run_cron_job'] = get_last_run_cron_job(encr_db, table['table_unique_id'])
     if('username' not in db['source'].keys()):
-        #try:
+        try:
             engine = create_engine(db['source']['url'])
             total_records = engine.execute("SELECT COUNT(*) from " + table_name).fetchall()[0][0]
             return total_records
-        #except:
-        #    logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
-        #    return None
+        except:
+            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
+            return None
     else:
-        try:
+        #try:
             conn = psycopg2.connect(
                 host=db['source']['url'],
                 database=db['source']['db_name'],
@@ -168,9 +168,9 @@ def get_number_of_records(db, table_name, table):
             total_records = cursor.execute("SELECT COUNT(*) from " + table_name).fetchone()[0]
             print(total_records)
             return total_records
-        except:
-            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
-            return None
+        #except:
+        #    logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
+        #    return None
 
 def get_data(db, table_name, batch_size=0, start=0):
     if('username' not in db['source'].keys()):
