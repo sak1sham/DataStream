@@ -165,7 +165,9 @@ def get_number_of_records(db, table_name, table):
             print(conn)
             cursor = conn.cursor()
             print(cursor)
-            total_records = cursor.execute("SELECT COUNT(*) from " + table_name).fetchone()[0]
+            total_records = cursor.execute("SELECT COUNT(*) from " + table_name)
+            print(total_records)
+            total_records = total_records.fetchone()[0]
             print(total_records)
             return total_records
         #except:
