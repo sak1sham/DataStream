@@ -162,8 +162,11 @@ def get_number_of_records(db, table_name, table):
                 database=db['source']['db_name'],
                 user=db['source']['username'],
                 password=db['source']['password'])            
+            print(conn)
             cursor = conn.cursor()
-            total_records = cursor.execute("SELECT COUNT(*) from " + table_name).fetchall()[0][0]
+            print(cursor)
+            total_records = cursor.execute("SELECT COUNT(*) from " + table_name).fetchone()[0]
+            print(total_records)
             return total_records
         except:
             logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
