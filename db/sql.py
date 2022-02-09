@@ -45,8 +45,7 @@ def filter_df(df, table_mapping={}):
     
     if('is_dump' in table_mapping.keys() and table_mapping['is_dump']):
         df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
-    print(df.head())
-    print(df.columns.values)
+    
     table_mapping['partition_for_parquet'] = []
     if('to_partition' in table_mapping.keys() and table_mapping['to_partition']):
         if('partition_col' in table_mapping.keys()):
@@ -226,10 +225,10 @@ def process_sql_table(db, table):
             df = get_data(db=db, table_name=table['table_name'], batch_size=batch_size, start=start, query = table['fetch_data_query'])
             if(df is not None):
                 logging.info(table['table_unique_id'] + ': Fetched data chunk.')
-                #try:
-                processed_table = process_data(df=df, table=table)
-                save_data(db=db, processed_table=processed_table, partition=table['partition_for_parquet'])
-                #except:
-                #    logging.error(table['table_unique_id'] + ': Caught some exception while processing/saving chunk.')
+                try:
+                    processed_table = process_data(df=df, table=table)
+                    save_data(db=db, processed_table=processed_table, partition=table['partition_for_parquet'])
+                except:
+                    logging.error(table['table_unique_id'] + ': Caught some exception while processing/saving chunk.')
             start += batch_size
     logging.info("Migration for " + table['table_unique_id'] + " ended.")
