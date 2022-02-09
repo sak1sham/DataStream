@@ -162,7 +162,7 @@ def preprocessing(collection):
         if('to_partition' in collection.keys() and collection['to_partition']):
             # Assure that partition_col and parition_col_format are lists of same length. If not present, use "_id"
             if('partition_col' not in collection.keys() or not collection['partition_col']):
-                logging.info(collection['collection_unique_id'] + " Partition_col not specified. Making partition using _id.")
+                logging.warning(collection['collection_unique_id'] + " Partition_col not specified. Making partition using _id.")
                 collection['partition_col'] = ['_id']
                 collection['partition_col_format'] = ['datetime']
             if(isinstance(collection['partition_col'], str)):
