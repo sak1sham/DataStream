@@ -116,9 +116,9 @@ mapping = [
             },
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * 18 44 0',
+                'cron': '* * * * * 19 0 0',
                 'to_partition': True,
-                'partition_col': 'created_at',
+                'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
                 'is_dump': True,
                 'fetch_data_query': query_1
