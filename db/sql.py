@@ -147,6 +147,8 @@ def filter_df(df, table_mapping={}):
 def get_number_of_records(db, table_name, table):
     encr_db = get_data_from_encr_db()
     table['last_run_cron_job'] = get_last_run_cron_job(encr_db, table['table_unique_id'])
+    if('fetch_data_query' in table.keys() and table['fetch_data_query'] and len(table['fetch_data_query']) > 0):
+        return 1
     if('username' not in db['source'].keys()):
         try:
             engine = create_engine(db['source']['url'])
@@ -170,11 +172,13 @@ def get_number_of_records(db, table_name, table):
             logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
             return None
 
-def get_data(db, table_name, batch_size=0, start=0):
+def get_data(db, table_name, batch_size=0, start=0, query=""):
     if('username' not in db['source'].keys()):
         try:
             engine = create_engine(db['source']['url'])
             sql_stmt = "SELECT * FROM " + table_name + " LIMIT " + str(batch_size) + " OFFSET " + str(start)
+            if(len(query) > 0):
+                sql_stmt = query
             df = pd.read_sql(sql_stmt, engine)
             return df
         except:
@@ -188,6 +192,8 @@ def get_data(db, table_name, batch_size=0, start=0):
                 user=db['source']['username'],
                 password=db['source']['password'])            
             select_query = "SELECT * FROM " + table_name + " LIMIT " + str(batch_size) + " OFFSET " + str(start)
+            if(len(query) > 0):
+                select_query = query
             df = sqlio.read_sql_query(select_query, conn)
             return df
         except:
@@ -207,13 +213,16 @@ def save_data(db, processed_table, partition):
 
 def process_sql_table(db, table):
     logging.info('Migrating ' + table['table_unique_id'])
+    if('fetch_data_query' not in table.keys() or not table['fetch_data_query']):
+        table['fetch_data_query'] = ""
+    
     total_len = get_number_of_records(db, table['table_name'], table)
     batch_size = 10000
 
     if(total_len is not None and total_len > 0):
         start = 0
         while(start < total_len):
-            df = get_data(db, table['table_name'], batch_size, start)
+            df = get_data(db=db, table_name=table['table_name'], batch_size=batch_size, start=start, query = table['fetch_data_query'])
             if(df is not None):
                 logging.info(table['table_unique_id'] + ': Fetched data chunk.')
                 try:
