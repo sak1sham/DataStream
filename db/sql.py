@@ -40,13 +40,8 @@ def distribute_records(collection_encr, df, table_unique_id):
 def filter_df(df, table_mapping={}):
     logging.info("Total " + str(df.shape[0]) + " records present in table.")
 
-    ## Fetching encryption database
-    ## Encryption database is used to store hashes of records in case bookmark is absent
     collection_encr = get_data_from_encr_db()
-    if(collection_encr is None):
-        return None, None
-
-    last_run_cron_job = get_last_run_cron_job(collection_encr, table_mapping['table_unique_id'])
+    last_run_cron_job = table_mapping['last_run_cron_job']
     
     if('is_dump' in table_mapping.keys() and table_mapping['is_dump']):
         df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
@@ -67,7 +62,14 @@ def filter_df(df, table_mapping={}):
                 col = table_mapping['partition_col'][i].lower()
                 col_form = table_mapping['partition_col_format'][i]
                 parq_col = "parquet_format_" + col
-                if(col_form == 'str'):
+                
+                if(col == 'migration_snapshot_date'):
+                    col_form = 'datetime'
+                    table_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    df[parq_col + "_year"] = df[col].dt.year
+                    df[parq_col + "_month"] = df[col].dt.month
+                    df[parq_col + "_day"] = df[col].dt.day
+                elif(col_form == 'str'):
                     table_mapping['partition_for_parquet'].extend([parq_col])
                     df[parq_col] = df[col].astype(str)
                 elif(col_form == 'int'):
@@ -139,19 +141,39 @@ def filter_df(df, table_mapping={}):
         # to_dump is set to True, just dump it !!
         df_insert = df_consider
         df_update = pd.DataFrame({})
-    logging.info("All records processed.")
-    logging.info("Insertions: " + str(df_insert.shape[0]))        
-    logging.info("Updations: " + str(df_update.shape[0])) 
+
     return df_insert, df_update
 
-def get_data(db, table_name):
+def get_number_of_records(db, table_name):
+    table_name['last_run_cron_job'] = get_last_run_cron_job(get_data_from_encr_db(), table_name['table_unique_id'])
     if('username' not in db['source'].keys()):
         try:
             engine = create_engine(db['source']['url'])
-            metadata = MetaData()
-            table = Table(table_name, metadata, autoload=True, autoload_with=engine)
-            stmt = select([table])
-            df = pd.read_sql(stmt, engine)
+            total_records = engine.execute("SELECT COUNT(*) from " + table_name).fetchall()[0][0]
+            return total_records
+        except:
+            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
+            return None
+    else:
+        try:
+            conn = psycopg2.connect(
+                host=db['source']['url'],
+                database=db['source']['db_name'],
+                user=db['source']['username'],
+                password=db['source']['password'])            
+            cursor = conn.cursor()
+            total_records = cursor.execute("SELECT COUNT(*) from " + table_name).fetchall()[0][0]
+            return total_records
+        except:
+            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
+            return None
+
+def get_data(db, table_name, batch_size=0, start=0):
+    if('username' not in db['source'].keys()):
+        try:
+            engine = create_engine(db['source']['url'])
+            sql_stmt = "SELECT * FROM " + table_name + " LIMIT " + str(batch_size) + " OFFSET " + str(start)
+            df = pd.read_sql(sql_stmt, engine)
             return df
         except:
             logging.error("Unable to connect sql:" + db['source']['db_name'] + ":" + table_name)
@@ -163,7 +185,7 @@ def get_data(db, table_name):
                 database=db['source']['db_name'],
                 user=db['source']['username'],
                 password=db['source']['password'])            
-            select_query = "SELECT * FROM " + table_name
+            select_query = "SELECT * FROM " + table_name + " LIMIT " + str(batch_size) + " OFFSET " + str(start)
             df = sqlio.read_sql_query(select_query, conn)
             return df
         except:
@@ -171,14 +193,10 @@ def get_data(db, table_name):
             return None
 
 def process_data(df, table):
-    try:
-        df_insert, df_update = filter_df(df=df, table_mapping=table)
-        if(df_insert is not None and df_update is not None):
-            return {'name': table['table_name'], 'df_insert': df_insert, 'df_update': df_update}
-        else:
-            return None
-    except:
-        logging.error("Caught some exception while processing " + table['table_unique_id'])
+    df_insert, df_update = filter_df(df=df, table_mapping=table)
+    if(df_insert is not None and df_update is not None):
+        return {'name': table['table_name'], 'df_insert': df_insert, 'df_update': df_update}
+    else:
         return None
 
 def save_data(db, processed_table, partition):
@@ -187,15 +205,19 @@ def save_data(db, processed_table, partition):
 
 def process_sql_table(db, table):
     logging.info('Migrating ' + table['table_unique_id'])
-    df = get_data(db, table['table_name'])
-    if(df is not None):
-        logging.info('Fetched data for ' + table['table_unique_id'])
-        processed_table = process_data(df=df, table=table)
-        if(processed_table is not None):
-            logging.info('Processed data for ' + table['table_unique_id'])
-            try:
-                save_data(db=db, processed_table=processed_table, partition=table['partition_for_parquet'])
-                logging.info('Successfully saved data for ' + table['table_unique_id'])
-            except:
-                logging.error('Caught some exception while saving data from ' + table['table_unique_id'])
+    total_len = get_number_of_records(db, table['table_name'])
+    batch_size = 10000
+
+    if(total_len is not None and total_len > 0):
+        start = 0
+        while(start < total_len):
+            df = get_data(db, table['table_name'], batch_size, start)
+            if(df is not None):
+                logging.info(table['table_unique_id'] + ': Fetched data chunk.')
+                try:
+                    processed_table = process_data(df=df, table=table)
+                    save_data(db=db, processed_table=processed_table, partition=table['partition_for_parquet'])
+                except:
+                    logging.error(table['table_unique_id'] + ': Caught some exception while processing/saving chunk.')
+            start += batch_size
     logging.info("Migration for " + table['table_unique_id'] + " ended.")

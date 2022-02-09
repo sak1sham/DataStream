@@ -13,7 +13,6 @@ def get_data_from_encr_db():
         client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
         db_encr = client_encr[encryption_store['db_name']]
         collection_encr = db_encr[encryption_store['collection_name']]
-        logging.info("Successfully connected to encryption database.")
         return collection_encr
     except:
         logging.info("Unable to connect to encryption store database.")

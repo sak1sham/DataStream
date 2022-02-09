@@ -34,7 +34,7 @@ mapping = [
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server'
+            's3_bucket_name': 'migration-service-temp'
         },
         'collections': [
             {
@@ -50,7 +50,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': '* * * * * 10 27 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -84,7 +84,7 @@ mapping = [
                 'bookmark': 'updated_at',
                 'bookmark_format': '%Y-%m-%dT%H:%M:%S.%fZ',
                 'archive': False,
-                'cron': '* * * * * 23 0 0',
+                'cron': '* * * * * 10 21 0',
                 'to_partition': True,
             },
             {
