@@ -45,7 +45,8 @@ def filter_df(df, table_mapping={}):
     
     if('is_dump' in table_mapping.keys() and table_mapping['is_dump']):
         df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
-    
+    print(df.head())
+    print(df.columns.values)
     table_mapping['partition_for_parquet'] = []
     if('to_partition' in table_mapping.keys() and table_mapping['to_partition']):
         if('partition_col' in table_mapping.keys()):
