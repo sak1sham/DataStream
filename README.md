@@ -15,7 +15,6 @@ Documentation to write the migration_mapping is provided in [Migration Mapping D
 ENCR_MONGO_URL=<Temp_Mongo_DB_URL>
 DB_NAME=<Temp_Mongo_DB_Name>
 COLLECTION_NAME=<Temp_Mongo_DB_Collection_Name>
-DEBUG_MODE=<INTEGER>
 PORT=<Uvicorn_Server_Port>
 HOST=<Uvicorn_Server_Host>
 AWS_ACCESS_KEY_ID=<AWS_ACCESS_KEY_ID>
@@ -23,7 +22,6 @@ AWS_SECRET_ACCESS_KEY=<AWS_SECRET_ACCESS_KEY>
 ```
 
 - ENCR_MONGO_URL, DB_NAME, COLLECTION_NAME: Some records from your source_database are saved temprarily (SHA256 encrypted) in a temporary mongoDB collection. These parameters specify the credentials and names for that temporary Mongo Database.
-- DEBUG_MODE: 1 for printing the logs in console, and 2 for saving it to ```/logs/production.log``` file
 - PORT, HOST: needed to run uvicorn server
 - AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY: Credentials to save files to destination.
 
