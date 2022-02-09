@@ -116,7 +116,7 @@ mapping = [
             },
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * 22 45 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -183,7 +183,7 @@ mapping = [
                 'bookmark': 'updated_at',
                 'bookmark_format': '%Y-%m-%dT%H:%M:%S.%fZ',
                 'archive': False,
-                'cron': '* * * * * 22 30 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True,
             },
             {
@@ -200,7 +200,7 @@ mapping = [
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 23 0 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True,
             },
             {
