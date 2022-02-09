@@ -162,12 +162,10 @@ def get_number_of_records(db, table_name, table):
                 database=db['source']['db_name'],
                 user=db['source']['username'],
                 password=db['source']['password'])            
-            print(conn)
             cursor = conn.cursor()
-            print(cursor)
             total_records = cursor.execute("SELECT count(*) from " + table_name + ";", [])
             print(total_records)
-            total_records = total_records.fetchone()[0]
+            total_records = cursor.fetchone()[0]
             print(total_records)
             return total_records
         #except:
