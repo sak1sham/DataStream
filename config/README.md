@@ -99,6 +99,8 @@ Date formats shall be written in pythonic way. Refer [this link](https://www.tut
 
 for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"
 
+Even if the field doesn't match your custom format, the script tries to match with standard datetime formats.
+
 ## 3. Specifying data types in MongoDB fields
 Only specify if the field belongs to one of the following category:
 1. 'int'
