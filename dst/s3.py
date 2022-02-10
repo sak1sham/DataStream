@@ -22,7 +22,7 @@ def save_to_s3(processed_data, db_source, db_destination, c_partition):
     
     for i in range(processed_data['df_update'].shape[0]):
         for x in partition_cols:
-            file_name_u = file_name_u + x + "=" + processed_data['df_update'].iloc[i][x] + "/"
+            file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[i][x]) + "/"
         df_to_be_updated = wr.s3.read_parquet(
             path = file_name_u,
             dataset = True

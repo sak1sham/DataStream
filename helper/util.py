@@ -6,6 +6,7 @@ import pandas as pd
 
 import pytz
 IST_tz = pytz.timezone('Asia/Kolkata')
+from dateutil import parser
 
 def convert_list_to_string(l):
     '''
@@ -105,14 +106,14 @@ def convert_to_datetime(x, format):
             x = x.replace(tzinfo=IST_tz)
             return x
         except:
-            logging.warning("Unable to convert " + x + " to format specified: \"" + format + "\". Trying to convert to default format")
             try:
-                x = datetime.datetime.strptime(x, '%Y-%m-%dT%H:%M:%SZ')
-                x = x.replace(tzinfo=IST_tz)
+                x = parser.parse(x)
+                if(x.tzinfo is None):
+                    x = x.replace(tzinfo=IST_tz)
                 logging.info("Successfully converted the date to standard format.")
                 return x
             except:
-                logging.warning("Unable to convert " + x + " to datetime. Specified format: \"" + format + "\". Returning None")
+                logging.warning("Unable to convert " + x + " to any datetime format. Specified format: \"" + format + "\". Returning None")
                 return pd.Timestamp(None)
 
 def convert_json_to_string(x):
