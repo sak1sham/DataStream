@@ -47,32 +47,32 @@ def convert_to_type(x, tp):
             x = x.lower() in ['true', '1', 't', 'y', 'yes']
             return x
         else:
-            logging.warning("Unable to convert " + str(type(x)) + " to boolean. Returning true.")
-            return True
+            logging.warning("Unable to convert " + str(type(x)) + " to boolean. Returning None")
+            return None
     elif(tp == 'int'):
         try:
-            return int(x)
+            return float(x)
         except:
-            logging.warning("Unable to convert " + str(type(x)) + " to int. Returning 1")
-            return 1
+            logging.warning("Unable to convert " + str(type(x)) + " to int. Returning None")
+            return None
     elif(tp == 'float'):
         try:
             return float(x)
         except:
-            logging.warning("Unable to convert " + str(type(x)) + " to float. Returning 1.0")
-            return 1.0
+            logging.warning("Unable to convert " + str(type(x)) + " to float. Returning None")
+            return None
     elif(tp == 'complex'):
         try:
             return complex(x)
         except:
-            logging.warning("Unable to convert " + str(type(x)) + " to complex. Returning 1+0j")
-            return 1+0j
+            logging.warning("Unable to convert " + str(type(x)) + " to complex. Returning None")
+            return None
     elif(tp == "datetime"):
         if(isinstance(x, datetime.datetime)):
             return x
         else:
-            logging.warning("Unable to convert " + str(type(x)) + " to datetime. Returning datetime.datetime(1602, 8, 20, 0, 0, 0, 0)")
-            return datetime.datetime(1602, 8, 20, 0, 0, 0, 0)
+            logging.warning("Unable to convert " + str(type(x)) + " to datetime. Returning None")
+            return None
     else:
         # Convert to string
         if(isinstance(x, datetime.datetime)):
@@ -85,8 +85,8 @@ def convert_to_type(x, tp):
             try:
                 return str(x)
             except:
-                logging.warning("Unable to convert " + str(type(x)) + " to string. Returning empty string \"\"")
-                return ""
+                logging.warning("Unable to convert " + str(type(x)) + " to string. Returning empty string None")
+                return None
 
 def convert_to_datetime(x, format):
     if(x is None):
@@ -97,8 +97,8 @@ def convert_to_datetime(x, format):
         x = datetime.datetime.strptime(x, format)
         return x
     except:
-        logging.warning("Unable to convert " + x + " to format specified: \"" + format + "\". Returning 20-8-1602 00:00:00")
-        return datetime.datetime(1602, 8, 20, 0, 0, 0, 0)
+        logging.warning("Unable to convert " + x + " to format specified: \"" + format + "\". Returning None")
+        return None
 
 def convert_json_to_string(x):
     '''
