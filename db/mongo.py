@@ -71,7 +71,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                 if('bookmark' in collection_mapping.keys() and collection_mapping['bookmark']):
                     # Use bookmark for comparison of updation time
                     if('bookmark_format' not in collection_mapping.keys()):
-                        if(document[collection_mapping['bookmark']] <= last_run_cron_job):
+                        if(document[collection_mapping['bookmark']].replace(tzinfo=IST_tz) <= last_run_cron_job):
                             # No updation has been performed since last cron job
                             continue
                         else:

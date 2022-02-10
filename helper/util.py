@@ -4,6 +4,9 @@ import logging
 logging.getLogger().setLevel(logging.INFO)
 import pandas as pd
 
+import pytz
+IST_tz = pytz.timezone('Asia/Kolkata')
+
 def convert_list_to_string(l):
     '''
         Recursively convert lists and nested lists to strings
@@ -70,7 +73,7 @@ def convert_to_type(x, tp):
             return None
     elif(tp == "datetime"):
         if(isinstance(x, datetime.datetime)):
-            return x
+            return x.replace(tzinfo=IST_tz)
         else:
             logging.warning("Unable to convert " + str(type(x)) + " to datetime. Returning None")
             return pd.Timestamp(None)
@@ -94,15 +97,18 @@ def convert_to_datetime(x, format):
         logging.warning("Unable to convert " + x + " to datetime. Specified format: \"" + format + "\". Returning None")
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
+        x = x.replace(tzinfo=IST_tz)
         return x
     else:
         try:
             x = datetime.datetime.strptime(x, format)
+            x = x.replace(tzinfo=IST_tz)
             return x
         except:
             logging.warning("Unable to convert " + x + " to format specified: \"" + format + "\". Trying to convert to default format")
             try:
                 x = datetime.datetime.strptime(x, '%Y-%m-%dT%H:%M:%SZ')
+                x = x.replace(tzinfo=IST_tz)
                 logging.info("Successfully converted the date to standard format.")
                 return x
             except:
