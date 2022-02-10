@@ -183,7 +183,7 @@ mapping = [
                 'bookmark': 'updated_at',
                 'bookmark_format': '%Y-%m-%dT%H:%M:%S.%fZ',
                 'archive': False,
-                'cron': '* * * * * 12 22 0',
+                'cron': '* * * * * 12 25 0',
                 'to_partition': True,
             },
             {
