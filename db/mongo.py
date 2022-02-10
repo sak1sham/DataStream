@@ -234,12 +234,12 @@ def process_mongo_collection(db, collection):
         logging.info(collection['collection_unique_id'] + ": Preprocessing done")
         start = 0
         while(start < db_collection.count_documents({})):    
-            #try:
-            processed_collection = process_data_from_source(db_collection=db_collection, collection=collection, start=start, end=min(start+batch_size, db_collection.count_documents({})))
-            save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
-            #except:
-            #    logging.error(collection['collection_unique_id'] + ": caught some error while migrating chunk.")
-            #    break
+            try:
+                processed_collection = process_data_from_source(db_collection=db_collection, collection=collection, start=start, end=min(start+batch_size, db_collection.count_documents({})))
+                save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
+            except:
+                logging.error(collection['collection_unique_id'] + ": caught some error while migrating chunk.")
+                break
             start += batch_size
 
     logging.info(collection['collection_unique_id'] + ": Migration ended.\n")

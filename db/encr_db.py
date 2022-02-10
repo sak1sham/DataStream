@@ -22,8 +22,7 @@ def get_last_run_cron_job(db, id):
     prev = db.find_one({'last_run_cron_job_for_id': id})
     if(prev):
         timing = prev['timing']
-        if(timing.tzinfo is None and timing.tzinfo.utcoffset(timing) is None):
-            timing = timing.replace(tzinfo=IST_tz)
+        timing = timing.replace(tzinfo=IST_tz)
         db.delete_one({'last_run_cron_job_for_id': id})
         db.insert_one({'last_run_cron_job_for_id': id, 'timing': datetime.datetime.utcnow().replace(tzinfo = IST_tz)})
         return timing
