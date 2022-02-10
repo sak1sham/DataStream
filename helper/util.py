@@ -2,6 +2,7 @@ import json
 import datetime
 import logging
 logging.getLogger().setLevel(logging.INFO)
+import pandas as pd
 
 def convert_list_to_string(l):
     '''
@@ -72,7 +73,7 @@ def convert_to_type(x, tp):
             return x
         else:
             logging.warning("Unable to convert " + str(type(x)) + " to datetime. Returning None")
-            return None
+            return pd.Timestamp(None)
     else:
         # Convert to string
         if(isinstance(x, datetime.datetime)):
@@ -90,15 +91,23 @@ def convert_to_type(x, tp):
 
 def convert_to_datetime(x, format):
     if(x is None):
+        logging.warning("Unable to convert " + x + " to datetime. Specified format: \"" + format + "\". Returning None")
+        return pd.Timestamp(None)
+    elif(isinstance(x, datetime.datetime)):
         return x
-    if(isinstance(x, datetime.datetime)):
-        return x
-    try:
-        x = datetime.datetime.strptime(x, format)
-        return x
-    except:
-        logging.warning("Unable to convert " + x + " to format specified: \"" + format + "\". Returning None")
-        return None
+    else:
+        try:
+            x = datetime.datetime.strptime(x, format)
+            return x
+        except:
+            logging.warning("Unable to convert " + x + " to format specified: \"" + format + "\". Trying to convert to default format")
+            try:
+                x = datetime.datetime.strptime(x, '%Y-%m-%dT%H:%M:%SZ')
+                logging.info("Successfully converted " + x + " to standard format.")
+                return x
+            except:
+                logging.warning("Unable to convert " + x + " to datetime. Specified format: \"" + format + "\". Returning None")
+                return pd.Timestamp(None)
 
 def convert_json_to_string(x):
     '''
