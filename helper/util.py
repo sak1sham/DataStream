@@ -103,7 +103,7 @@ def convert_to_datetime(x, format):
             logging.warning("Unable to convert " + x + " to format specified: \"" + format + "\". Trying to convert to default format")
             try:
                 x = datetime.datetime.strptime(x, '%Y-%m-%dT%H:%M:%SZ')
-                logging.info("Successfully converted " + x + " to standard format.")
+                logging.info("Successfully converted the date to standard format.")
                 return x
             except:
                 logging.warning("Unable to convert " + x + " to datetime. Specified format: \"" + format + "\". Returning None")
