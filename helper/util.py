@@ -108,9 +108,7 @@ def convert_to_datetime(x, format):
         except:
             try:
                 x = parser.parse(x)
-                if(x.tzinfo is None):
-                    x = x.replace(tzinfo=IST_tz)
-                logging.info("Successfully converted the date to standard format.")
+                x = x.replace(tzinfo=IST_tz)
                 return x
             except:
                 logging.warning("Unable to convert " + x + " to any datetime format. Specified format: \"" + format + "\". Returning None")
