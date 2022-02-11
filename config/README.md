@@ -91,10 +91,9 @@ For example: '* * * * * 7-19 */1 0' represents every minute between 7AM to 7PM.
 
 ## 2. Specifying data types in MongoDB fields
 Only specify if the field belongs to one of the following category:
-1. 'int'
-2. 'bool'
-3. 'float'
-4. 'complex'
+1. 'bool'
+2. 'float'
+3. 'complex'
 
 Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string. By default, datetime is converted to strings in MongoDB. If the source data is consistent, one can also provide a 'datetime' category to keep fields in datetime format. However, it's not recommended, and might result in errors.
 
