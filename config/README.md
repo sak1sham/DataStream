@@ -33,16 +33,14 @@ If source is SQL, we need to provide a field ```tables```, which is a list of ta
 {
     'table_name': str,
     'bookmark_creation': False or 'field_name' (optional, Default=False, for example - 'created_at'),
-    'bookmark_creation_format': '' (optional, Refer Notes 2),
     'bookmark': False or 'field_name' (optional, Default=False, for example - 'updated_at'),
-    'bookmark_format': '' (optional, Refer Notes 2),
     'primary_keys': string or list of unique specifiers for records (Optional),
     'archive': "SQL_query" or False,
     'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the column (str or list of str),
-    'partition_col_format': '' (Optional, Refer Notes 4),
-    'is_dump': False (Optional, Default=False, Refer Notes 5)
+    'partition_col_format': '' (Optional, Refer Notes 3),
+    'is_dump': False (Optional, Default=False, Refer Notes 4)
 }
 ```
 
@@ -51,17 +49,16 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
 {
     'collection_name': '',
     'fields': {
-        'field_1': 'int' (Refer Notes 3),
+        'field_1': 'int' (Refer Notes 2),
         'field_2': 'complex', 
         ...
     } (Optional),
     'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
-    'bookmark_format': '' (optional, Refer Notes 2),
     'archive': "Mongodb_query" or False,
     'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the field (str or list of str),
-    'partition_col_format': '' (Optional, Refer Notes 4),
+    'partition_col_format': '' (Optional, Refer Notes 3),
     'is_dump': False
 }
 ```
@@ -77,8 +74,6 @@ Api_specifications shall be in following format:
         ...
     } (Optional),
     'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
-    'bookmark_format': '' (optional, Refer Notes 2),
-    'archive': "Mongodb_query" or False,
     'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the field (str or list of str),
@@ -94,14 +89,7 @@ Writing Cron expression as per guidelines at [APScheduler docs](https://apschedu
 
 For example: '* * * * * 7-19 */1 0' represents every minute between 7AM to 7PM.
 
-## 2. Writing datetime formats
-Date formats shall be written in pythonic way. Refer [this link](https://www.tutorialspoint.com/python/time_strptime.htm)
-
-for example- "%Y-%m-%dT%H:%M:%S.%fZ" for dates like "2021-12-06T10:33:22Z"
-
-Even if the field doesn't match your custom format, the script tries to match with standard datetime formats.
-
-## 3. Specifying data types in MongoDB fields
+## 2. Specifying data types in MongoDB fields
 Only specify if the field belongs to one of the following category:
 1. 'int'
 2. 'bool'
@@ -110,10 +98,10 @@ Only specify if the field belongs to one of the following category:
 
 Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string. By default, datetime is converted to strings in MongoDB. If the source data is consistent, one can also provide a 'datetime' category to keep fields in datetime format. However, it's not recommended, and might result in errors.
 
-## 4. Partition Columns formats
+## 3. Partition Columns formats
 
-'int' or 'str' (Default) or 'datetime' or datetime formats (Refer Notes 2) like "%Y-%m-%dT%H:%M:%S.%fZ", or list of formats for different columns.
+'int' or 'str' (Default) or 'datetime', or list of these formats for different columns.
 
-## 5. Data Dumping
+## 4. Data Dumping
 
 True or False. If set to true, it adds a column 'migration_snapshot_date' to data, which stores the datetime of migration. Without updation checks, it simply dumps the data into destination. If set to true, one can also partition data based on 'migration_snapshot_date'.

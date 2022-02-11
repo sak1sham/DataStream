@@ -37,8 +37,9 @@ def distribute_records(collection_encr, df, table_unique_id):
             collection_encr.insert_one(encr)
     return df_insert, df_update
 
+
 def filter_df(df, table_mapping={}):
-    logging.info("Total " + str(df.shape[0]) + " records present in table.")
+    logging.info(table_mapping['table_unique_id'] + ": Total " + str(df.shape[0]) + " records present.")
 
     collection_encr = get_data_from_encr_db()
     last_run_cron_job = table_mapping['last_run_cron_job']
@@ -58,6 +59,7 @@ def filter_df(df, table_mapping={}):
             while(len(table_mapping['partition_col']) > len(table_mapping['partition_col_format'])):
                 table_mapping['partition_col_format'] = table_mapping['partition_col_format'].append('str')
             # Now, there is a 1-1 mapping of partition_col and partition_col_format. Now, we need to partition.
+            
             for i in range(len(table_mapping['partition_col'])):
                 col = table_mapping['partition_col'][i].lower()
                 col_form = table_mapping['partition_col_format'][i]
@@ -66,9 +68,10 @@ def filter_df(df, table_mapping={}):
                 if(col == 'migration_snapshot_date'):
                     col_form = 'datetime'
                     table_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    df[parq_col + "_year"] = df[col].dt.year
-                    df[parq_col + "_month"] = df[col].dt.month
-                    df[parq_col + "_day"] = df[col].dt.day
+                    temp = df[col].apply(lambda x: convert_to_datetime(x))
+                    df[parq_col + "_year"] = temp.dt.year
+                    df[parq_col + "_month"] = temp.dt.month
+                    df[parq_col + "_day"] = temp.dt.day
                 elif(col_form == 'str'):
                     table_mapping['partition_for_parquet'].extend([parq_col])
                     df[parq_col] = df[col].astype(str)
@@ -77,17 +80,15 @@ def filter_df(df, table_mapping={}):
                     df[parq_col] = df[col].astype(int)
                 elif(col_form == 'datetime'):
                     table_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    df[parq_col + "_year"] = df[col].dt.year
-                    df[parq_col + "_month"] = df[col].dt.month
-                    df[parq_col + "_day"] = df[col].dt.day
-                else:
-                    table_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    temp = df[col].apply(lambda x: convert_to_datetime(x, col_form))
+                    temp = df[col].apply(lambda x: convert_to_datetime(x))
                     df[parq_col + "_year"] = temp.dt.year
                     df[parq_col + "_month"] = temp.dt.month
                     df[parq_col + "_day"] = temp.dt.day
+                else:
+                    logging.error(table_mapping['table_unique_id'] + ": Parition_col_format wrongly specified.")
+                    return None, None
         else:
-            logging.warning("Unable to find partition_col in " + table_mapping['table_unique_id'] + ". Continuing without partitioning")
+            logging.warning(table_mapping['table_unique_id'] + ": Unable to find partition_col. Continuing without partitioning")
 
     df_consider = df
     df_insert = pd.DataFrame({})
@@ -97,7 +98,7 @@ def filter_df(df, table_mapping={}):
         if('primary_keys' not in table_mapping):
             # If unique keys are not specified by user, consider entire rows are unique keys
             table_mapping['primary_keys'] = df.columns.values.tolist()
-            logging.warning("Unable to find primary_keys in " + str(table_mapping['table_unique_id']) + " mapping. Taking entire records into consideration.")
+            logging.warning(str(table_mapping['table_unique_id']) + ": Unable to find primary_keys in mapping. Taking entire records into consideration.")
         if(isinstance(table_mapping['primary_keys'], str)):
             table_mapping['primary_keys'] = [table_mapping['primary_keys']]
         table_mapping['primary_keys'] = [x.lower() for x in table_mapping['primary_keys']]
@@ -105,40 +106,20 @@ def filter_df(df, table_mapping={}):
 
     if('is_dump' not in table_mapping.keys() or not table_mapping['is_dump']):
         if('bookmark' in table_mapping.keys() and table_mapping['bookmark']):
-            # Use bookmark for comparison of updation time
-            if('bookmark_format' not in table_mapping.keys()):
-                df_consider = df[df[table_mapping['bookmark']] > last_run_cron_job]
-            else:
-                df_consider = df[df[table_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_format'])) > last_run_cron_job]
-            # Now, df_consider = insert_records + update_records
+            df_consider = df[df[table_mapping['bookmark']].apply(lambda x: convert_to_datetime(x)) > last_run_cron_job]
             if('bookmark_creation' in table_mapping.keys() and table_mapping['bookmark_creation']):
-                # Further used to divide into creation and updation subsets
-                if('bookmark_creation_format' not in table_mapping.keys()):
-                    df_insert = df_consider[df_consider[table_mapping['bookmark_creation']] > last_run_cron_job]
-                    df_update = df_consider[df_consider[table_mapping['bookmark_creation']] <= last_run_cron_job]
-                else:
-                    df_insert = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) > last_run_cron_job]
-                    df_update = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) <= last_run_cron_job]
+                df_insert = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x)) > last_run_cron_job]
+                df_update = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x)) <= last_run_cron_job]
             else:
-                # Need to check hashing, need to distribute manually
                 df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
         else:
-            # Bookmark of updation is not present
             if('bookmark_creation' in table_mapping.keys() and table_mapping['bookmark_creation']):
-                # First separate out creation subset, then use hashing to separate out updation from rest
-                if('bookmark_creation_format' not in table_mapping.keys()):
-                    df_insert = df[df[table_mapping['bookmark_creation']] > last_run_cron_job]
-                    df_consider = df[df[table_mapping['bookmark_creation']] <= last_run_cron_job]
-                    _, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
-                else:
-                    df_insert = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) > last_run_cron_job]
-                    df_consider = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, table_mapping['bookmark_creation_format'])) <= last_run_cron_job]
-                    _, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
+                df_insert = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x)) > last_run_cron_job]
+                df_consider = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x)) <= last_run_cron_job]
+                _, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
             else:
-                # Need to distribute every record manually
                 df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
     else:
-        # to_dump is set to True, just dump it !!
         df_insert = df_consider
         df_update = pd.DataFrame({})
 
@@ -155,7 +136,7 @@ def get_number_of_records(db, table_name, table):
             total_records = engine.execute("SELECT COUNT(*) from " + table_name).fetchall()[0][0]
             return total_records
         except:
-            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
+            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + ": Unable to fetch number of records.")
             return None
     else:
         try:
@@ -169,7 +150,7 @@ def get_number_of_records(db, table_name, table):
             total_records = cursor.fetchone()[0]
             return total_records
         except:
-            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + "Unable to fetch number of records.")
+            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + ": Unable to fetch number of records.")
             return None
 
 def get_data(db, table_name, batch_size=0, start=0, query=""):
@@ -182,7 +163,7 @@ def get_data(db, table_name, batch_size=0, start=0, query=""):
             df = pd.read_sql(sql_stmt, engine)
             return df
         except:
-            logging.error("Unable to connect sql:" + db['source']['db_name'] + ":" + table_name)
+            logging.error("sql: " + db['source']['db_name'] + ":" + table_name + ": Unable to connect.")
             return None
     else:
         try:
@@ -197,7 +178,7 @@ def get_data(db, table_name, batch_size=0, start=0, query=""):
             df = sqlio.read_sql_query(select_query, conn)
             return df
         except:
-            logging.error("Unable to connect sql:" + db['source']['db_name'] + ":" + table_name)
+            logging.error("sql: " + db['source']['db_name'] + ":" + table_name + ": Unable to connect.")
             return None
 
 def process_data(df, table):
@@ -212,7 +193,7 @@ def save_data(db, processed_table, partition):
         save_to_s3(processed_table, db_source=db['source'], db_destination=db['destination'], c_partition=partition)
 
 def process_sql_table(db, table):
-    logging.info('Migrating ' + table['table_unique_id'])
+    logging.info(table['table_unique_id'] + ': Migration started.')
     if('fetch_data_query' not in table.keys() or not table['fetch_data_query']):
         table['fetch_data_query'] = ""
     
@@ -231,4 +212,4 @@ def process_sql_table(db, table):
                 except:
                     logging.error(table['table_unique_id'] + ': Caught some exception while processing/saving chunk.')
             start += batch_size
-    logging.info("Migration for " + table['table_unique_id'] + " ended.")
+    logging.info(table['table_unique_id'] + ": Migration ended.\n")

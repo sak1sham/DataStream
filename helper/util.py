@@ -93,26 +93,20 @@ def convert_to_type(x, tp):
                 logging.warning("Unable to convert " + str(type(x)) + " to string. Returning empty string None")
                 return None
 
-def convert_to_datetime(x, format):
+def convert_to_datetime(x):
     if(x is None):
-        logging.warning("Unable to convert " + x + " to datetime. Specified format: \"" + format + "\". Returning None")
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
         x = x.replace(tzinfo=IST_tz)
         return x
     else:
         try:
-            x = datetime.datetime.strptime(x, format)
+            x = parser.parse(x)
             x = x.replace(tzinfo=IST_tz)
             return x
         except:
-            try:
-                x = parser.parse(x)
-                x = x.replace(tzinfo=IST_tz)
-                return x
-            except:
-                logging.warning("Unable to convert " + x + " to any datetime format. Specified format: \"" + format + "\". Returning None")
-                return pd.Timestamp(None)
+            logging.warning("Unable to convert " + x + " to any datetime format. Returning None")
+            return pd.Timestamp(None)
 
 def convert_json_to_string(x):
     '''

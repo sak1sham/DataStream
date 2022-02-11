@@ -60,5 +60,7 @@ if __name__ == "__main__":
                 curr_collection['collection_unique_id'] = db['source']['source_type'] + ":" + db['source']['db_name'] + ":" + curr_collection['collection_name']
                 if(len(custom_records_to_run) == 0 or curr_collection['collection_unique_id'] in custom_records_to_run):
                     scheduler.add_job(process_mongo_collection, 'cron', args=[db, curr_collection], id=curr_collection['collection_unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Calcutta'))
+        else:
+            logging.error("Un-identified Source Type found in migration-mapping.")
     logging.info('Added job(s) to the scheduler.')
     uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))

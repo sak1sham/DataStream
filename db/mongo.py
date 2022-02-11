@@ -34,6 +34,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
     collection_encr = get_data_from_encr_db()
 
     last_run_cron_job = collection_mapping['last_run_cron_job']
+    ## last_run_cron_job is in IST
 
     all_documents = mongodb_collection.find()[start:end]
 
@@ -41,7 +42,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
         insertion_time = IST_tz.normalize(document['_id'].generation_time.astimezone(IST_tz))
         if('is_dump' in collection_mapping.keys() and collection_mapping['is_dump']):
             document['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
-        if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition'] and 'partition_col' in collection_mapping.keys()):        
+        if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):        
             for i in range(len(collection_mapping['partition_col'])):
                 col = collection_mapping['partition_col'][i]
                 col_form = collection_mapping['partition_col_format'][i]
@@ -55,37 +56,24 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                 elif(col_form == 'int'):
                     document[parq_col] = int(document[col])
                 elif(col_form == 'datetime'):
+                    document[col] = convert_to_datetime(document[col])
                     document[parq_col + "_year"] = document[col].year
                     document[parq_col + "_month"] = document[col].month
                     document[parq_col + "_day"] = document[col].day
                 else:
-                    temp = convert_to_datetime(document[col], col_form)
-                    document[parq_col + "_year"] = temp.year
-                    document[parq_col + "_month"] = temp.month
-                    document[parq_col + "_day"] = temp.day
-
+                    logging.error(collection_mapping['collection_unique_id'] + ": Parition_col_format wrongly specified.")
+                    return None, None
+                
         updation = False
         if('is_dump' not in collection_mapping.keys() or not collection_mapping['is_dump']):
             if(insertion_time < last_run_cron_job):
-                # Document of this _id would already be present at destination, we need to check for updation
                 if('bookmark' in collection_mapping.keys() and collection_mapping['bookmark']):
-                    # Use bookmark for comparison of updation time
-                    if('bookmark_format' not in collection_mapping.keys()):
-                        if(document[collection_mapping['bookmark']].replace(tzinfo=IST_tz) <= last_run_cron_job):
-                            # No updation has been performed since last cron job
-                            continue
-                        else:
-                            # The document has changed. Need to update destination
-                            updation = True
+                    docu_bookmark_date = convert_to_datetime(document[collection_mapping['bookmark']])
+                    if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date <= last_run_cron_job):
+                        continue
                     else:
-                        if(convert_to_datetime(document[collection_mapping['bookmark']], collection_mapping['bookmark_format']) <= last_run_cron_job):
-                            # No updation has been performed since last cron job
-                            continue
-                        else:
-                            # The document has changed. Need to update destination
-                            updation = True
+                        updation = True
                 else:
-                    # No bookmark => We will store a hash to check for updation
                     document['_id'] = str(document['_id'])
                     encr = {
                         'collection': collection_unique_id,
@@ -95,17 +83,15 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                     previous_records = collection_encr.find_one({'collection': collection_unique_id, 'map_id': document['_id']})
                     if(previous_records):
                         if(previous_records['document_sha'] == encr['document_sha']):
-                            continue     # No updation in this record
+                            continue
                         else:
-                            updation = True     # This record has been updated
+                            updation = True
                             collection_encr.delete_one({'collection': collection_unique_id, 'map_id': document['_id']})
                             collection_encr.insert_one(encr)
                     else:
                         collection_encr.insert_one(encr)
             else:
-                ## Document has not been seen before
                 if(not collection_mapping['bookmark']):
-                    # We need to store hash if bookmark is not present
                     document['_id'] = str(document['_id'])
                     encr = {
                         'collection': collection_unique_id,
@@ -113,7 +99,6 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                         'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
                     }
                     collection_encr.insert_one(encr)
-                # If bookmark is present, and document has not been seen before, we will insert the document with updation = False
 
         for key, _ in document.items():
             if(key == '_id'):
@@ -130,7 +115,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                 try:
                     document[key] = str(document[key])
                 except:
-                    logging.error(collection_unique_id + ": unidentified datatype at id:" + str(document['_id']) +". Saving NoneType.")
+                    logging.warning(collection_unique_id + ": Unidentified datatype at document _id:" + str(document['_id']) +". Saving NoneType.")
                     document[key] = None
         if(not updation):
             docu_insert.append(document)
@@ -148,7 +133,7 @@ def get_data_from_source(db, collection_name):
         target_collection = database_[collection_name]
         return target_collection
     except:
-        logging.error("Unable to connect to mongo:" + db['source']['db_name'] + ":" + collection_name)
+        logging.error("mongo:" + db['source']['db_name'] + ":" + collection_name + ": Unable to connect.")
         return None
 
 def preprocessing(collection):
@@ -182,9 +167,8 @@ def preprocessing(collection):
                 col_form = collection['partition_col_format'][i]
                 parq_col = "parquet_format_" + col
                 if(col == 'migration_snapshot_date'):
-                    col_form ='datetime'
-                    collection['fields'][col] = 'datetime'
                     collection['partition_col_format'][i] = 'datetime'
+                    collection['fields'][col] = 'datetime'
                     collection['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                     collection['fields'][parq_col + "_year"] = 'int'
                     collection['fields'][parq_col + "_month"] = 'int'
@@ -205,12 +189,11 @@ def preprocessing(collection):
                     collection['fields'][parq_col + "_month"] = 'int'
                     collection['fields'][parq_col + "_day"] = 'int'
                 else:
-                    collection['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    collection['fields'][parq_col + "_year"] = 'int'
-                    collection['fields'][parq_col + "_month"] = 'int'
-                    collection['fields'][parq_col + "_day"] = 'int'
+                    logging.error(collection['collection_unique_id'] + ": Unrecognized partition_col_format " + str(col_form) + ". partition_col_format can be int, str or datetime")
+                    return None
+        return 1
     except:
-        logging.error(collection['collection_unique_id'] + ": caught some exception while preprocessing.")
+        logging.error(collection['collection_unique_id'] + ": Caught some exception while preprocessing.")
         return None
 
 def process_data_from_source(db_collection, collection, start, end):
@@ -229,17 +212,18 @@ def process_mongo_collection(db, collection):
     batch_size = 10000
     db_collection = get_data_from_source(db, collection['collection_name'])
     if(db_collection is not None):
-        logging.info(collection['collection_unique_id'] + ': data fetched')
-        preprocessing(collection)
-        logging.info(collection['collection_unique_id'] + ": Preprocessing done")
-        start = 0
-        while(start < db_collection.count_documents({})):    
-            #try:
-            processed_collection = process_data_from_source(db_collection=db_collection, collection=collection, start=start, end=min(start+batch_size, db_collection.count_documents({})))
-            save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
-            #except:
-            #    logging.error(collection['collection_unique_id'] + ": caught some error while migrating chunk.")
-            #    break
-            start += batch_size
+        logging.info(collection['collection_unique_id'] + ': Data fetched.')
+        result = preprocessing(collection)
+        if(result):
+            logging.info(collection['collection_unique_id'] + ": Preprocessing done")
+            start = 0
+            while(start < db_collection.count_documents({})):    
+                try:
+                    processed_collection = process_data_from_source(db_collection=db_collection, collection=collection, start=start, end=min(start+batch_size, db_collection.count_documents({})))
+                    save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
+                except:
+                    logging.error(collection['collection_unique_id'] + ": Caught some error while migrating chunk.")
+                    break
+                start += batch_size
 
     logging.info(collection['collection_unique_id'] + ": Migration ended.\n")

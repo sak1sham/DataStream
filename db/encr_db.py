@@ -21,6 +21,7 @@ def get_data_from_encr_db():
 def get_last_run_cron_job(db, id):
     prev = db.find_one({'last_run_cron_job_for_id': id})
     if(prev):
+        ## MongoDB stores and returns all datatimes in UTC by default. We need to adjust them.
         timing = prev['timing']
         timing = timing.replace(tzinfo=IST_tz)
         db.delete_one({'last_run_cron_job_for_id': id})
@@ -28,6 +29,6 @@ def get_last_run_cron_job(db, id):
         return timing
     else:
         timing = IST_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
-        logging.info("Never seen " + id + " before. Taking previous run for cron job as August 20, 1602.")
+        logging.info("Never seen " + id + " before. Taking previous run for cron job as on August 20, 1602, IST.")
         db.insert_one({'last_run_cron_job_for_id': id, 'timing': datetime.datetime.utcnow().replace(tzinfo = IST_tz)})
         return timing
