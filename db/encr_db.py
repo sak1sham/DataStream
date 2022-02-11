@@ -25,13 +25,12 @@ def get_last_run_cron_job(id):
         ## MongoDB stores and returns all datatimes in UTC by default. We need to adjust them.
         timing = prev['timing']
         timing = timing.replace(tzinfo=IST_tz)
-        logging.info("Glad to see this database again!")
-        print(timing)
+        logging.info(id + "Glad to see this database again!")
         db.delete_one({'last_run_cron_job_for_id': id})
         db.insert_one({'last_run_cron_job_for_id': id, 'timing': datetime.datetime.utcnow().replace(tzinfo = IST_tz)})
         return timing
     else:
         timing = IST_tz.localize(datetime.datetime(1602, 8, 20, 0, 0, 0, 0))
-        logging.info("Never seen " + id + " before. Taking previous run for cron job as on August 20, 1602, IST.")
+        logging.info(id + ": Never seen it before. Taking previous run for cron job as on August 20, 1602, IST.")
         db.insert_one({'last_run_cron_job_for_id': id, 'timing': datetime.datetime.utcnow().replace(tzinfo = IST_tz)})
         return timing

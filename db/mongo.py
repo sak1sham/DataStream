@@ -129,6 +129,8 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
             ret_df_insert[col] = ret_df_insert[col].apply(lambda x: convert_to_type(x, "bool")).fillna(False).astype(np.bool_)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'complex'):
             ret_df_insert[col] = ret_df_insert[col].apply(lambda x: convert_to_type(x, "complex")).fillna(0).astype(np.csingle)
+        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'datetime'):
+            ret_df_insert[col] =  pd.to_datetime(ret_df_insert[col].apply(lambda date: np.nan if date is np.nan else parse(date)))
 
     for col in ret_df_update.columns.values.tolist():
         if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'int'):
@@ -139,6 +141,8 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
             ret_df_update[col] = ret_df_update[col].apply(lambda x: convert_to_type(x, "bool")).fillna(False).astype(np.bool_)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'complex'):
             ret_df_update[col] = ret_df_update[col].apply(lambda x: convert_to_type(x, "complex")).fillna(0).astype(np.csingle)
+        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'datetime'):
+            ret_df_update[col] = pd.to_datetime(ret_df_update[col].apply(lambda date: np.nan if date is np.nan else parse(date)))
 
     return ret_df_insert, ret_df_update
 
@@ -233,12 +237,12 @@ def process_mongo_collection(db, collection):
             logging.info(collection['collection_unique_id'] + ": Preprocessing done")
             start = 0
             while(start < db_collection.count_documents({})):    
-                #try:
-                processed_collection = process_data_from_source(db_collection=db_collection, collection=collection, start=start, end=min(start+batch_size, db_collection.count_documents({})))
-                #save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
-                #except:
-                #    logging.error(collection['collection_unique_id'] + ": Caught some error while migrating chunk.")
-                #    break
+                try:
+                    processed_collection = process_data_from_source(db_collection=db_collection, collection=collection, start=start, end=min(start+batch_size, db_collection.count_documents({})))
+                    save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
+                except:
+                    logging.error(collection['collection_unique_id'] + ": Caught some error while migrating chunk.")
+                    break
                 start += batch_size
 
     logging.info(collection['collection_unique_id'] + ": Migration ended.\n")
