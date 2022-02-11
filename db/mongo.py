@@ -116,7 +116,10 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
             docu_insert.append(document)
         else:
             docu_update.append(document)
-
+    
+    ret_df_insert = pd.DataFrame(docu_insert)
+    ret_df_update = pd.DataFrame(docu_update)
+    
     for col in ret_df_insert.columns.values.tolist():
         if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
             ret_df_insert[col] = ret_df_insert[col].astype(float)
@@ -124,7 +127,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
             ret_df_insert[col] = ret_df_insert[col].astype(bool)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'complex'):
             ret_df_insert[col] = ret_df_insert[col].astype(complex)
-
+    
     for col in ret_df_update.columns.values.tolist():
         if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
             ret_df_update[col] = ret_df_update[col].astype(float)
@@ -133,8 +136,6 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'complex'):
             ret_df_update[col] = ret_df_update[col].astype(complex)
 
-    ret_df_insert = pd.DataFrame(docu_insert)
-    ret_df_update = pd.DataFrame(docu_update)
     return ret_df_insert, ret_df_update
 
 def get_data_from_source(db, collection_name):

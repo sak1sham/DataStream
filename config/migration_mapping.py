@@ -186,16 +186,7 @@ mapping = [
             },
             {
                 'collection_name': 'support_tickets',
-                'fields': {
-                    'spam': 'bool',
-                    'priority': 'float',
-                    'source': 'float',
-                    'status': 'float',
-                    'is_escalated': 'bool',
-                    'nr_escalated': 'bool',
-                    'fr_escalated': 'bool',
-                    '__v': 'float',
-                },
+                'fields': {},
                 'bookmark': 'updated_at',
                 'archive': False,
                 'cron': '* * * * * 11 45 0',
@@ -203,13 +194,10 @@ mapping = [
             },
             {
                 'collection_name': 'support_tickets_rating',
-                'fields': {
-                    'rating': 'float',
-                    '__v': 'float',
-                },
+                'fields': {},
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 12 49 0',
+                'cron': '* * * * * 12 56 0',
                 'to_partition': True,
             },
             {
