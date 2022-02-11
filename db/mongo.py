@@ -49,7 +49,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                 elif(col_form == 'str'):
                     document[parq_col] = str(document[col])
                 elif(col_form == 'int'):
-                    document[parq_col] = int(document[col])
+                    document[parq_col] = float(document[col])
                 elif(col_form == 'datetime'):
                     document[col] = convert_to_datetime(document[col])
                     document[parq_col + "_year"] = document[col].year
