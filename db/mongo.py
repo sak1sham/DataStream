@@ -48,7 +48,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                     document[parq_col + "_day"] = insertion_time.day
                 elif(col_form == 'str'):
                     document[parq_col] = str(document[col])
-                elif(col_form == 'int'):
+                elif(col_form == 'float'):
                     document[parq_col] = float(document[col])
                 elif(col_form == 'datetime'):
                     document[col] = convert_to_datetime(document[col])
@@ -165,26 +165,26 @@ def preprocessing(collection):
                     collection['partition_col_format'][i] = 'datetime'
                     collection['fields'][col] = 'datetime'
                     collection['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    collection['fields'][parq_col + "_year"] = 'int'
-                    collection['fields'][parq_col + "_month"] = 'int'
-                    collection['fields'][parq_col + "_day"] = 'int'
+                    collection['fields'][parq_col + "_year"] = 'float'
+                    collection['fields'][parq_col + "_month"] = 'float'
+                    collection['fields'][parq_col + "_day"] = 'float'
                 elif(col == '_id'):
                     collection['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    collection['fields'][parq_col + "_year"] = 'int'
-                    collection['fields'][parq_col + "_month"] = 'int'
-                    collection['fields'][parq_col + "_day"] = 'int'
+                    collection['fields'][parq_col + "_year"] = 'float'
+                    collection['fields'][parq_col + "_month"] = 'float'
+                    collection['fields'][parq_col + "_day"] = 'float'
                 elif(col_form == 'str'):
                     collection['partition_for_parquet'].extend([parq_col])
-                elif(col_form == 'int'):
+                elif(col_form == 'float'):
                     collection['partition_for_parquet'].extend([parq_col])
-                    collection['fields'][parq_col] = 'int'
+                    collection['fields'][parq_col] = 'float'
                 elif(col_form == 'datetime'):
                     collection['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    collection['fields'][parq_col + "_year"] = 'int'
-                    collection['fields'][parq_col + "_month"] = 'int'
-                    collection['fields'][parq_col + "_day"] = 'int'
+                    collection['fields'][parq_col + "_year"] = 'float'
+                    collection['fields'][parq_col + "_month"] = 'float'
+                    collection['fields'][parq_col + "_day"] = 'float'
                 else:
-                    logging.error(collection['collection_unique_id'] + ": Unrecognized partition_col_format " + str(col_form) + ". partition_col_format can be int, str or datetime")
+                    logging.error(collection['collection_unique_id'] + ": Unrecognized partition_col_format " + str(col_form) + ". partition_col_format can be float, str or datetime")
                     return None
         return 1
     except:

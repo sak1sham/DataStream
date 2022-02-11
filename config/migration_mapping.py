@@ -156,7 +156,7 @@ mapping = [
             {
                 'collection_name': 'support_items',
                 'fields': {
-                    'priority': 'int',
+                    'priority': 'float',
                 },
                 'bookmark': False,
                 'archive': False,
@@ -176,8 +176,8 @@ mapping = [
                 'fields': {
                     'incoming': 'bool',
                     'private': 'bool',
-                    'freshdesk_user_id': 'int',
-                    '__v': 'int',
+                    'freshdesk_user_id': 'float',
+                    '__v': 'float',
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
@@ -188,13 +188,13 @@ mapping = [
                 'collection_name': 'support_tickets',
                 'fields': {
                     'spam': 'bool',
-                    'priority': 'int',
-                    'source': 'int',
-                    'status': 'int',
+                    'priority': 'float',
+                    'source': 'float',
+                    'status': 'float',
                     'is_escalated': 'bool',
                     'nr_escalated': 'bool',
                     'fr_escalated': 'bool',
-                    '__v': 'int',
+                    '__v': 'float',
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
@@ -204,8 +204,8 @@ mapping = [
             {
                 'collection_name': 'support_tickets_rating',
                 'fields': {
-                    'rating': 'int',
-                    '__v': 'int',
+                    'rating': 'float',
+                    '__v': 'float',
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
