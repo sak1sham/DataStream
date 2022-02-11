@@ -209,7 +209,7 @@ mapping = [
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 12 18 0',
+                'cron': '* * * * * 12 20 0',
                 'to_partition': True,
             },
             {
