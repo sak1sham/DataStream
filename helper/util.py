@@ -68,8 +68,7 @@ def convert_to_type(x, tp):
             x = x.lower() in ['true', '1', 't', 'y', 'yes']
             return x
         else:
-            logging.warning("Unable to convert " + str(type(x)) + " to boolean. Returning None")
-            return None
+            return False
     elif(tp == 'int'):
         try:
             return float(x)
@@ -86,8 +85,8 @@ def convert_to_type(x, tp):
         try:
             return complex(x)
         except:
-            logging.warning("Unable to convert " + str(type(x)) + " to complex. Returning None")
-            return None
+            logging.warning("Unable to convert " + str(type(x)) + " to complex. Returning 0")
+            return 0
     elif(tp == "datetime"):
         if(isinstance(x, datetime.datetime)):
             return x.replace(tzinfo=IST_tz)
@@ -96,7 +95,7 @@ def convert_to_type(x, tp):
     else:
         # Convert to string
         if(isinstance(x, datetime.datetime)):
-            return x.strftime("%m/%d/%Y, %H:%M:%S")
+            return x.strftime("%Y-%m-%dT%H:%M:%S")
         elif(isinstance(x, dict)):
             return convert_json_to_string(x)
         elif(isinstance(x, list)):

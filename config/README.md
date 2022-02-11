@@ -94,8 +94,9 @@ Only specify if the field belongs to one of the following category:
 1. 'bool'
 2. 'float'
 3. 'complex'
+4. 'int'
 
-Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string. By default, datetime is converted to strings in MongoDB. If the source data is consistent, one can also provide a 'datetime' category to keep fields in datetime format. However, it's not recommended, and might result in errors.
+Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string. By default, datetime is converted to strings in MongoDB processing.
 
 ## 3. Partition Columns formats
 

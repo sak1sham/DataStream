@@ -107,7 +107,7 @@ mapping = [
         'tables':[
             {
                 'table_name': 'localities_live',
-                'cron': '* * * * * 11 45 0',
+                'cron': '* * * * * 14 37 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -115,7 +115,7 @@ mapping = [
             },
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * 11 45 0',
+                'cron': '* * * * * 14 37 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -140,7 +140,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 11 45 0',
+                'cron': '* * * * * 14 37 0',
                 'to_partition': True
             },
             {
@@ -148,7 +148,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 11 45 0',
+                'cron': '* * * * * 14 37 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -156,11 +156,11 @@ mapping = [
             {
                 'collection_name': 'support_items',
                 'fields': {
-                    'priority': 'float',
+                    'priority': 'int',
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 11 45 0',
+                'cron': '* * * * * 14 37 0',
                 'to_partition': True
             },
             {
@@ -168,7 +168,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 11 45 0',
+                'cron': '* * * * * 14 37 0',
                 'to_partition': True
             },
             {
@@ -181,23 +181,35 @@ mapping = [
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 11 45 0',
+                'cron': '* * * * * 14 37 0',
                 'to_partition': True,
             },
             {
                 'collection_name': 'support_tickets',
-                'fields': {},
+                'fields': {
+                    'spam': 'bool',
+                    'priority': 'float',
+                    'source': 'float',
+                    'status': 'float',
+                    'is_escalated': 'bool',
+                    'nr_escalated': 'bool',
+                    'fr_escalated': 'bool',
+                    '__v': 'float',
+                },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 11 45 0',
+                'cron': '* * * * * 14 37 0',
                 'to_partition': True,
             },
             {
                 'collection_name': 'support_tickets_rating',
-                'fields': {},
+                'fields': {
+                    'rating': 'int',
+                    '__v': 'int',
+                },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 12 56 0',
+                'cron': '* * * * * 14 37 0',
                 'to_partition': True,
             },
             {
@@ -205,7 +217,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 11 45 0',
+                'cron': '* * * * * 14 37 0',
                 'to_partition': True
             },
         ]

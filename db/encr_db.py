@@ -18,12 +18,15 @@ def get_data_from_encr_db():
         logging.info("Unable to connect to encryption store database.")
         return None
 
-def get_last_run_cron_job(db, id):
+def get_last_run_cron_job(id):
+    db = get_data_from_encr_db()
     prev = db.find_one({'last_run_cron_job_for_id': id})
     if(prev):
         ## MongoDB stores and returns all datatimes in UTC by default. We need to adjust them.
         timing = prev['timing']
         timing = timing.replace(tzinfo=IST_tz)
+        logging.info("Glad to see this database again!")
+        print(timing)
         db.delete_one({'last_run_cron_job_for_id': id})
         db.insert_one({'last_run_cron_job_for_id': id, 'timing': datetime.datetime.utcnow().replace(tzinfo = IST_tz)})
         return timing

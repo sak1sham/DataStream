@@ -12,6 +12,8 @@ import json
 import hashlib
 import pytz
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
+import numpy as np
+from dateutil.parser import parse
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -98,8 +100,6 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
         for key, _ in document.items():
             if(key == '_id'):
                 document[key] = str(document[key])
-            elif(key in collection_mapping['fields'].keys()):
-                document[key] = convert_to_type(document[key], collection_mapping['fields'][key])
             elif(isinstance(document[key], list)):
                 document[key] = convert_list_to_string(document[key])
             elif(isinstance(document[key], dict)):
@@ -116,25 +116,29 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
             docu_insert.append(document)
         else:
             docu_update.append(document)
-    
+
     ret_df_insert = pd.DataFrame(docu_insert)
     ret_df_update = pd.DataFrame(docu_update)
     
     for col in ret_df_insert.columns.values.tolist():
-        if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
-            ret_df_insert[col] = ret_df_insert[col].astype(float)
+        if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'int'):
+            ret_df_insert[col] = pd.to_numeric(ret_df_insert[col], errors='coerce').fillna(0).astype(np.int64)
+        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
+            ret_df_insert[col] = pd.to_numeric(ret_df_insert[col], errors='coerce').astype(np.float64)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'bool'):
-            ret_df_insert[col] = ret_df_insert[col].astype(bool)
+            ret_df_insert[col] = ret_df_insert[col].apply(lambda x: convert_to_type(x, "bool")).fillna(False).astype(np.bool_)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'complex'):
-            ret_df_insert[col] = ret_df_insert[col].astype(complex)
-    
+            ret_df_insert[col] = ret_df_insert[col].apply(lambda x: convert_to_type(x, "complex")).fillna(0).astype(np.csingle)
+
     for col in ret_df_update.columns.values.tolist():
-        if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
-            ret_df_update[col] = ret_df_update[col].astype(float)
+        if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'int'):
+            ret_df_update[col] = pd.to_numeric(ret_df_update[col], errors='coerce').fillna(0).astype(np.int64)
+        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
+            ret_df_update[col] = pd.to_numeric(ret_df_update[col], errors='coerce').astype(np.float64)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'bool'):
-            ret_df_update[col] = ret_df_update[col].astype(bool)
+            ret_df_update[col] = ret_df_update[col].apply(lambda x: convert_to_type(x, "bool")).fillna(False).astype(np.bool_)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'complex'):
-            ret_df_update[col] = ret_df_update[col].astype(complex)
+            ret_df_update[col] = ret_df_update[col].apply(lambda x: convert_to_type(x, "complex")).fillna(0).astype(np.csingle)
 
     return ret_df_insert, ret_df_update
 
@@ -153,8 +157,7 @@ def preprocessing(collection):
         if('fields' not in collection.keys()):
             collection['fields'] = {}
         
-        collection_encr = get_data_from_encr_db()
-        collection['last_run_cron_job'] = get_last_run_cron_job(collection_encr, collection['collection_unique_id'])
+        collection['last_run_cron_job'] = get_last_run_cron_job(collection['collection_unique_id'])
 
         if('to_partition' in collection.keys() and collection['to_partition']):
             # Assure that partition_col and parition_col_format are lists of same length. If not present, use "_id"
@@ -232,7 +235,7 @@ def process_mongo_collection(db, collection):
             while(start < db_collection.count_documents({})):    
                 #try:
                 processed_collection = process_data_from_source(db_collection=db_collection, collection=collection, start=start, end=min(start+batch_size, db_collection.count_documents({})))
-                save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
+                #save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
                 #except:
                 #    logging.error(collection['collection_unique_id'] + ": Caught some error while migrating chunk.")
                 #    break
