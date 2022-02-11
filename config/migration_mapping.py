@@ -178,13 +178,11 @@ mapping = [
                     'private': 'bool',
                     'freshdesk_user_id': 'int',
                     '__v': 'int',
-                    'created_at': 'datetime',
-                    'updated_at': 'datetime'
                 },
                 'bookmark': 'updated_at',
                 'bookmark_format': '%Y-%m-%dT%H:%M:%S.%fZ',
                 'archive': False,
-                'cron': '* * * * * 10 22 0',
+                'cron': '* * * * * 11 10 0',
                 'to_partition': True,
             },
             {
@@ -198,11 +196,6 @@ mapping = [
                     'nr_escalated': 'bool',
                     'fr_escalated': 'bool',
                     '__v': 'int',
-                    'created_at': 'datetime',
-                    'updated_at': 'datetime',
-                    'due_by': 'datetime',
-                    'fr_due_by': 'datetime',
-                    'nr_due_by': 'datetime'
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
@@ -214,8 +207,6 @@ mapping = [
                 'fields': {
                     'rating': 'int',
                     '__v': 'int',
-                    'createdAt': 'datetime',
-                    'updatedAt': 'datetime'
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,

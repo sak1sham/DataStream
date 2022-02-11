@@ -24,17 +24,11 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
             df_insert: New Records to insert at destination (pandas.DataFrame)
             df_update: Updations to be done in existing records at destination (pandas.DataFrame)
     '''
-    collection_unique_id=collection_mapping['collection_unique_id']
-    collection_fields=collection_mapping['fields']
     docu_insert = []
     docu_update = []
 
-    ## Fetching encryption database
-    ## Encryption database is used to store hashes of records in case bookmark is absent
     collection_encr = get_data_from_encr_db()
-
     last_run_cron_job = collection_mapping['last_run_cron_job']
-    ## last_run_cron_job is in IST
 
     all_documents = mongodb_collection.find()[start:end]
 
@@ -76,17 +70,17 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                 else:
                     document['_id'] = str(document['_id'])
                     encr = {
-                        'collection': collection_unique_id,
+                        'collection': collection_mapping['collection_unique_id'],
                         'map_id': document['_id'],
                         'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
                     }
-                    previous_records = collection_encr.find_one({'collection': collection_unique_id, 'map_id': document['_id']})
+                    previous_records = collection_encr.find_one({'collection': collection_mapping['collection_unique_id'], 'map_id': document['_id']})
                     if(previous_records):
                         if(previous_records['document_sha'] == encr['document_sha']):
                             continue
                         else:
                             updation = True
-                            collection_encr.delete_one({'collection': collection_unique_id, 'map_id': document['_id']})
+                            collection_encr.delete_one({'collection': collection_mapping['collection_unique_id'], 'map_id': document['_id']})
                             collection_encr.insert_one(encr)
                     else:
                         collection_encr.insert_one(encr)
@@ -94,7 +88,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                 if(not collection_mapping['bookmark']):
                     document['_id'] = str(document['_id'])
                     encr = {
-                        'collection': collection_unique_id,
+                        'collection': collection_mapping['collection_unique_id'],
                         'map_id': document['_id'],
                         'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
                     }
@@ -103,8 +97,8 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
         for key, _ in document.items():
             if(key == '_id'):
                 document[key] = str(document[key])
-            elif(key in collection_fields.keys()):
-                document[key] = convert_to_type(document[key], collection_fields[key])
+            elif(key in collection_mapping['fields'].keys()):
+                document[key] = convert_to_type(document[key], collection_mapping['fields'][key])
             elif(isinstance(document[key], list)):
                 document[key] = convert_list_to_string(document[key])
             elif(isinstance(document[key], dict)):
@@ -115,7 +109,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                 try:
                     document[key] = str(document[key])
                 except:
-                    logging.warning(collection_unique_id + ": Unidentified datatype at document _id:" + str(document['_id']) +". Saving NoneType.")
+                    logging.warning(collection_mapping['collection_unique_id'] + ": Unidentified datatype at document _id:" + str(document['_id']) +". Saving NoneType.")
                     document[key] = None
         if(not updation):
             docu_insert.append(document)
