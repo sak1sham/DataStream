@@ -107,7 +107,7 @@ mapping = [
         'tables':[
             {
                 'table_name': 'localities_live',
-                'cron': '* * * * * 10 0 0',
+                'cron': '* * * * * 10 22 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -115,7 +115,7 @@ mapping = [
             },
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * 10 0 0',
+                'cron': '* * * * * 10 22 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -132,7 +132,7 @@ mapping = [
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'data-migration-server'
         },
         'collections': [
             {
@@ -140,7 +140,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 10 0 0',
+                'cron': '* * * * * 10 22 0',
                 'to_partition': True
             },
             {
@@ -148,7 +148,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 10 0 0',
+                'cron': '* * * * * 10 22 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -160,7 +160,7 @@ mapping = [
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 10 0 0',
+                'cron': '* * * * * 10 22 0',
                 'to_partition': True
             },
             {
@@ -168,7 +168,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 10 0 0',
+                'cron': '* * * * * 10 22 0',
                 'to_partition': True
             },
             {
@@ -177,12 +177,14 @@ mapping = [
                     'incoming': 'bool',
                     'private': 'bool',
                     'freshdesk_user_id': 'int',
-                    '__v': 'int'
+                    '__v': 'int',
+                    'created_at': 'datetime',
+                    'updated_at': 'datetime'
                 },
                 'bookmark': 'updated_at',
                 'bookmark_format': '%Y-%m-%dT%H:%M:%S.%fZ',
                 'archive': False,
-                'cron': '* * * * * 10 0 0',
+                'cron': '* * * * * 10 22 0',
                 'to_partition': True,
             },
             {
@@ -195,22 +197,29 @@ mapping = [
                     'is_escalated': 'bool',
                     'nr_escalated': 'bool',
                     'fr_escalated': 'bool',
-                    '__v': 'int'
+                    '__v': 'int',
+                    'created_at': 'datetime',
+                    'updated_at': 'datetime',
+                    'due_by': 'datetime',
+                    'fr_due_by': 'datetime',
+                    'nr_due_by': 'datetime'
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 10 0 0',
+                'cron': '* * * * * 10 22 0',
                 'to_partition': True,
             },
             {
                 'collection_name': 'support_tickets_rating',
                 'fields': {
                     'rating': 'int',
-                    '__v': 'int'
+                    '__v': 'int',
+                    'createdAt': 'datetime',
+                    'updatedAt': 'datetime'
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 10 0 0',
+                'cron': '* * * * * 10 22 0',
                 'to_partition': True,
             },
             {
@@ -218,7 +227,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 10 0 0',
+                'cron': '* * * * * 10 22 0',
                 'to_partition': True
             },
         ]

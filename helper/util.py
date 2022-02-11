@@ -6,6 +6,7 @@ import pandas as pd
 
 import pytz
 IST_tz = pytz.timezone('Asia/Kolkata')
+
 from dateutil import parser
 
 def convert_list_to_string(l):
@@ -31,6 +32,21 @@ def convert_list_to_string(l):
         val = val + item
     val = val + ']'
     return val
+
+def convert_to_datetime(x):
+    if(x is None):
+        return pd.Timestamp(None)
+    elif(isinstance(x, datetime.datetime)):
+        x = x.replace(tzinfo=IST_tz)
+        return x
+    else:
+        try:
+            x = parser.parse(x)
+            x = x.replace(tzinfo=IST_tz)
+            return x
+        except:
+            logging.warning("Unable to convert " + x + " to any datetime format. Returning None")
+            return pd.Timestamp(None)
 
 def convert_to_type(x, tp):
     '''
@@ -76,8 +92,7 @@ def convert_to_type(x, tp):
         if(isinstance(x, datetime.datetime)):
             return x.replace(tzinfo=IST_tz)
         else:
-            logging.warning("Unable to convert " + str(type(x)) + " to datetime. Returning None")
-            return pd.Timestamp(None)
+            return convert_to_datetime(x)
     else:
         # Convert to string
         if(isinstance(x, datetime.datetime)):
@@ -92,21 +107,6 @@ def convert_to_type(x, tp):
             except:
                 logging.warning("Unable to convert " + str(type(x)) + " to string. Returning empty string None")
                 return None
-
-def convert_to_datetime(x):
-    if(x is None):
-        return pd.Timestamp(None)
-    elif(isinstance(x, datetime.datetime)):
-        x = x.replace(tzinfo=IST_tz)
-        return x
-    else:
-        try:
-            x = parser.parse(x)
-            x = x.replace(tzinfo=IST_tz)
-            return x
-        except:
-            logging.warning("Unable to convert " + x + " to any datetime format. Returning None")
-            return pd.Timestamp(None)
 
 def convert_json_to_string(x):
     '''
