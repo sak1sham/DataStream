@@ -160,7 +160,7 @@ mapping = [
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 51 0',
+                'cron': '* * * * * 15 8 0',
                 'to_partition': True
             },
             {

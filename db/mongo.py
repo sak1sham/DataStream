@@ -50,6 +50,8 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
                     document[parq_col + "_day"] = insertion_time.day
                 elif(col_form == 'str'):
                     document[parq_col] = str(document[col])
+                elif(col_form == 'int'):
+                    document[parq_col] = int(document[col])
                 elif(col_form == 'float'):
                     document[parq_col] = float(document[col])
                 elif(col_form == 'datetime'):
@@ -122,7 +124,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
     
     for col in ret_df_insert.columns.values.tolist():
         if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'int'):
-            ret_df_insert[col] = pd.to_numeric(ret_df_insert[col], errors='coerce').fillna(0).astype(np.int64)
+            ret_df_insert[col] = pd.to_numeric(ret_df_insert[col], errors='coerce').astype(np.float64)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
             ret_df_insert[col] = pd.to_numeric(ret_df_insert[col], errors='coerce').astype(np.float64)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'bool'):
@@ -134,7 +136,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
 
     for col in ret_df_update.columns.values.tolist():
         if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'int'):
-            ret_df_update[col] = pd.to_numeric(ret_df_update[col], errors='coerce').fillna(0).astype(np.int64)
+            ret_df_update[col] = pd.to_numeric(ret_df_update[col], errors='coerce').astype(np.float64)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
             ret_df_update[col] = pd.to_numeric(ret_df_update[col], errors='coerce').astype(np.float64)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'bool'):
