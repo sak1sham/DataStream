@@ -116,6 +116,7 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
             docu_insert.append(document)
         else:
             docu_update.append(document)
+
     for col in ret_df_insert.columns.values.tolist():
         if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
             ret_df_insert[col] = ret_df_insert[col].astype(float)
@@ -123,8 +124,6 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
             ret_df_insert[col] = ret_df_insert[col].astype(bool)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'complex'):
             ret_df_insert[col] = ret_df_insert[col].astype(complex)
-        else:
-            ret_df_insert[col] = ret_df_insert[col].astype(str)
 
     for col in ret_df_update.columns.values.tolist():
         if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
@@ -133,8 +132,6 @@ def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0
             ret_df_update[col] = ret_df_update[col].astype(bool)
         elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'complex'):
             ret_df_update[col] = ret_df_update[col].astype(complex)
-        else:
-            ret_df_update[col] = ret_df_update[col].astype(str)
 
     ret_df_insert = pd.DataFrame(docu_insert)
     ret_df_update = pd.DataFrame(docu_update)
@@ -232,12 +229,12 @@ def process_mongo_collection(db, collection):
             logging.info(collection['collection_unique_id'] + ": Preprocessing done")
             start = 0
             while(start < db_collection.count_documents({})):    
-                try:
-                    processed_collection = process_data_from_source(db_collection=db_collection, collection=collection, start=start, end=min(start+batch_size, db_collection.count_documents({})))
-                    save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
-                except:
-                    logging.error(collection['collection_unique_id'] + ": Caught some error while migrating chunk.")
-                    break
+                #try:
+                processed_collection = process_data_from_source(db_collection=db_collection, collection=collection, start=start, end=min(start+batch_size, db_collection.count_documents({})))
+                save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
+                #except:
+                #    logging.error(collection['collection_unique_id'] + ": Caught some error while migrating chunk.")
+                #    break
                 start += batch_size
 
     logging.info(collection['collection_unique_id'] + ": Migration ended.\n")
