@@ -127,7 +127,7 @@ def filter_df(df, table_mapping={}):
 
 def get_number_of_records(db, table_name, table):
     encr_db = get_data_from_encr_db()
-    table['last_run_cron_job'] = get_last_run_cron_job(encr_db, table['table_unique_id'])
+    table['last_run_cron_job'] = get_last_run_cron_job(table['table_unique_id'])
     if('fetch_data_query' in table.keys() and table['fetch_data_query'] and len(table['fetch_data_query']) > 0):
         return 1
     if('username' not in db['source'].keys()):
