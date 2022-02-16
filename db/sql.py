@@ -229,7 +229,7 @@ class SQLMigrate:
         self.inform("Migration Complete.")
 
 
-def process_sql_collection(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> None:
+def process_sql_table(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> None:
     obj = SQLMigrate(db, table)
     try:
         obj.process()
