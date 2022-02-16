@@ -1,250 +1,231 @@
+from re import S
 from pymongo import MongoClient
-from helper.util import convert_list_to_string, convert_to_type, convert_to_datetime, convert_json_to_string
+from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema
 
 import logging
 logging.getLogger().setLevel(logging.INFO)
+import traceback
 
 import certifi
-from dst.s3 import save_to_s3
+from dst.s3 import s3Saver
 import pandas as pd
 import datetime
 import json
 import hashlib
 import pytz
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
-import numpy as np
-from dateutil.parser import parse
+from typing import Dict, Any
 
-IST_tz = pytz.timezone('Asia/Kolkata')
+class ConnectionError(Exception):
+    pass
 
-def dataframe_from_collection(mongodb_collection, collection_mapping={}, start=0, end=0):
-    '''
-        Converts the unstructed database documents to structured pandas dataframe
-        INPUT:
-            mongodb_collection: Pymongo collection
-            collection_mapping: Full collection mapping as provided in migration_mapping.py
-        OUTPUT:
-            df_insert: New Records to insert at destination (pandas.DataFrame)
-            df_update: Updations to be done in existing records at destination (pandas.DataFrame)
-    '''
-    docu_insert = []
-    docu_update = []
+class UnrecognizedFormat(Exception):
+    pass
 
-    collection_encr = get_data_from_encr_db()
-    last_run_cron_job = collection_mapping['last_run_cron_job']
+class DestinationNotFound(Exception):
+    pass
 
-    all_documents = mongodb_collection.find()[start:end]
+class MongoMigrate:
+    def __init__(self, db: Dict[str, Any], collection: Dict[str, Any], batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
+        self.db = db
+        self.collection = collection
+        self.batch_size = batch_size
+        self.tz_info = pytz.timezone(tz_str)
+    
+    def inform(self, message: str) -> None:
+        logging.info(self.collection['collection_unique_id'] + ": " + message)
+    
+    def warn(self, message: str) -> None:
+        logging.warning(self.collection['collection_unique_id'] + ": " + message)
 
-    for document in all_documents:
-        insertion_time = IST_tz.normalize(document['_id'].generation_time.astimezone(IST_tz))
-        if('is_dump' in collection_mapping.keys() and collection_mapping['is_dump']):
-            document['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
-        if('to_partition' in collection_mapping.keys() and collection_mapping['to_partition']):        
-            for i in range(len(collection_mapping['partition_col'])):
-                col = collection_mapping['partition_col'][i]
-                col_form = collection_mapping['partition_col_format'][i]
+    def get_data(self) -> None:
+        try:
+            client = MongoClient(self.db['source']['url'], tlsCAFile=certifi.where())
+            database_ = client[self.db['source']['db_name']]
+            self.db_collection = database_[self.collection['collection_name']]
+            self.inform("Data fetched.")
+        except:
+            self.db_collection = None
+            raise ConnectionError("Unable to connect to source.")
+
+    def preprocess(self) -> None:
+        if('fields' not in self.collection.keys()):
+            self.collection['fields'] = {}
+        
+        self.last_run_cron_job = utc_to_local(get_last_run_cron_job(self.collection['collection_unique_id']), self.tz_info)
+        self.partition_for_parquet = []
+
+        if('to_partition' in self.collection.keys() and self.collection['to_partition']):
+            if('partition_col' not in self.collection.keys() or not self.collection['partition_col']):
+                self.warn("Partition_col not specified. Making partition using _id.")
+                self.collection['partition_col'] = ['_id']
+                self.collection['partition_col_format'] = ['datetime']
+            if(isinstance(self.collection['partition_col'], str)):
+                self.collection['partition_col'] = [self.collection['partition_col']]
+            
+            if('partition_col_format' not in self.collection.keys()):
+                self.collection['partition_col_format'] = ['str']
+            if(isinstance(self.collection['partition_col_format'], str)):
+                self.collection['partition_col_format'] = [self.collection['partition_col_format']]
+            
+            while(len(self.collection['partition_col']) > len(self.collection['partition_col_format'])):
+                self.collection['partition_col_format'] = self.collection['partition_col_format'].append('str')
+        
+            for i in range(len(self.collection['partition_col'])):
+                col = self.collection['partition_col'][i]
+                col_form = self.collection['partition_col_format'][i]
                 parq_col = "parquet_format_" + col
-                if(col == '_id'):
-                    document[parq_col + "_year"] = insertion_time.year
-                    document[parq_col + "_month"] = insertion_time.month
-                    document[parq_col + "_day"] = insertion_time.day
+                if(col == 'migration_snapshot_date'):
+                    self.collection['partition_col_format'][i] = 'datetime'
+                    self.collection['fields'][col] = 'datetime'
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    self.collection['fields'][parq_col + "_year"] = 'int'
+                    self.collection['fields'][parq_col + "_month"] = 'int'
+                    self.collection['fields'][parq_col + "_day"] = 'int'
+                elif(col == '_id'):
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    self.collection['fields'][parq_col + "_year"] = 'int'
+                    self.collection['fields'][parq_col + "_month"] = 'int'
+                    self.collection['fields'][parq_col + "_day"] = 'int'
                 elif(col_form == 'str'):
-                    document[parq_col] = str(document[col])
+                    self.partition_for_parquet.extend([parq_col])
+                    self.collection['fields'][parq_col] = 'str'
                 elif(col_form == 'int'):
-                    document[parq_col] = int(document[col])
+                    self.partition_for_parquet.extend([parq_col])
+                    self.collection['fields'][parq_col] = 'int'
                 elif(col_form == 'float'):
-                    document[parq_col] = float(document[col])
+                    self.partition_for_parquet.extend([parq_col])
+                    self.collection['fields'][parq_col] = 'float'
                 elif(col_form == 'datetime'):
-                    document[col] = convert_to_datetime(document[col])
-                    document[parq_col + "_year"] = document[col].year
-                    document[parq_col + "_month"] = document[col].month
-                    document[parq_col + "_day"] = document[col].day
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    self.collection['fields'][parq_col + "_year"] = 'int'
+                    self.collection['fields'][parq_col + "_month"] = 'int'
+                    self.collection['fields'][parq_col + "_day"] = 'int'
                 else:
-                    logging.error(collection_mapping['collection_unique_id'] + ": Parition_col_format wrongly specified.")
-                    return None, None
-                
-        updation = False
-        if('is_dump' not in collection_mapping.keys() or not collection_mapping['is_dump']):
-            if(insertion_time < last_run_cron_job):
-                if('bookmark' in collection_mapping.keys() and collection_mapping['bookmark']):
-                    docu_bookmark_date = convert_to_datetime(document[collection_mapping['bookmark']])
-                    if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date <= last_run_cron_job):
-                        continue
+                    raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")            
+
+        if(self.db['destination']['destination_type'] == 's3'):
+            self.saver = s3Saver(db_source=self.db['source'], db_destination=self.db['destination'], c_partition=self.partition_for_parquet, unique_id=self.collection['collection_unique_id'])
+        else:
+            raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
+        
+        self.dtypes = {}
+        for key, value in self.collection['fields'].items():
+            if(value == 'int'):
+                self.dtypes[key] = 'double'
+            elif(value == 'float'):
+                self.dtypes[key] = 'double'
+            elif(value == 'datetime'):
+                self.dtypes[key] = 'string'
+            elif(value == 'complex'):
+                self.dtypes[key] = 'string'
+            elif(value == 'bool'):
+                self.dtypes[key] = 'boolean'
+            elif(value == 'str'):
+                self.dtypes[key] = 'string'
+            else:
+                raise UnrecognizedFormat(str(value) + ". Fields can be of type int, float, datetime, complex, or str")
+        self.inform("Collection pre-processed.")
+        
+
+    def process_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
+        docu_insert = []
+        docu_update = []
+
+        collection_encr = get_data_from_encr_db()
+        all_documents = self.db_collection.find()[start:end]
+
+        for document in all_documents:
+            insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            if('is_dump' in self.collection.keys() and self.collection['is_dump']):
+                document['migration_snapshot_date'] = utc_to_local(datetime.datetime.utcnow(), self.tz_info)
+            if('to_partition' in self.collection.keys() and self.collection['to_partition']):        
+                for i in range(len(self.collection['partition_col'])):
+                    col = self.collection['partition_col'][i]
+                    col_form = self.collection['partition_col_format'][i]
+                    parq_col = "parquet_format_" + col
+                    if(col == '_id'):
+                        document[parq_col + "_year"] = insertion_time.year
+                        document[parq_col + "_month"] = insertion_time.month
+                        document[parq_col + "_day"] = insertion_time.day
+                    elif(col_form == 'str'):
+                        document[parq_col] = str(document[col])
+                    elif(col_form == 'int'):
+                        document[parq_col] = int(document[col])
+                    elif(col_form == 'float'):
+                        document[parq_col] = float(document[col])
+                    elif(col_form == 'datetime'):
+                        document[col] = convert_to_datetime(document[col], self.tz_info)
+                        document[parq_col + "_year"] = document[col].year
+                        document[parq_col + "_month"] = document[col].month
+                        document[parq_col + "_day"] = document[col].day
                     else:
-                        updation = True
-                else:
-                    document['_id'] = str(document['_id'])
-                    encr = {
-                        'collection': collection_mapping['collection_unique_id'],
-                        'map_id': document['_id'],
-                        'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
-                    }
-                    previous_records = collection_encr.find_one({'collection': collection_mapping['collection_unique_id'], 'map_id': document['_id']})
-                    if(previous_records):
-                        if(previous_records['document_sha'] == encr['document_sha']):
+                        raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")                    
+            updation = False
+            if('is_dump' not in self.collection.keys() or not self.collection['is_dump']):
+                if(insertion_time < self.last_run_cron_job):
+                    if('bookmark' in self.collection.keys() and self.collection['bookmark']):
+                        docu_bookmark_date = convert_to_datetime(document[self.collection['bookmark']], self.tz_info)
+                        if(docu_bookmark_date is pd.Timestamp(None) or docu_bookmark_date <= self.last_run_cron_job):
                             continue
                         else:
                             updation = True
-                            collection_encr.delete_one({'collection': collection_mapping['collection_unique_id'], 'map_id': document['_id']})
-                            collection_encr.insert_one(encr)
                     else:
-                        collection_encr.insert_one(encr)
-            else:
-                if(not collection_mapping['bookmark']):
-                    document['_id'] = str(document['_id'])
-                    encr = {
-                        'collection': collection_mapping['collection_unique_id'],
-                        'map_id': document['_id'],
-                        'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
-                    }
-                    collection_encr.insert_one(encr)
-
-        for key, _ in document.items():
-            if(key == '_id'):
-                document[key] = str(document[key])
-            elif(isinstance(document[key], list)):
-                document[key] = convert_list_to_string(document[key])
-            elif(isinstance(document[key], dict)):
-                document[key] = convert_json_to_string(document[key])
-            elif(isinstance(document[key], datetime.datetime)):
-                document[key] = document[key].strftime("%Y-%m-%dT%H:%M:%S")
-            else:
-                try:
-                    document[key] = str(document[key])
-                except:
-                    logging.warning(collection_mapping['collection_unique_id'] + ": Unidentified datatype at document _id:" + str(document['_id']) +". Saving NoneType.")
-                    document[key] = None
-        if(not updation):
-            docu_insert.append(document)
-        else:
-            docu_update.append(document)
-
-    ret_df_insert = pd.DataFrame(docu_insert)
-    ret_df_update = pd.DataFrame(docu_update)
-    
-    for col in ret_df_insert.columns.values.tolist():
-        if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'int'):
-            ret_df_insert[col] = pd.to_numeric(ret_df_insert[col], errors='coerce').astype(np.float64)
-        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
-            ret_df_insert[col] = pd.to_numeric(ret_df_insert[col], errors='coerce').astype(np.float64)
-        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'bool'):
-            ret_df_insert[col] = ret_df_insert[col].apply(lambda x: convert_to_type(x, "bool")).fillna(False).astype(np.bool_)
-        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'complex'):
-            ret_df_insert[col] = ret_df_insert[col].apply(lambda x: convert_to_type(x, "complex")).fillna(0).astype(np.csingle)
-        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'datetime'):
-            ret_df_insert[col] =  pd.to_datetime(ret_df_insert[col].apply(lambda date: np.nan if date is np.nan else parse(date)))
-
-    for col in ret_df_update.columns.values.tolist():
-        if(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'int'):
-            ret_df_update[col] = pd.to_numeric(ret_df_update[col], errors='coerce').astype(np.float64)
-        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'float'):
-            ret_df_update[col] = pd.to_numeric(ret_df_update[col], errors='coerce').astype(np.float64)
-        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'bool'):
-            ret_df_update[col] = ret_df_update[col].apply(lambda x: convert_to_type(x, "bool")).fillna(False).astype(np.bool_)
-        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'complex'):
-            ret_df_update[col] = ret_df_update[col].apply(lambda x: convert_to_type(x, "complex")).fillna(0).astype(np.csingle)
-        elif(col in collection_mapping['fields'].keys() and collection_mapping['fields'][col] == 'datetime'):
-            ret_df_update[col] = pd.to_datetime(ret_df_update[col].apply(lambda date: np.nan if date is np.nan else parse(date)))
-
-    return ret_df_insert, ret_df_update
-
-def get_data_from_source(db, collection_name):
-    try:
-        client = MongoClient(db['source']['url'], tlsCAFile=certifi.where())
-        database_ = client[db['source']['db_name']]
-        target_collection = database_[collection_name]
-        return target_collection
-    except:
-        logging.error("mongo:" + db['source']['db_name'] + ":" + collection_name + ": Unable to connect.")
-        return None
-
-def preprocessing(collection):
-    try:
-        if('fields' not in collection.keys()):
-            collection['fields'] = {}
-        
-        collection['last_run_cron_job'] = get_last_run_cron_job(collection['collection_unique_id'])
-
-        if('to_partition' in collection.keys() and collection['to_partition']):
-            # Assure that partition_col and parition_col_format are lists of same length. If not present, use "_id"
-            if('partition_col' not in collection.keys() or not collection['partition_col']):
-                logging.warning(collection['collection_unique_id'] + " Partition_col not specified. Making partition using _id.")
-                collection['partition_col'] = ['_id']
-                collection['partition_col_format'] = ['datetime']
-            if(isinstance(collection['partition_col'], str)):
-                collection['partition_col'] = [collection['partition_col']]
-            if('partition_col_format' not in collection.keys()):
-                collection['partition_col_format'] = ['str']
-            if(isinstance(collection['partition_col_format'], str)):
-                collection['partition_col_format'] = [collection['partition_col_format']]
-            while(len(collection['partition_col']) > len(collection['partition_col_format'])):
-                collection['partition_col_format'] = collection['partition_col_format'].append('str')
-            # Now, there is a 1-1 mapping of partition_col and partition_col_format. Now, we need to partition.
-        
-        collection['partition_for_parquet'] = []
-        if('to_partition' in collection.keys() and collection['to_partition']):
-            for i in range(len(collection['partition_col'])):
-                col = collection['partition_col'][i]
-                col_form = collection['partition_col_format'][i]
-                parq_col = "parquet_format_" + col
-                if(col == 'migration_snapshot_date'):
-                    collection['partition_col_format'][i] = 'datetime'
-                    collection['fields'][col] = 'datetime'
-                    collection['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    collection['fields'][parq_col + "_year"] = 'float'
-                    collection['fields'][parq_col + "_month"] = 'float'
-                    collection['fields'][parq_col + "_day"] = 'float'
-                elif(col == '_id'):
-                    collection['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    collection['fields'][parq_col + "_year"] = 'float'
-                    collection['fields'][parq_col + "_month"] = 'float'
-                    collection['fields'][parq_col + "_day"] = 'float'
-                elif(col_form == 'str'):
-                    collection['partition_for_parquet'].extend([parq_col])
-                elif(col_form == 'float'):
-                    collection['partition_for_parquet'].extend([parq_col])
-                    collection['fields'][parq_col] = 'float'
-                elif(col_form == 'datetime'):
-                    collection['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    collection['fields'][parq_col + "_year"] = 'float'
-                    collection['fields'][parq_col + "_month"] = 'float'
-                    collection['fields'][parq_col + "_day"] = 'float'
+                        document['_id'] = str(document['_id'])
+                        encr = {
+                            'collection': self.collection['collection_unique_id'],
+                            'map_id': document['_id'],
+                            'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
+                        }
+                        previous_records = collection_encr.find_one({'collection': self.collection['collection_unique_id'], 'map_id': document['_id']})
+                        if(previous_records):
+                            if(previous_records['document_sha'] == encr['document_sha']):
+                                continue
+                            else:
+                                updation = True
+                                collection_encr.delete_one({'collection': self.collection['collection_unique_id'], 'map_id': document['_id']})
+                                collection_encr.insert_one(encr)
+                        else:
+                            collection_encr.insert_one(encr)
                 else:
-                    logging.error(collection['collection_unique_id'] + ": Unrecognized partition_col_format " + str(col_form) + ". partition_col_format can be float, str or datetime")
-                    return None
-        return 1
-    except:
-        logging.error(collection['collection_unique_id'] + ": Caught some exception while preprocessing.")
-        return None
+                    if('bookmark' not in self.collection.keys() or not self.collection['bookmark']):
+                        document['_id'] = str(document['_id'])
+                        encr = {
+                            'collection': self.collection['collection_unique_id'],
+                            'map_id': document['_id'],
+                            'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
+                        }
+                        collection_encr.insert_one(encr)
+            document = validate_or_convert(document, self.collection['fields'], self.tz_info)
+            if(not updation):
+                docu_insert.append(document)
+            else:
+                docu_update.append(document)
+        ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.collection['fields'])
+        ret_df_update = typecast_df_to_schema(pd.DataFrame(docu_update), self.collection['fields'])
+        return {'name': self.collection['collection_name'], 'df_insert': ret_df_insert, 'df_update': ret_df_update}
 
-def process_data_from_source(db_collection, collection, start, end):
-    df_insert, df_update = dataframe_from_collection(mongodb_collection = db_collection, collection_mapping = collection, start=start, end=end)
-    if(df_insert is not None and df_update is not None):
-        return {'name': collection['collection_name'], 'df_insert': df_insert, 'df_update': df_update}
-    else:
-        return None
-    
-def save_data_to_destination(db, processed_collection, partition):
-    if(db['destination']['destination_type'] == 's3'):
-        save_to_s3(processed_collection, db_source=db['source'], db_destination=db['destination'], c_partition=partition)
+    def save_data(self, processed_collection: Dict[str, Any] = {}) -> None:
+        if(not processed_collection):
+            return
+        else:
+            self.saver.save(processed_collection, dtypes = self.dtypes)
 
-def process_mongo_collection(db, collection):
-    logging.info(collection['collection_unique_id'] + ': Migration started')
-    batch_size = 10000
-    db_collection = get_data_from_source(db, collection['collection_name'])
-    if(db_collection is not None):
-        logging.info(collection['collection_unique_id'] + ': Data fetched.')
-        result = preprocessing(collection)
-        if(result):
-            logging.info(collection['collection_unique_id'] + ": Preprocessing done")
-            start = 0
-            while(start < db_collection.count_documents({})):    
-                try:
-                    processed_collection = process_data_from_source(db_collection=db_collection, collection=collection, start=start, end=min(start+batch_size, db_collection.count_documents({})))
-                    save_data_to_destination(db=db, processed_collection=processed_collection, partition=collection['partition_for_parquet'])
-                except:
-                    logging.error(collection['collection_unique_id'] + ": Caught some error while migrating chunk.")
-                    break
-                start += batch_size
+    def process(self) -> None:
+        self.get_data()
+        self.preprocess()
+        start = 0
+        size_ = self.db_collection.count_documents({})
+        while(start < size_):    
+            processed_collection = self.process_data(start=start, end=min(start+self.batch_size, size_))
+            self.save_data(processed_collection=processed_collection)
+            start += self.batch_size
+        self.inform("Migration Complete.")
 
-    logging.info(collection['collection_unique_id'] + ": Migration ended.\n")
+def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any] = {}):
+    obj = MongoMigrate(db, collection)
+    try:
+        obj.process()
+    except Exception as e:
+        logging.error(traceback.format_exc())
+        logging.info(collection['collection_unique_id'] + ": Migration stopped.")
