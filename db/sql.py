@@ -224,7 +224,7 @@ class SQLMigrate:
                 df = self.get_data(start=start)
                 if(df is not None):
                     processed_data = self.process_table(df = df)
-                    self.save_data(processed_data = processed_data, partition = self.partition_for_parquet)
+                    self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                 start += self.batch_size
         self.inform("Migration Complete.")
 
