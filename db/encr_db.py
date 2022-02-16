@@ -7,6 +7,9 @@ logging.getLogger().setLevel(logging.INFO)
 
 import datetime
 
+class ConnectionError(Exception):
+    pass
+
 def get_data_from_encr_db():
     try:
         client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
@@ -14,8 +17,7 @@ def get_data_from_encr_db():
         collection_encr = db_encr[encryption_store['collection_name']]
         return collection_encr
     except:
-        logging.info("Unable to connect to encryption storing database.")
-        return None
+        raise ConnectionError("Unable to connect to Encryption DB.")
 
 def get_last_run_cron_job(id: str):
     db = get_data_from_encr_db()

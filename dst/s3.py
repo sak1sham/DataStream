@@ -6,18 +6,20 @@ logging.getLogger().setLevel(logging.INFO)
 from typing import List, Dict, Any
 
 class s3Saver:
-    def __init__(self, db_source: Dict[str, Any], db_destination: Dict[str, Any], c_partition: List[str], unique_id: str) -> None:
+    def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, c_partition: List[str] = [], unique_id: str = "") -> None:
         self.s3_location = "s3://" + db_destination['s3_bucket_name'] + "/" + db_source['source_type'] + "/" + db_source['db_name'] + "/"
         self.partition_cols = c_partition
         self.unique_id = unique_id
 
-    def inform(self, message: str) -> None:
+    def inform(self, message: str = "") -> None:
         logging.info(self.unique_id + ": " + message)
     
-    def warn(self, message: str) -> None:
+    def warn(self, message: str = "") -> None:
         logging.warning(self.unique_id + ": " + message)
 
-    def save(self, processed_data: Dict[str, Any], dtypes: Dict[str, str] = {}) -> None:
+    def save(self, processed_data: Dict[str, Any] = {}, c_partition: List[str] = []) -> None:
+        if(len(c_partition) > 0):
+            self.partition_cols = c_partition
         file_name = self.s3_location + processed_data['name'] + "/"
         self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
         print(dict(processed_data['df_insert'].dtypes))
@@ -28,9 +30,6 @@ class s3Saver:
                 compression='snappy',
                 dataset = True,
                 partition_cols = self.partition_cols,
-                database = 'date-migration-database',
-                table = 'support_tickets',
-                dtype = dtypes
             )
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
 
@@ -50,6 +49,5 @@ class s3Saver:
                 path = file_name_u,
                 compression = 'snappy',
                 dataset = True,
-                dtypes = dtypes
             )
         self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")

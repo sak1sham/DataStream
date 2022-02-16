@@ -11,7 +11,7 @@ from typing import List, Dict, Any, NewType
 import pandas as pd
 
 datetype = NewType("datetype", datetime.datetime)
-dftype = NewType("datetype", pd.DataFrame)
+dftype = NewType("dftype", pd.DataFrame)
 
 std_datetime_format = "%Y/%m/%dT%H:%M:%S"
 
@@ -153,15 +153,13 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
         if(col in schema.keys()):
             tp = schema[col]
         if(tp == 'int'):
-            df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
         elif(tp == 'float'):
             df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
         elif(tp == 'complex'):
             df[col] = df[col].astype('|S')
         elif(tp == 'datetime'):
-            #df[col] = pd.to_datetime(df[col], utc=False).dt.tz_convert(pytz.utc).apply(lambda x: pd.Timestamp(x))
-            df[col] = pd.to_datetime(df[col], utc=False).dt.tz_convert(pytz.utc).apply(lambda x: x.strftime(std_datetime_format) if not pd.isnull(x) else '')
-            df[col] = df[col].astype('|S')
+            df[col] = pd.to_datetime(df[col], utc=False).dt.tz_convert(pytz.utc).apply(lambda x: pd.Timestamp(x))
         elif(tp == 'bool'):
             df[col] = df[col].astype(bool)
         else:

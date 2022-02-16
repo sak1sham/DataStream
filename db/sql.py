@@ -1,215 +1,238 @@
-from sqlalchemy import create_engine, Table, MetaData, select
+from sqlalchemy import create_engine
 import pandas as pd
+import psycopg2
+import pandas.io.sql as sqlio
+import pymongo
+
 import logging
 logging.getLogger().setLevel(logging.INFO)
+import traceback
 
-from dst.s3 import save_to_s3
+from dst.s3 import s3Saver
 from helper.util import convert_list_to_string, convert_to_datetime
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
+
 import datetime
 import hashlib
 import pytz
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
-import psycopg2
-import pandas.io.sql as sqlio
-
-IST_tz = pytz.timezone('Asia/Kolkata')
-
-def distribute_records(collection_encr, df, table_unique_id):
-    df = df.sort_index(axis = 1)
-    df_insert = pd.DataFrame({})
-    df_update = pd.DataFrame({})
-    for i in range(df.shape[0]):
-        encr = {
-            'table': table_unique_id,
-            'map_id': df.iloc[i].unique_migration_record_id,
-            'record_sha': hashlib.sha256(convert_list_to_string(df.loc[i, :].values.tolist()).encode()).hexdigest()
-        }
-        previous_records = collection_encr.find_one({'table': table_unique_id, 'map_id': df.iloc[i].unique_migration_record_id})
-        if(previous_records):
-            if(previous_records['record_sha'] == encr['record_sha']):
-                continue
-            else:
-                df_update = df_update.append(df.loc[i, :])
-                collection_encr.delete_one({'table': table_unique_id, 'map_id': df.iloc[i].unique_migration_record_id})
-                collection_encr.insert_one(encr)
-        else:
-            df_insert = df_insert.append(df.loc[i, :])
-            collection_encr.insert_one(encr)
-    return df_insert, df_update
+from typing import List, Dict, Any, NewType, Tuple
 
 
-def filter_df(df, table_mapping={}):
-    logging.info(table_mapping['table_unique_id'] + ": Total " + str(df.shape[0]) + " records present.")
+dftype = NewType("dftype", pd.DataFrame)
+collectionType =  NewType("collectionType", pymongo.collection.Collection)
 
-    collection_encr = get_data_from_encr_db()
-    last_run_cron_job = table_mapping['last_run_cron_job']
+class ConnectionError(Exception):
+    pass
+
+class UnrecognizedFormat(Exception):
+    pass
+
+class DestinationNotFound(Exception):
+    pass
+
+
+class SQLMigrate:
+    def __init__(self, db: Dict[str, Any], table: Dict[str, Any], batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
+        self.db = db
+        self.table = table
+        self.batch_size = batch_size
+        self.tz_info = pytz.timezone(tz_str)
     
-    if('is_dump' in table_mapping.keys() and table_mapping['is_dump']):
-        df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = IST_tz)
+    def inform(self, message: str) -> None:
+        logging.info(self.table['table_unique_id'] + ": " + message)
     
-    table_mapping['partition_for_parquet'] = []
-    if('to_partition' in table_mapping.keys() and table_mapping['to_partition']):
-        if('partition_col' in table_mapping.keys()):
-            if(isinstance(table_mapping['partition_col'], str)):
-                table_mapping['partition_col'] = [table_mapping['partition_col']]
-            if('partition_col_format' not in table_mapping.keys()):
-                table_mapping['partition_col_format'] = ['str']
-            if(isinstance(table_mapping['partition_col_format'], str)):
-                table_mapping['partition_col_format'] = [table_mapping['partition_col_format']]
-            while(len(table_mapping['partition_col']) > len(table_mapping['partition_col_format'])):
-                table_mapping['partition_col_format'] = table_mapping['partition_col_format'].append('str')
-            # Now, there is a 1-1 mapping of partition_col and partition_col_format. Now, we need to partition.
-            
-            for i in range(len(table_mapping['partition_col'])):
-                col = table_mapping['partition_col'][i].lower()
-                col_form = table_mapping['partition_col_format'][i]
-                parq_col = "parquet_format_" + col
-                
-                if(col == 'migration_snapshot_date'):
-                    col_form = 'datetime'
-                    table_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    temp = df[col].apply(lambda x: convert_to_datetime(x))
-                    df[parq_col + "_year"] = temp.dt.year
-                    df[parq_col + "_month"] = temp.dt.month
-                    df[parq_col + "_day"] = temp.dt.day
-                elif(col_form == 'str'):
-                    table_mapping['partition_for_parquet'].extend([parq_col])
-                    df[parq_col] = df[col].astype(str)
-                elif(col_form == 'int'):
-                    table_mapping['partition_for_parquet'].extend([parq_col])
-                    df[parq_col] = df[col].astype(int)
-                elif(col_form == 'datetime'):
-                    table_mapping['partition_for_parquet'].extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    temp = df[col].apply(lambda x: convert_to_datetime(x))
-                    df[parq_col + "_year"] = temp.dt.year
-                    df[parq_col + "_month"] = temp.dt.month
-                    df[parq_col + "_day"] = temp.dt.day
-                else:
-                    logging.error(table_mapping['table_unique_id'] + ": Parition_col_format wrongly specified.")
-                    return None, None
+    def warn(self, message: str) -> None:
+        logging.warning(self.table['table_unique_id'] + ": " + message)
+
+
+    def get_number_of_records(self) -> None:
+        if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
+            self.total_records = 1
         else:
-            logging.warning(table_mapping['table_unique_id'] + ": Unable to find partition_col. Continuing without partitioning")
-
-    df_consider = df
-    df_insert = pd.DataFrame({})
-    df_update = pd.DataFrame({})
-
-    if('is_dump' not in table_mapping.keys() or not table_mapping['is_dump']):
-        if('primary_keys' not in table_mapping):
-            # If unique keys are not specified by user, consider entire rows are unique keys
-            table_mapping['primary_keys'] = df.columns.values.tolist()
-            logging.warning(str(table_mapping['table_unique_id']) + ": Unable to find primary_keys in mapping. Taking entire records into consideration.")
-        if(isinstance(table_mapping['primary_keys'], str)):
-            table_mapping['primary_keys'] = [table_mapping['primary_keys']]
-        table_mapping['primary_keys'] = [x.lower() for x in table_mapping['primary_keys']]
-        df['unique_migration_record_id'] = df[table_mapping['primary_keys']].astype(str).sum(1)
-
-    if('is_dump' not in table_mapping.keys() or not table_mapping['is_dump']):
-        if('bookmark' in table_mapping.keys() and table_mapping['bookmark']):
-            df_consider = df[df[table_mapping['bookmark']].apply(lambda x: convert_to_datetime(x)) > last_run_cron_job]
-            if('bookmark_creation' in table_mapping.keys() and table_mapping['bookmark_creation']):
-                df_insert = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x)) > last_run_cron_job]
-                df_update = df_consider[df_consider[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x)) <= last_run_cron_job]
-            else:
-                df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
-        else:
-            if('bookmark_creation' in table_mapping.keys() and table_mapping['bookmark_creation']):
-                df_insert = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x)) > last_run_cron_job]
-                df_consider = df[df[table_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x)) <= last_run_cron_job]
-                _, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
-            else:
-                df_insert, df_update = distribute_records(collection_encr, df_consider, table_mapping['table_unique_id'])
-    else:
-        df_insert = df_consider
-        df_update = pd.DataFrame({})
-
-    return df_insert, df_update
-
-def get_number_of_records(db, table_name, table):
-    encr_db = get_data_from_encr_db()
-    table['last_run_cron_job'] = get_last_run_cron_job(table['table_unique_id'])
-    if('fetch_data_query' in table.keys() and table['fetch_data_query'] and len(table['fetch_data_query']) > 0):
-        return 1
-    if('username' not in db['source'].keys()):
-        try:
-            engine = create_engine(db['source']['url'])
-            total_records = engine.execute("SELECT COUNT(*) from " + table_name).fetchall()[0][0]
-            return total_records
-        except:
-            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + ": Unable to fetch number of records.")
-            return None
-    else:
-        try:
-            conn = psycopg2.connect(
-                host=db['source']['url'],
-                database=db['source']['db_name'],
-                user=db['source']['username'],
-                password=db['source']['password'])            
-            cursor = conn.cursor()
-            total_records = cursor.execute("SELECT count(*) from " + table_name + ";", [])
-            total_records = cursor.fetchone()[0]
-            return total_records
-        except:
-            logging.error("sql:" + db['source']['db_name'] + ":" + table_name + ": Unable to fetch number of records.")
-            return None
-
-def get_data(db, table_name, batch_size=0, start=0, query=""):
-    if('username' not in db['source'].keys()):
-        try:
-            engine = create_engine(db['source']['url'])
-            sql_stmt = "SELECT * FROM " + table_name + " LIMIT " + str(batch_size) + " OFFSET " + str(start)
-            if(len(query) > 0):
-                sql_stmt = query
-            df = pd.read_sql(sql_stmt, engine)
-            return df
-        except:
-            logging.error("sql: " + db['source']['db_name'] + ":" + table_name + ": Unable to connect.")
-            return None
-    else:
-        try:
-            conn = psycopg2.connect(
-                host=db['source']['url'],
-                database=db['source']['db_name'],
-                user=db['source']['username'],
-                password=db['source']['password'])            
-            select_query = "SELECT * FROM " + table_name + " LIMIT " + str(batch_size) + " OFFSET " + str(start)
-            if(len(query) > 0):
-                select_query = query
-            df = sqlio.read_sql_query(select_query, conn)
-            return df
-        except:
-            logging.error("sql: " + db['source']['db_name'] + ":" + table_name + ": Unable to connect.")
-            return None
-
-def process_data(df, table):
-    df_insert, df_update = filter_df(df=df, table_mapping=table)
-    if(df_insert is not None and df_update is not None):
-        return {'name': table['table_name'], 'df_insert': df_insert, 'df_update': df_update}
-    else:
-        return None
-
-def save_data(db, processed_table, partition):
-    if(db['destination']['destination_type'] == 's3'):
-        save_to_s3(processed_table, db_source=db['source'], db_destination=db['destination'], c_partition=partition)
-
-def process_sql_table(db, table):
-    logging.info(table['table_unique_id'] + ': Migration started.')
-    if('fetch_data_query' not in table.keys() or not table['fetch_data_query']):
-        table['fetch_data_query'] = ""
-    
-    total_len = get_number_of_records(db, table['table_name'], table)
-    batch_size = 10000
-
-    if(total_len is not None and total_len > 0):
-        start = 0
-        while(start < total_len):
-            df = get_data(db=db, table_name=table['table_name'], batch_size=batch_size, start=start, query = table['fetch_data_query'])
-            if(df is not None):
-                logging.info(table['table_unique_id'] + ': Fetched data chunk.')
+            if('username' not in self.db['source'].keys() or 'password' not in self.db['source'].keys()):
                 try:
-                    processed_table = process_data(df=df, table=table)
-                    save_data(db=db, processed_table=processed_table, partition=table['partition_for_parquet'])
+                    engine = create_engine(self.db['source']['url'])
+                    self.total_records = engine.execute("SELECT COUNT(*) from " + self.table['table_name']).fetchall()[0][0]
                 except:
-                    logging.error(table['table_unique_id'] + ': Caught some exception while processing/saving chunk.')
-            start += batch_size
-    logging.info(table['table_unique_id'] + ": Migration ended.\n")
+                    self.total_records = 0
+                    raise ConnectionError("Unable to connect to source.")
+            else:
+                try:
+                    conn = psycopg2.connect(
+                        host = self.db['source']['url'],
+                        database = self.db['source']['db_name'],
+                        user = self.db['source']['username'],
+                        password = self.db['source']['password'])
+                    cursor = conn.cursor()
+                    total_records = cursor.execute("SELECT COUNT(*) from " + self.table['table_name'] + ";", [])
+                    self.total_records = cursor.fetchone()[0]
+                except:
+                    self.total_records = 0
+                    raise ConnectionError("Unable to connect to source.")
+
+
+    def get_data(self, start: int = 0) -> dftype:
+        if('username' not in self.db['source'].keys() or 'password' not in self.db['source'].keys()):
+            try:
+                engine = create_engine(self.db['source']['url'])
+                sql_stmt = "SELECT * FROM " + self.table['table_name'] + " LIMIT " + str(self.batch_size) + " OFFSET " + str(start)
+                if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
+                    sql_stmt = self.table['fetch_data_query']
+                df = pd.read_sql(sql_stmt, engine)
+                return df
+            except:
+                raise ConnectionError("Unable to connect to source.")
+        else:
+            try:
+                conn = psycopg2.connect(
+                    host = self.db['source']['url'],
+                    database = self.db['source']['db_name'],
+                    user = self.db['source']['username'],
+                    password = self.db['source']['password'])            
+                select_query = "SELECT * FROM " + self.table['table_name'] + " LIMIT " + str(self.batch_size) + " OFFSET " + str(start)
+                if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
+                    select_query = self.table['fetch_data_query']
+                df = sqlio.read_sql_query(select_query, conn)
+                return df
+            except:
+                raise ConnectionError("Unable to connect to source.")
+
+
+    def preprocess(self) -> None:
+        self.last_run_cron_job = get_last_run_cron_job(self.table['table_unique_id'])
+        if('fetch_data_query' not in self.table.keys() or not self.table['fetch_data_query']):
+            self.inform("Number of records: " + str(self.total_records))
+        if(self.db['destination']['destination_type'] == 's3'):
+            self.saver = s3Saver(db_source = self.db['source'], db_destination = self.db['destination'], unique_id = self.table['table_unique_id'])
+        else:
+            raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
+        self.inform("Table pre-processed.")
+
+
+    def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({})) -> Tuple[dftype]:
+        df = df.sort_index(axis = 1)
+        df_insert = pd.DataFrame({})
+        df_update = pd.DataFrame({})
+        for i in range(df.shape[0]):
+            encr = {
+                'table': self.table['table_unique_id'],
+                'map_id': df.iloc[i].unique_migration_record_id,
+                'record_sha': hashlib.sha256(convert_list_to_string(df.loc[i, :].values.tolist()).encode()).hexdigest()
+            }
+            previous_records = collection_encr.find_one({'table': self.table['table_unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
+            if(previous_records):
+                if(previous_records['record_sha'] == encr['record_sha']):
+                    continue
+                else:
+                    df_update = df_update.append(df.loc[i, :])
+                    collection_encr.delete_one({'table': self.table['table_unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
+                    collection_encr.insert_one(encr)
+            else:
+                df_insert = df_insert.append(df.loc[i, :])
+                collection_encr.insert_one(encr)
+        return df_insert, df_update
+
+
+    def process_table(self, df: dftype = pd.DataFrame({})) -> Tuple[dftype]:
+        if('fetch_data_query' in self.table.keys() or self.table['fetch_data_query']):
+            self.inform("Number of records: " + str(df.shape[0]))
+        collection_encr = get_data_from_encr_db()
+        last_run_cron_job = self.last_run_cron_job
+        if('is_dump' in self.table.keys() and self.table['is_dump']):
+            self.df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = self.tz_info)
+        self.partition_for_parquet = []
+        if('to_partition' in self.table.keys() and self.table['to_partition']):
+            if('partition_col' in self.table.keys()):
+                if(isinstance(self.table['partition_col'], str)):
+                    self.table['partition_col'] = [self.table['partition_col']]
+                if('partition_col_format' not in self.table.keys()):
+                    self.table['partition_col_format'] = ['str']
+                if(isinstance(self.table['partition_col_format'], str)):
+                    self.table['partition_col_format'] = [self.table['partition_col_format']]
+                while(len(self.table['partition_col']) > len(self.table['partition_col_format'])):
+                    self.table['partition_col_format'] = self.table['partition_col_format'].append('str')
+                for i in range(len(self.table['partition_col'])):
+                    col = self.table['partition_col'][i].lower()
+                    col_form = self.table['partition_col_format'][i]
+                    parq_col = "parquet_format_" + col
+                    if(col == 'migration_snapshot_date'):
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                        temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
+                        df[parq_col + "_year"] = temp.dt.year
+                        df[parq_col + "_month"] = temp.dt.month
+                        df[parq_col + "_day"] = temp.dt.day
+                    elif(col_form == 'str'):
+                        self.partition_for_parquet.extend([parq_col])
+                        df[parq_col] = df[col].astype(str)
+                    elif(col_form == 'int'):
+                        self.partition_for_parquet.extend([parq_col])
+                        df[parq_col] = df[col].astype(int)
+                    elif(col_form == 'datetime'):
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                        temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
+                        df[parq_col + "_year"] = temp.dt.year
+                        df[parq_col + "_month"] = temp.dt.month
+                        df[parq_col + "_day"] = temp.dt.day
+                    else:
+                        raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime.") 
+            else:
+                self.warn("Unable to find partition_col. Continuing without partitioning.")
+        df_consider = df
+        df_insert = pd.DataFrame({})
+        df_update = pd.DataFrame({})
+        if('is_dump' not in self.table.keys() or not self.table['is_dump']):
+            if('primary_keys' not in self.table):
+                self.table['primary_keys'] = df.columns.values.tolist()
+                self.warn("Unable to find primary_keys in mapping. Taking entire records into consideration.")
+            if(isinstance(self.table['primary_keys'], str)):
+                self.table['primary_keys'] = [self.table['primary_keys']]
+            self.table['primary_keys'] = [x.lower() for x in self.table['primary_keys']]
+            df['unique_migration_record_id'] = df[self.table['primary_keys']].astype(str).sum(1)
+            if('bookmark' in self.table.keys() and self.table['bookmark']):
+                df_consider = df[df[self.table['bookmark']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > last_run_cron_job]
+                if('bookmark_creation' in self.table.keys() and self.table['bookmark_creation']):
+                    df_insert = df_consider[df_consider[self.table['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > last_run_cron_job]
+                    df_update = df_consider[df_consider[self.table['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= last_run_cron_job]
+                else:
+                    df_insert, df_update = self.distribute_records(collection_encr, df_consider)
+            else:
+                if('bookmark_creation' in self.table.keys() and self.table['bookmark_creation']):
+                    df_insert = df[df[self.table['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > last_run_cron_job]
+                    df_consider = df[df[self.table['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= last_run_cron_job]
+                    _, df_update = self.distribute_records(collection_encr, df_consider)
+                else:
+                    df_insert, df_update = self.distribute_records(collection_encr, df_consider)
+        else:
+            df_insert = df_consider
+            df_update = pd.DataFrame({})
+        return {'name': self.table['table_name'], 'df_insert': df_insert, 'df_update': df_update}
+
+
+    def save_data(self, processed_data: Dict[str, Any] = {}, c_partition: List[str] = []) -> None:
+        if(not processed_data):
+            return
+        else:
+            self.saver.save(processed_data, c_partition)
+
+
+    def process(self) -> None:
+        self.get_number_of_records()
+        self.preprocess()
+        if(self.total_records and self.total_records > 0):
+            start = 0
+            while(start < self.total_records):
+                df = self.get_data(start=start)
+                if(df is not None):
+                    processed_data = self.process_table(df = df)
+                    self.save_data(processed_data = processed_data, partition = self.partition_for_parquet)
+                start += self.batch_size
+        self.inform("Migration Complete.")
+
+
+def process_sql_collection(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> None:
+    obj = SQLMigrate(db, table)
+    try:
+        obj.process()
+    except Exception as e:
+        logging.error(traceback.format_exc())
+        logging.info(table['table_unique_id'] + ": Migration stopped.")

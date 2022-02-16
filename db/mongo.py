@@ -109,22 +109,6 @@ class MongoMigrate:
         else:
             raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
         
-        self.dtypes = {}
-        for key, value in self.collection['fields'].items():
-            if(value == 'int'):
-                self.dtypes[key] = 'double'
-            elif(value == 'float'):
-                self.dtypes[key] = 'double'
-            elif(value == 'datetime'):
-                self.dtypes[key] = 'string'
-            elif(value == 'complex'):
-                self.dtypes[key] = 'string'
-            elif(value == 'bool'):
-                self.dtypes[key] = 'boolean'
-            elif(value == 'str'):
-                self.dtypes[key] = 'string'
-            else:
-                raise UnrecognizedFormat(str(value) + ". Fields can be of type int, float, datetime, complex, or str")
         self.inform("Collection pre-processed.")
         
 
@@ -209,7 +193,7 @@ class MongoMigrate:
         if(not processed_collection):
             return
         else:
-            self.saver.save(processed_collection, dtypes = self.dtypes)
+            self.saver.save(processed_collection)
 
     def process(self) -> None:
         self.get_data()
@@ -222,7 +206,7 @@ class MongoMigrate:
             start += self.batch_size
         self.inform("Migration Complete.")
 
-def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any] = {}):
+def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any] = {}) -> None:
     obj = MongoMigrate(db, collection)
     try:
         obj.process()

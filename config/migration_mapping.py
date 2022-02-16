@@ -132,7 +132,7 @@ mapping = [
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server'
+            's3_bucket_name': 'data-migration-server',
         },
         'collections': [
             {
@@ -176,12 +176,14 @@ mapping = [
                 'fields': {
                     'incoming': 'bool',
                     'private': 'bool',
-                    'freshdesk_user_id': 'float',
-                    '__v': 'float',
+                    'freshdesk_user_id': 'int',
+                    '__v': 'int',
+                    'created_at': 'datetime',
+                    'updated_at': 'datetime'
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 14 51 0',
+                'cron': '* * * * * * 59 0',
                 'to_partition': True,
             },
             {
@@ -200,7 +202,7 @@ mapping = [
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 11 32 50',
+                'cron': '* * * * * * 17 40',
                 'to_partition': True,
             },
             {
