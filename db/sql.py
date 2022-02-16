@@ -139,7 +139,7 @@ class SQLMigrate:
         collection_encr = get_data_from_encr_db()
         last_run_cron_job = self.last_run_cron_job
         if('is_dump' in self.table.keys() and self.table['is_dump']):
-            self.df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = self.tz_info)
+            df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = self.tz_info)
         self.partition_for_parquet = []
         if('to_partition' in self.table.keys() and self.table['to_partition']):
             if('partition_col' in self.table.keys()):
