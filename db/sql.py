@@ -227,6 +227,10 @@ class SQLMigrate:
                     self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                 start += self.batch_size
         self.inform("Migration Complete.")
+        if('is_dump' in self.table.keys() and self.table['is_dump'] and 'expiry' in self.table.keys()):
+            self.saver.expire(self.table['expiry'], self.tz_info)
+            self.inform("Expired data removed.")
+        self.inform("\n\n")
 
 
 def process_sql_table(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> None:
@@ -235,4 +239,4 @@ def process_sql_table(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> No
         obj.process()
     except Exception as e:
         logging.error(traceback.format_exc())
-        logging.info(table['table_unique_id'] + ": Migration stopped.")
+        logging.info(table['table_unique_id'] + ": Migration stopped.\n\n")

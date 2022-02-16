@@ -59,7 +59,8 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the field (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 3),
-    'is_dump': False
+    'is_dump': False,
+    'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True)
 }
 ```
 
@@ -78,7 +79,8 @@ Api_specifications shall be in following format:
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the field (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 4),
-    'is_dump': False
+    'is_dump': False,
+    'expiry': {'days': 30, 'hours': 5} (dict[str, int], Optional, used only when is_dump = True)
 }
 ```
 

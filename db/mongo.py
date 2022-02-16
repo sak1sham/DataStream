@@ -205,6 +205,10 @@ class MongoMigrate:
             self.save_data(processed_collection=processed_collection)
             start += self.batch_size
         self.inform("Migration Complete.")
+        if('is_dump' in self.table.keys() and self.table['is_dump'] and 'expiry' in self.table.keys()):
+            self.saver.expire(self.collection['expiry'], self.tz_info)
+            self.inform("Expired data removed.")
+        self.inform("\n\n")
 
 def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any] = {}) -> None:
     obj = MongoMigrate(db, collection)
@@ -212,4 +216,4 @@ def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any]
         obj.process()
     except Exception as e:
         logging.error(traceback.format_exc())
-        logging.info(collection['collection_unique_id'] + ": Migration stopped.")
+        logging.info(collection['collection_unique_id'] + ": Migration stopped.\n\n")
