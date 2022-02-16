@@ -134,7 +134,7 @@ class SQLMigrate:
 
 
     def process_table(self, df: dftype = pd.DataFrame({})) -> Tuple[dftype]:
-        if('fetch_data_query' in self.table.keys() or self.table['fetch_data_query']):
+        if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query']):
             self.inform("Number of records: " + str(df.shape[0]))
         collection_encr = get_data_from_encr_db()
         last_run_cron_job = self.last_run_cron_job

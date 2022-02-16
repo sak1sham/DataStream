@@ -22,7 +22,6 @@ class s3Saver:
             self.partition_cols = c_partition
         file_name = self.s3_location + processed_data['name'] + "/"
         self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
-        print(dict(processed_data['df_insert'].dtypes))
         if(processed_data['df_insert'].shape[0] > 0):
             wr.s3.to_parquet(
                 df = processed_data['df_insert'],
