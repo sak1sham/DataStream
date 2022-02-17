@@ -1,0 +1,11 @@
+__pycache__
+Converted
+.DS_Store
+logs
+Migration Service.code-workspace
+.vscode
+temp
+credentials.py
+AWSCLIV2.pkg
+.env
+dms-v2.pem
