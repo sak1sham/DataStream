@@ -44,7 +44,7 @@ class MongoMigrate:
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.collection['collection_name']]
             self.inform("Data fetched.")
-        except:
+        except Exception as e:
             self.db_collection = None
             raise ConnectionError("Unable to connect to source.")
 

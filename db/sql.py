@@ -53,7 +53,7 @@ class SQLMigrate:
                 try:
                     engine = create_engine(self.db['source']['url'])
                     self.total_records = engine.execute("SELECT COUNT(*) from " + self.table['table_name']).fetchall()[0][0]
-                except:
+                except Exception as e:
                     self.total_records = 0
                     raise ConnectionError("Unable to connect to source.")
             else:
@@ -66,7 +66,7 @@ class SQLMigrate:
                     cursor = conn.cursor()
                     total_records = cursor.execute("SELECT COUNT(*) from " + self.table['table_name'] + ";", [])
                     self.total_records = cursor.fetchone()[0]
-                except:
+                except Exception as e:
                     self.total_records = 0
                     raise ConnectionError("Unable to connect to source.")
 
@@ -80,7 +80,7 @@ class SQLMigrate:
                     sql_stmt = self.table['fetch_data_query']
                 df = pd.read_sql(sql_stmt, engine)
                 return df
-            except:
+            except Exception as e:
                 raise ConnectionError("Unable to connect to source.")
         else:
             try:
@@ -94,7 +94,7 @@ class SQLMigrate:
                     select_query = self.table['fetch_data_query']
                 df = sqlio.read_sql_query(select_query, conn)
                 return df
-            except:
+            except Exception as e:
                 raise ConnectionError("Unable to connect to source.")
 
 
