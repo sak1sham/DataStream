@@ -36,7 +36,9 @@ def convert_list_to_string(l: List[Any]) -> str:
             item = item.strftime(std_datetime_format)
         else:
             item = str(item)
-        val = val + item
+        val = val + item + ", "
+    if(len(val) > 1):
+        val = val[:-2]
     val = val + ']'
     return val
 
@@ -48,12 +50,13 @@ def convert_to_datetime(x: Any, tz_: Any) -> datetype:
     if(x is None):
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
-        return utc_to_local(x, tz_)
+        x = utc_to_local(x, tz_)
+        return x
     else:
         try:
             x = parser.parse(x)
             return utc_to_local(x, tz_)
-        except:
+        except Exception as e:
             logging.warning("Unable to convert " + x + " to any datetime format. Returning None")
             return pd.Timestamp(None)
 
@@ -71,7 +74,7 @@ def convert_json_to_string(x: Dict[str, Any]) -> str:
         elif(isinstance(value, bool) or isinstance(value, float) or isinstance(value, complex) or isinstance(value, int)):
             x[item] = str(x[item])
         elif(isinstance(value, dict)):
-            x[item] = json.dumps(x[item])
+            x[item] = convert_json_to_string(x[item])
         elif(isinstance(value, datetime.datetime)):
             x[item] = x[item].strftime(std_datetime_format)
         else:
@@ -90,7 +93,8 @@ def evaluate_cron(expression: str) -> List[str]:
     vals = [(None if w == '?' else w) for w in vals]
     return vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], vals[7]
 
-def validate_or_convert(docu: Dict[str, Any], schema: Dict[str, str], tz_info: Any) -> Dict[str, Any]:
+def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_info: Any) -> Dict[str, Any]:
+    docu = docu_orig.copy()
     for key, _ in docu.items():
         if(key == '_id'):
             docu[key] = str(docu[key])
@@ -101,33 +105,31 @@ def validate_or_convert(docu: Dict[str, Any], schema: Dict[str, str], tz_info: A
         elif(key in schema.keys()):
             if(schema[key] == 'int'):
                 try:
-                    docu[key] = int(docu[key])
-                except:
+                    docu[key] = int(float(docu[key]))
+                except Exception as e:
                     docu[key] = 0
             elif(schema[key] == 'float'):
                 try:
                     docu[key] = float(docu[key])
-                except:
+                except Exception as e:
                     docu[key] = None
             elif(schema[key] == 'datetime'):
                 docu[key] = convert_to_datetime(docu[key], tz_info)
             elif(schema[key] == 'bool'):
-                try:
-                    docu[key] = bool(docu[key])
-                except:
-                    docu[key] = docu[key].lower() in ['true', '1', 't', 'y', 'yes']
+                docu[key] = str(docu[key])
+                docu[key] = bool(docu[key].lower() in ['true', '1', 't', 'y', 'yes'])
             elif(schema[key] == 'complex'):
                 try:
                     docu[key] = complex(docu[key])
-                except:
+                except Exception as e:
                     docu[key] = None
         elif(isinstance(docu[key], datetime.datetime)):
             docu[key] = utc_to_local(docu[key], tz_info)
-            docu[key] = docu[key].strftime("%Y-%m-%dT%H:%M:%S")
+            docu[key] = docu[key].strftime(std_datetime_format)
         else:
             try:
                 docu[key] = str(docu[key])
-            except:
+            except Exception as e:
                 logging.warning("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
                 docu[key] = None
     
