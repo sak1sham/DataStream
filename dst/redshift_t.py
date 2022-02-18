@@ -15,6 +15,7 @@ def redshift_test():
         "value": ["foo", "boo"],
         "date": [date(2020, 1, 1), date(2020, 1, 2)]
     })
+    print("Trying to write df.")
     wr.redshift.copy(
         df = df,
         con = conn,
@@ -23,4 +24,5 @@ def redshift_test():
         table = 'my_table',
         mode = 'append',
     )
+    print("df written.")
     print(wr.redshift.read_sql_table(table="my_table", schema="migration_service", con=conn))
