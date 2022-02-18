@@ -220,7 +220,7 @@ class MongoMigrate:
             self.save_data(processed_collection=processed_collection)
             start += self.batch_size
         self.inform("Migration Complete.")
-        if('is_dump' in self.collection.keys() and self.collection['is_dump'] and 'expiry' in self.collection.keys()):
+        if('is_dump' in self.collection.keys() and self.collection['is_dump'] and 'expiry' in self.collection.keys() and self.collection['expiry']):
             self.saver.expire(self.collection['expiry'], self.tz_info)
             self.inform("Expired data removed.")
         self.saver.close()
