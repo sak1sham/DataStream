@@ -1,20 +1,20 @@
-from re import S
-from pymongo import MongoClient
 from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema
-
-import logging
-logging.getLogger().setLevel(logging.INFO)
-import traceback
-
-import certifi
 from dst.s3 import s3Saver
+from dst.redshift import RedshiftSaver
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
+
+from pymongo import MongoClient
+import traceback
+import certifi
 import pandas as pd
 import datetime
 import json
 import hashlib
 import pytz
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from typing import Dict, Any
+
+import logging
+logging.getLogger().setLevel(logging.INFO)
 
 class ConnectionError(Exception):
     pass
@@ -111,7 +111,7 @@ class MongoMigrate:
         if(self.db['destination']['destination_type'] == 's3'):
             self.saver = s3Saver(db_source=self.db['source'], db_destination=self.db['destination'], c_partition=self.partition_for_parquet, unique_id=self.collection['collection_unique_id'])
         elif(self.db['destination']['destination_type'] == 'redshift'):
-            self.saver = s3Saver(db_source=self.db['source'], db_destination=self.db['destination'], unique_id=self.collection['collection_unique_id'])
+            self.saver = RedshiftSaver(db_source=self.db['source'], db_destination=self.db['destination'], unique_id=self.collection['collection_unique_id'])
         else:
             raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
         
