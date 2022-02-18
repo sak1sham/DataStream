@@ -23,9 +23,22 @@ Migration mapping is a list of specifications for each pipeline. Each specificat
 ```
 'destination': {
     'destination_type': 's3' or 'redshift',
-    's3_bucket_name': ''
+    'host': '',
+    'database': '',
+    'user': '',
+    'password': '',
+    's3_bucket_name': '',
+    'schema': ''
 },
 ```
+
+1. destination_type : str, required, 's3' or 'redshift'
+2. host : str, connection endpoint with destination, example - 'examplecluster.abc123xyz789.us-west-1.redshift.amazonaws.com' for Redshift connection
+3. database : str, database name for destination
+4. user : str, username to access destination storage
+5. password : str, password corresponding to user to access destination storage
+6. s3_bucket_name : str, name of the s3 bucket
+7. schema : str, name of the schema to upload the data to
 
 ### Data structure (Table or Collection or JSON)
 If source is SQL, we need to provide a field ```tables```, which is a list of table_specifications. Table_specifications shall be in following format:
