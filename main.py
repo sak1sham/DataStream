@@ -10,7 +10,7 @@ from db.mongo import process_mongo_collection
 from db.sql import process_sql_table
 import logging
 from helper.util import evaluate_cron
-
+from dst.redshift_t import redshift_test
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -34,7 +34,9 @@ def healthcheck():
     pass
 
 if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
+    redshift_test()
+    
+    '''logging.getLogger().setLevel(logging.INFO)
     custom_records_to_run = sys.argv[1:]
     for i in range(len(mapping)):
         db = mapping[i]
@@ -57,4 +59,4 @@ if __name__ == "__main__":
         else:
             logging.error("Un-identified Source Type " + str(db['source']['source_type']) + " found in migration-mapping.")
     logging.info('Added job(s) to the scheduler.')
-    uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))
+    uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))'''
