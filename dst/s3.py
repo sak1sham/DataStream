@@ -70,3 +70,7 @@ class s3Saver:
             path = self.s3_location + self.name_ + "/",
             last_modified_end = delete_before_date
         )
+    
+    def close(self):
+        # This function is required here to make it consistent with redshift connection closing counterpart
+        return

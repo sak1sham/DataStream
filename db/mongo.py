@@ -31,12 +31,15 @@ class MongoMigrate:
         self.collection = collection
         self.batch_size = batch_size
         self.tz_info = pytz.timezone(tz_str)
+ 
     
     def inform(self, message: str) -> None:
         logging.info(self.collection['collection_unique_id'] + ": " + message)
-    
+
+
     def warn(self, message: str) -> None:
         logging.warning(self.collection['collection_unique_id'] + ": " + message)
+
 
     def get_data(self) -> None:
         try:
@@ -47,6 +50,7 @@ class MongoMigrate:
         except Exception as e:
             self.db_collection = None
             raise ConnectionError("Unable to connect to source.")
+
 
     def preprocess(self) -> None:
         if('fields' not in self.collection.keys()):
@@ -191,11 +195,14 @@ class MongoMigrate:
         ret_df_update = typecast_df_to_schema(pd.DataFrame(docu_update), self.collection['fields'])
         return {'name': self.collection['collection_name'], 'df_insert': ret_df_insert, 'df_update': ret_df_update}
 
+
     def save_data(self, processed_collection: Dict[str, Any] = {}) -> None:
         if(not processed_collection):
             return
         else:
             self.saver.save(processed_collection)
+            self.saver.close()
+
 
     def process(self) -> None:
         self.get_data()
@@ -211,6 +218,7 @@ class MongoMigrate:
             self.saver.expire(self.collection['expiry'], self.tz_info)
             self.inform("Expired data removed.")
         self.inform("\n\n")
+
 
 def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any] = {}) -> None:
     obj = MongoMigrate(db, collection)

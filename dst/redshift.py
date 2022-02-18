@@ -74,4 +74,6 @@ class RedshiftSaver:
         query = "DELETE FROM " + self.schema + "." + self.name_ + " WHERE migration_snapshot_date <= " + delete_before_date_str + ";"
         with self.conn.cursor() as cursor:
             cursor.execute(query)
+    
+    def close(self):
         self.conn.close()

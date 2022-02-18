@@ -216,6 +216,7 @@ class SQLMigrate:
             return
         else:
             self.saver.save(processed_data, c_partition)
+            self.saver.close()
 
 
     def process(self) -> None:
