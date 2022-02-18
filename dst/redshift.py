@@ -19,7 +19,6 @@ class RedshiftSaver:
             user = db_destination['user'],
             password = db_destination['password']
         )
-        print(self.conn)
         self.schema = db_destination['schema']
 
     def inform(self, message: str = "") -> None:
@@ -31,7 +30,6 @@ class RedshiftSaver:
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         self.name_ = processed_data['name']
         file_name = self.s3_location + self.name_ + "/"
-        print(processed_data['df_insert'])
         self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
         if(processed_data['df_insert'].shape[0] > 0):
             wr.redshift.copy(
@@ -44,8 +42,6 @@ class RedshiftSaver:
                 primary_keys = primary_keys
             )
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
-        print(wr.redshift.read_sql_table(table="my_table2", schema="migration_service", con=self.conn), "\n")
-        print(wr.redshift.read_sql_table(table="my_table", schema="migration_service", con=self.conn), "\n")
         self.inform("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")    
         if(processed_data['df_update'].shape[0] > 0):
             wr.redshift.copy(
