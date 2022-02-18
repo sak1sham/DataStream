@@ -224,7 +224,7 @@ class MongoMigrate:
             self.saver.expire(self.collection['expiry'], self.tz_info)
             self.inform("Expired data removed.")
         self.saver.close()
-        self.inform("\n\n")
+        self.inform("Hope to see you again :')\n\n")
 
 
 def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any] = {}) -> None:

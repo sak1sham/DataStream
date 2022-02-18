@@ -9,7 +9,7 @@ import datetime
 from helper.util import utc_to_local
 
 class RedshiftSaver:
-    def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, unique_id: str = "") -> None:
+    def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, unique_id: str = "", is_small_data: bool = False) -> None:
         # s3_location is required as a staging area to push into redshift
         self.s3_location = "s3://" + db_destination['s3_bucket_name'] + "/Redshift/" + db_source['source_type'] + "/" + db_source['db_name'] + "/"
         self.unique_id = unique_id
@@ -20,6 +20,7 @@ class RedshiftSaver:
             password = db_destination['password']
         )
         self.schema = db_destination['schema']
+        self.is_small_data = is_small_data
 
     def inform(self, message: str = "") -> None:
         logging.info(self.unique_id + ": " + message)
@@ -32,27 +33,48 @@ class RedshiftSaver:
         file_name = self.s3_location + self.name_ + "/"
         self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
         if(processed_data['df_insert'].shape[0] > 0):
-            wr.redshift.copy(
-                df = processed_data['df_insert'],
-                con = self.conn,
-                path = file_name,
-                schema = self.schema,
-                table = self.name_,
-                mode = "append",
-                primary_keys = primary_keys
-            )
+            if(self.is_small_data):
+                wr.redshift.to_sql(
+                    df = processed_data['df_insert'],
+                    con = self.conn,
+                    schema = self.schema,
+                    table = self.name_,
+                    mode = "append",
+                    primary_keys = primary_keys
+                )
+            else:
+                wr.redshift.copy(
+                    df = processed_data['df_insert'],
+                    con = self.conn,
+                    path = file_name,
+                    schema = self.schema,
+                    table = self.name_,
+                    mode = "append",
+                    primary_keys = primary_keys
+                )
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
         self.inform("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")    
         if(processed_data['df_update'].shape[0] > 0):
-            wr.redshift.copy(
-                df = processed_data['df_update'],
-                path = file_name,
-                con = self.conn,
-                schema = self.schema,
-                table = self.name_,
-                mode = "upsert",
-                primary_keys = primary_keys
-            )
+            # is_dump = False, and primary_keys will be present.
+            if(self.is_small_data):
+                wr.redshift.to_sql(
+                    df = processed_data['df_update'],
+                    con = self.conn,
+                    schema = self.schema,
+                    table = self.name_,
+                    mode = "upsert",
+                    primary_keys = primary_keys
+                )
+            else:
+                wr.redshift.copy(
+                    df = processed_data['df_update'],
+                    path = file_name,
+                    con = self.conn,
+                    schema = self.schema,
+                    table = self.name_,
+                    mode = "upsert",
+                    primary_keys = primary_keys
+                )
         self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
     
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:

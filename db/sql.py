@@ -241,7 +241,7 @@ class SQLMigrate:
             self.saver.expire(self.table['expiry'], self.tz_info)
             self.inform("Expired data removed.")
         self.saver.close()
-        self.inform("\n\n")
+        self.inform("Hope to see you again :')\n\n")
 
 
 def process_sql_table(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> None:
