@@ -216,7 +216,6 @@ class SQLMigrate:
             return
         else:
             self.saver.save(processed_data, c_partition)
-            self.saver.close()
 
 
     def process(self) -> None:
@@ -234,6 +233,7 @@ class SQLMigrate:
         if('is_dump' in self.table.keys() and self.table['is_dump'] and 'expiry' in self.table.keys()):
             self.saver.expire(self.table['expiry'], self.tz_info)
             self.inform("Expired data removed.")
+        self.saver.close()
         self.inform("\n\n")
 
 

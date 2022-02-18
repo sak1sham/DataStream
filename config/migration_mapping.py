@@ -100,7 +100,7 @@ mapping = [
         },
         'destination': {
             'destination_type': 'redshift',
-            'host': 'http://redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com/',
+            'host': 'redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
             'database': 'dev',
             'user': 'admin-redshift',
             'password': 'CitymallDevAdmin123',
@@ -113,7 +113,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 55 0',
+                'cron': '* * * * * * 30 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'

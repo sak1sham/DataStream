@@ -31,8 +31,8 @@ class MongoMigrate:
         self.collection = collection
         self.batch_size = batch_size
         self.tz_info = pytz.timezone(tz_str)
- 
-    
+
+
     def inform(self, message: str) -> None:
         logging.info(self.collection['collection_unique_id'] + ": " + message)
 
@@ -201,7 +201,6 @@ class MongoMigrate:
             return
         else:
             self.saver.save(processed_collection)
-            self.saver.close()
 
 
     def process(self) -> None:
@@ -214,9 +213,10 @@ class MongoMigrate:
             self.save_data(processed_collection=processed_collection)
             start += self.batch_size
         self.inform("Migration Complete.")
-        if('is_dump' in self.table.keys() and self.table['is_dump'] and 'expiry' in self.table.keys()):
+        if('is_dump' in self.collection.keys() and self.collection['is_dump'] and 'expiry' in self.collection.keys()):
             self.saver.expire(self.collection['expiry'], self.tz_info)
             self.inform("Expired data removed.")
+        self.saver.close()
         self.inform("\n\n")
 
 

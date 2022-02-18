@@ -36,13 +36,14 @@ def healthcheck():
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     custom_records_to_run = sys.argv[1:]
-    for db in mapping:
+    for i in len(mapping):
+        db = mapping[i]
         if(db['source']['source_type'] == 'sql'):
             if('tables' not in db.keys()):
                 db['tables'] = []
             for curr_table in db['tables']:
                 year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(curr_table['cron'])
-                curr_table['table_unique_id'] = db['source']['source_type'] + ":" + db['destination']['destination_type'] + ":" + db['source']['db_name'] + ":" + curr_table['table_name'] + ":" + str(random.randrange(100000, 1000000, 1))
+                curr_table['table_unique_id'] = db['source']['source_type'] + ":" + db['destination']['destination_type'] + ":" + db['source']['db_name'] + ":" + curr_table['table_name'] + ":" + str(i+1)
                 if(len(custom_records_to_run) == 0 or curr_table['table_unique_id'] in custom_records_to_run):
                     scheduler.add_job(process_sql_table, 'cron', args=[db, curr_table], id=curr_table['table_unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Calcutta'))
         elif(db['source']['source_type'] == 'mongo'):
@@ -50,7 +51,7 @@ if __name__ == "__main__":
                 db['collections'] = []
             for curr_collection in db['collections']:
                 year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(curr_collection['cron'])
-                curr_collection['collection_unique_id'] = db['source']['source_type'] + ":" + db['destination']['destination_type'] + ":" + db['source']['db_name'] + ":" + curr_collection['collection_name'] + ":" + str(random.randrange(100000, 1000000, 1))
+                curr_collection['collection_unique_id'] = db['source']['source_type'] + ":" + db['destination']['destination_type'] + ":" + db['source']['db_name'] + ":" + curr_collection['collection_name'] + ":" + str(i+1)
                 if(len(custom_records_to_run) == 0 or curr_collection['collection_unique_id'] in custom_records_to_run):
                     scheduler.add_job(process_mongo_collection, 'cron', args=[db, curr_collection], id=curr_collection['collection_unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Calcutta'))
         else:
