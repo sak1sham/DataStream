@@ -200,7 +200,14 @@ class MongoMigrate:
         if(not processed_collection):
             return
         else:
-            self.saver.save(processed_collection)
+            if(self.db['destination']['destination_type'] == 's3'):
+                self.saver.save(processed_collection)
+            elif(self.db['destination']['destination_type'] == 'redshift'):
+                if('is_dump' in self.collection.keys() and self.collection['is_dump']):
+                    self.saver.save(processed_collection)
+                else:
+                    ## In case of syncing (not simply dumping) with redshift, we need to specify some primary keys for it to do the updations
+                    self.saver.save(processed_collection, ['_id'])
 
 
     def process(self) -> None:

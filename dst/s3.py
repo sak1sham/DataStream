@@ -19,8 +19,8 @@ class s3Saver:
     def warn(self, message: str = "") -> None:
         logging.warning(self.unique_id + ": " + message)
 
-    def save(self, processed_data: Dict[str, Any] = {}, c_partition: List[str] = []) -> None:
-        if(len(c_partition) > 0):
+    def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = []) -> None:
+        if(c_partition and len(c_partition) > 0):
             self.partition_cols = c_partition
         self.name_ = processed_data['name']
         file_name = self.s3_location + processed_data['name'] + "/"

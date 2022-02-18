@@ -28,8 +28,7 @@ class RedshiftSaver:
     def warn(self, message: str = "") -> None:
         logging.warning(self.unique_id + ": " + message)
 
-    def save(self, processed_data: Dict[str, Any] = {}, c_partition: List[str] = []) -> None:
-        # There is no need of c_partition here, it's just taken to be consistent with S3Saver.save()
+    def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         self.name_ = processed_data['name']
         file_name = self.s3_location + self.name_ + "/"
         print(processed_data['df_insert'])
@@ -38,10 +37,11 @@ class RedshiftSaver:
             wr.redshift.copy(
                 df = processed_data['df_insert'],
                 con = self.conn,
-                path = "s3://data-migration-server/redshift/",
-                schema = 'migration_service',
-                table = 'my_table2',
+                path = file_name,
+                schema = self.schema,
+                table = self.name_,
                 mode = "append",
+                primary_keys = primary_keys
             )
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
         print(wr.redshift.read_sql_table(table="my_table2", schema="migration_service", con=self.conn), "\n")
@@ -55,6 +55,7 @@ class RedshiftSaver:
                 schema = self.schema,
                 table = self.name_,
                 mode = "upsert",
+                primary_keys = primary_keys
             )
         self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
     

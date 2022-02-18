@@ -215,7 +215,14 @@ class SQLMigrate:
         if(not processed_data):
             return
         else:
-            self.saver.save(processed_data, c_partition)
+            if(self.db['destination']['destination_type'] == 's3'):
+                self.saver.save(processed_data, c_partition)
+            elif(self.db['destination']['destination_type'] == 'redshift'):
+                if('is_dump' in self.table.keys() and self.table['is_dump']):
+                    self.saver.save(processed_data)
+                else:
+                    ## In case of syncing (not simply dumping) with redshift, we need to specify some primary keys for it to do the updations
+                    self.saver.save(processed_data, ['unique_migration_record_id'])
 
 
     def process(self) -> None:
