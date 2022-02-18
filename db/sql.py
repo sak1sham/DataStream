@@ -47,14 +47,14 @@ class SQLMigrate:
 
 
     def get_number_of_records(self) -> None:
-        self.source_table = self.table['table_name']
+        self.source_table = "SELECT * FROM " + self.table['table_name']
         if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
             self.source_table = self.table['fetch_data_query']
 
         if('username' not in self.db['source'].keys() or 'password' not in self.db['source'].keys()):
             try:
                 engine = create_engine(self.db['source']['url'])
-                self.total_records = engine.execute("SELECT COUNT(*) from (" + self.source_table + ") AS MIGRATION_SERVICE_DATA;").fetchall()[0][0]
+                self.total_records = engine.execute("SELECT COUNT(*) FROM (" + self.source_table + ") AS MIGRATION_SERVICE_DATA;").fetchall()[0][0]
             except Exception as e:
                 self.total_records = 0
                 raise ConnectionError("Unable to connect to source.")
@@ -66,7 +66,7 @@ class SQLMigrate:
                     user = self.db['source']['username'],
                     password = self.db['source']['password'])
                 cursor = conn.cursor()
-                total_records = cursor.execute("SELECT COUNT(*) from (" + self.source_table + ") AS MIGRATION_SERVICE_DATA;", [])
+                total_records = cursor.execute("SELECT COUNT(*) FROM (" + self.source_table + ") AS MIGRATION_SERVICE_DATA;", [])
                 self.total_records = cursor.fetchone()[0]
             except Exception as e:
                 self.total_records = 0
