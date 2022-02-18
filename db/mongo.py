@@ -106,6 +106,8 @@ class MongoMigrate:
 
         if(self.db['destination']['destination_type'] == 's3'):
             self.saver = s3Saver(db_source=self.db['source'], db_destination=self.db['destination'], c_partition=self.partition_for_parquet, unique_id=self.collection['collection_unique_id'])
+        elif(self.db['destination']['destination_type'] == 'redshift'):
+            self.saver = s3Saver(db_source=self.db['source'], db_destination=self.db['destination'], unique_id=self.collection['collection_unique_id'])
         else:
             raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
         

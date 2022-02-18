@@ -9,6 +9,7 @@ logging.getLogger().setLevel(logging.INFO)
 import traceback
 
 from dst.s3 import s3Saver
+from dst.redshift import RedshiftSaver
 from helper.util import convert_list_to_string, convert_to_datetime
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 
@@ -104,6 +105,8 @@ class SQLMigrate:
             self.inform("Number of records: " + str(self.total_records))
         if(self.db['destination']['destination_type'] == 's3'):
             self.saver = s3Saver(db_source = self.db['source'], db_destination = self.db['destination'], unique_id = self.table['table_unique_id'])
+        elif(self.db['destination']['destination_type'] == 'redshift'):
+            self.saver = RedshiftSaver(db_source = self.db['source'], db_destination = self.db['destination'], unique_id = self.table['table_unique_id'])
         else:
             raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
         self.inform("Table pre-processed.")

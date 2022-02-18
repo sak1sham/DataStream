@@ -94,6 +94,34 @@ with all_products as (
 mapping = [
     {
         'source': {
+            'source_type': 'mongo',
+            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+            'db_name': 'support-service'
+        },
+        'destination': {
+            'destination_type': 'redshift',
+            'host': 'http://redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com/',
+            'database': 'dev',
+            'user': 'admin-redshift',
+            'password': 'CitymallDevAdmin123',
+            's3_bucket_name': 'data-migration-server',
+            'schema': 'migration_service'
+        },
+        'collections': [
+            {
+                'collection_name': 'support_form_items',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * * 50 0',
+                'to_partition': True,
+                'is_dump': True,
+                'partition_col': 'migration_snapshot_date'
+            }
+        ]
+    },
+    {
+        'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
             'db_name': 'cmdb',
