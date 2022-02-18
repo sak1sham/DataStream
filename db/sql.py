@@ -54,7 +54,7 @@ class SQLMigrate:
         if('username' not in self.db['source'].keys() or 'password' not in self.db['source'].keys()):
             try:
                 engine = create_engine(self.db['source']['url'])
-                self.total_records = engine.execute("SELECT COUNT(*) from (" + self.source_table + ");").fetchall()[0][0]
+                self.total_records = engine.execute("SELECT COUNT(*) from (" + self.source_table + ") AS MIGRATION_SERVICE_DATA;").fetchall()[0][0]
             except Exception as e:
                 self.total_records = 0
                 raise ConnectionError("Unable to connect to source.")
@@ -66,7 +66,7 @@ class SQLMigrate:
                     user = self.db['source']['username'],
                     password = self.db['source']['password'])
                 cursor = conn.cursor()
-                total_records = cursor.execute("SELECT COUNT(*) from (" + self.source_table + ");", [])
+                total_records = cursor.execute("SELECT COUNT(*) from (" + self.source_table + ") AS MIGRATION_SERVICE_DATA;", [])
                 self.total_records = cursor.fetchone()[0]
             except Exception as e:
                 self.total_records = 0
@@ -81,7 +81,7 @@ class SQLMigrate:
         if('username' not in self.db['source'].keys() or 'password' not in self.db['source'].keys()):
             try:
                 engine = create_engine(self.db['source']['url'])
-                sql_stmt = "SELECT * FROM (" + self.source_table + ") LIMIT " + str(self.batch_size) + " OFFSET " + str(start)
+                sql_stmt = "SELECT * FROM (" + self.source_table + ") AS MIGRATION_SERVICE_DATA " + str(self.batch_size) + " OFFSET " + str(start)
                 return pd.read_sql(sql_stmt, engine)
             except Exception as e:
                 raise ConnectionError("Unable to connect to source.")
@@ -92,7 +92,7 @@ class SQLMigrate:
                     database = self.db['source']['db_name'],
                     user = self.db['source']['username'],
                     password = self.db['source']['password'])            
-                sql_stmt = "SELECT * FROM (" + self.source_table + ") LIMIT " + str(self.batch_size) + " OFFSET " + str(start)
+                sql_stmt = "SELECT * FROM (" + self.source_table + ") AS MIGRATION_SERVICE_DATA LIMIT " + str(self.batch_size) + " OFFSET " + str(start)
                 return sqlio.read_sql_query(sql_stmt, conn)
             except Exception as e:
                 raise ConnectionError("Unable to connect to source.")
