@@ -107,7 +107,7 @@ mapping = [
         'tables':[
             {
                 'table_name': 'localities_live',
-                'cron': '* * * * * 17 30 0',
+                'cron': '* * * * * 17 33 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -115,7 +115,7 @@ mapping = [
             },
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * 17 30 0',
+                'cron': '* * * * * 17 33 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -124,7 +124,7 @@ mapping = [
             },
             {
                 'table_name': 'cmocx_cl_in_vicinity',
-                'cron': '* * * * * 17 30 0',
+                'cron': '* * * * * 17 33 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
