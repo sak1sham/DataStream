@@ -36,7 +36,7 @@ def healthcheck():
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     custom_records_to_run = sys.argv[1:]
-    for i in len(mapping):
+    for i in range(len(mapping)):
         db = mapping[i]
         if(db['source']['source_type'] == 'sql'):
             if('tables' not in db.keys()):
