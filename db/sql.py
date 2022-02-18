@@ -47,40 +47,42 @@ class SQLMigrate:
 
 
     def get_number_of_records(self) -> None:
+        self.source_table = self.table['table_name']
         if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
-            self.total_records = 1
-        else:
-            if('username' not in self.db['source'].keys() or 'password' not in self.db['source'].keys()):
-                try:
-                    engine = create_engine(self.db['source']['url'])
-                    self.total_records = engine.execute("SELECT COUNT(*) from " + self.table['table_name']).fetchall()[0][0]
-                except Exception as e:
-                    self.total_records = 0
-                    raise ConnectionError("Unable to connect to source.")
-            else:
-                try:
-                    conn = psycopg2.connect(
-                        host = self.db['source']['url'],
-                        database = self.db['source']['db_name'],
-                        user = self.db['source']['username'],
-                        password = self.db['source']['password'])
-                    cursor = conn.cursor()
-                    total_records = cursor.execute("SELECT COUNT(*) from " + self.table['table_name'] + ";", [])
-                    self.total_records = cursor.fetchone()[0]
-                except Exception as e:
-                    self.total_records = 0
-                    raise ConnectionError("Unable to connect to source.")
+            self.source_table = self.table['fetch_data_query']
 
-
-    def get_data(self, start: int = 0) -> dftype:
         if('username' not in self.db['source'].keys() or 'password' not in self.db['source'].keys()):
             try:
                 engine = create_engine(self.db['source']['url'])
-                sql_stmt = "SELECT * FROM " + self.table['table_name'] + " LIMIT " + str(self.batch_size) + " OFFSET " + str(start)
-                if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
-                    sql_stmt = self.table['fetch_data_query']
-                df = pd.read_sql(sql_stmt, engine)
-                return df
+                self.total_records = engine.execute("SELECT COUNT(*) from (" + self.source_table + ");").fetchall()[0][0]
+            except Exception as e:
+                self.total_records = 0
+                raise ConnectionError("Unable to connect to source.")
+        else:
+            try:
+                conn = psycopg2.connect(
+                    host = self.db['source']['url'],
+                    database = self.db['source']['db_name'],
+                    user = self.db['source']['username'],
+                    password = self.db['source']['password'])
+                cursor = conn.cursor()
+                total_records = cursor.execute("SELECT COUNT(*) from (" + self.source_table + ");", [])
+                self.total_records = cursor.fetchone()[0]
+            except Exception as e:
+                self.total_records = 0
+                raise ConnectionError("Unable to connect to source.")
+
+
+    def get_data(self, start: int = 0) -> dftype:
+        self.source_table = self.table['table_name']
+        if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
+            self.source_table = self.table['fetch_data_query']
+
+        if('username' not in self.db['source'].keys() or 'password' not in self.db['source'].keys()):
+            try:
+                engine = create_engine(self.db['source']['url'])
+                sql_stmt = "SELECT * FROM (" + self.source_table + ") LIMIT " + str(self.batch_size) + " OFFSET " + str(start)
+                return pd.read_sql(sql_stmt, engine)
             except Exception as e:
                 raise ConnectionError("Unable to connect to source.")
         else:
@@ -90,11 +92,8 @@ class SQLMigrate:
                     database = self.db['source']['db_name'],
                     user = self.db['source']['username'],
                     password = self.db['source']['password'])            
-                select_query = "SELECT * FROM " + self.table['table_name'] + " LIMIT " + str(self.batch_size) + " OFFSET " + str(start)
-                if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
-                    select_query = self.table['fetch_data_query']
-                df = sqlio.read_sql_query(select_query, conn)
-                return df
+                sql_stmt = "SELECT * FROM (" + self.source_table + ") LIMIT " + str(self.batch_size) + " OFFSET " + str(start)
+                return sqlio.read_sql_query(sql_stmt, conn)
             except Exception as e:
                 raise ConnectionError("Unable to connect to source.")
 
@@ -241,7 +240,7 @@ class SQLMigrate:
             self.saver.expire(self.table['expiry'], self.tz_info)
             self.inform("Expired data removed.")
         self.saver.close()
-        self.inform("Hope to see you again :')\n\n")
+        self.inform("Hope to see you again :')\n")
 
 
 def process_sql_table(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> None:
@@ -250,4 +249,4 @@ def process_sql_table(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> No
         obj.process()
     except Exception as e:
         logging.error(traceback.format_exc())
-        logging.info(table['table_unique_id'] + ": Migration stopped.\n\n")
+        logging.info(table['table_unique_id'] + ": Migration stopped.\n")

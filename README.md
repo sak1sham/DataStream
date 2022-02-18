@@ -32,3 +32,5 @@ docker-compose build
 ```bash
 docker-compose up
 ```
+
+This system can convert common datetime string columns to datetime columns.

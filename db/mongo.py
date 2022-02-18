@@ -224,7 +224,7 @@ class MongoMigrate:
             self.saver.expire(self.collection['expiry'], self.tz_info)
             self.inform("Expired data removed.")
         self.saver.close()
-        self.inform("Hope to see you again :')\n\n")
+        self.inform("Hope to see you again :')\n")
 
 
 def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any] = {}) -> None:
@@ -233,4 +233,4 @@ def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any]
         obj.process()
     except Exception as e:
         logging.error(traceback.format_exc())
-        logging.info(collection['collection_unique_id'] + ": Migration stopped.\n\n")
+        logging.info(collection['collection_unique_id'] + ": Migration stopped.\n")
