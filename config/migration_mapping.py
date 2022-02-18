@@ -113,7 +113,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 50 0',
+                'cron': '* * * * * * 55 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
