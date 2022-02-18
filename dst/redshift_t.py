@@ -23,4 +23,4 @@ def redshift_test():
         table = 'my_table',
         mode = 'append',
     )
-    print(wr.redshift.read_sql_table(table="my_table", schema="public", con=conn))
+    print(wr.redshift.read_sql_table(table="my_table", schema="migration_service", con=conn))
