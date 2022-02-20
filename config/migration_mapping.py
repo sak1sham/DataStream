@@ -104,7 +104,7 @@ mapping = [
             'destination_type': 's3',
             's3_bucket_name': 'data-migration-server'
         },
-        'tables':[
+        'tables': [
             {
                 'table_name': 'localities_live',
                 'cron': '* * * * * 18 47 0',
@@ -224,6 +224,27 @@ mapping = [
                 'cron': '* * * * * 18 47 0',
                 'to_partition': True
             },
+        ]
+    },
+    {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'cm',
+            'password': 'cm'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'data-migration-server'
+        },
+        'tables': [
+            {
+                'table_name': 'leader_kycs',
+                'cron': 'run',
+                'to_partition': False,
+                'is_dump': True
+            }
         ]
     }
 ]
