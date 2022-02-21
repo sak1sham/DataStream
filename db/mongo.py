@@ -26,11 +26,11 @@ class MongoMigrate:
 
 
     def inform(self, message: str) -> None:
-        logging.info(self.collection['collection_unique_id'] + ": " + message)
+        logging.info(self.collection['unique_id'] + ": " + message)
 
 
     def warn(self, message: str) -> None:
-        logging.warning(self.collection['collection_unique_id'] + ": " + message)
+        logging.warning(self.collection['unique_id'] + ": " + message)
 
 
     def get_data(self) -> None:
@@ -48,7 +48,7 @@ class MongoMigrate:
         if('fields' not in self.collection.keys()):
             self.collection['fields'] = {}
         
-        self.last_run_cron_job = utc_to_local(get_last_run_cron_job(self.collection['collection_unique_id']), self.tz_info)
+        self.last_run_cron_job = utc_to_local(get_last_run_cron_job(self.collection['unique_id']), self.tz_info)
         self.partition_for_parquet = []
 
         if('to_partition' in self.collection.keys() and self.collection['to_partition']):
@@ -101,9 +101,9 @@ class MongoMigrate:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")            
 
         if(self.db['destination']['destination_type'] == 's3'):
-            self.saver = s3Saver(db_source=self.db['source'], db_destination=self.db['destination'], c_partition=self.partition_for_parquet, unique_id=self.collection['collection_unique_id'])
+            self.saver = s3Saver(db_source=self.db['source'], db_destination=self.db['destination'], c_partition=self.partition_for_parquet, unique_id=self.collection['unique_id'])
         elif(self.db['destination']['destination_type'] == 'redshift'):
-            self.saver = RedshiftSaver(db_source=self.db['source'], db_destination=self.db['destination'], unique_id=self.collection['collection_unique_id'])
+            self.saver = RedshiftSaver(db_source=self.db['source'], db_destination=self.db['destination'], unique_id=self.collection['unique_id'])
         else:
             raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
         
@@ -155,17 +155,17 @@ class MongoMigrate:
                     else:
                         document['_id'] = str(document['_id'])
                         encr = {
-                            'collection': self.collection['collection_unique_id'],
+                            'collection': self.collection['unique_id'],
                             'map_id': document['_id'],
                             'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
                         }
-                        previous_records = collection_encr.find_one({'collection': self.collection['collection_unique_id'], 'map_id': document['_id']})
+                        previous_records = collection_encr.find_one({'collection': self.collection['unique_id'], 'map_id': document['_id']})
                         if(previous_records):
                             if(previous_records['document_sha'] == encr['document_sha']):
                                 continue
                             else:
                                 updation = True
-                                collection_encr.delete_one({'collection': self.collection['collection_unique_id'], 'map_id': document['_id']})
+                                collection_encr.delete_one({'collection': self.collection['unique_id'], 'map_id': document['_id']})
                                 collection_encr.insert_one(encr)
                         else:
                             collection_encr.insert_one(encr)
@@ -173,7 +173,7 @@ class MongoMigrate:
                     if('bookmark' not in self.collection.keys() or not self.collection['bookmark']):
                         document['_id'] = str(document['_id'])
                         encr = {
-                            'collection': self.collection['collection_unique_id'],
+                            'collection': self.collection['unique_id'],
                             'map_id': document['_id'],
                             'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
                         }
@@ -225,4 +225,4 @@ def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any]
         obj.process()
     except Exception as e:
         logging.error(traceback.format_exc())
-        logging.info(collection['collection_unique_id'] + ": Migration stopped.\n")
+        logging.info(collection['unique_id'] + ": Migration stopped.\n")

@@ -33,29 +33,32 @@ def healthcheck():
     logging.info('Health check done.')
     pass
 
+def schedule_new_job(db, list_specs, uid, i, custom_f):
+    list_specs['unique_id'] = uid + "_MIGRATION_SERVICE_" + str(i+1)
+    if(list_specs['cron'] == 'run'):
+        custom_f(db, list_specs)
+    else:
+        year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(list_specs['cron'])
+        scheduler.add_job(custom_f, 'cron', args=[db, list_specs], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Kolkata'))
+
+def use_mapping(db, key, custom_f):
+    if(key not in db.keys()):
+        db[key] = []
+    for i, curr_mapping in enumerate(db[key]):
+        schedule_new_job(db, curr_mapping, unique_id, i, custom_f)
+
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     custom_records_to_run = sys.argv[1:]
     for unique_id, db in mapping.items():
-        if(db['source']['source_type'] == 'sql'):
-            if('tables' not in db.keys()):
-                db['tables'] = []
-            for i in range(len(db['tables'])):
-                curr_table = db['tables'][i]
-                year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(curr_table['cron'])
-                curr_table['table_unique_id'] = unique_id + "_MIGRATION_SERVICE_" + str(i+1)
-                if(len(custom_records_to_run) == 0 or curr_table['table_unique_id'] in custom_records_to_run):
-                    scheduler.add_job(process_sql_table, 'cron', args=[db, curr_table], id=curr_table['table_unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Calcutta'))
+        if(unique_id == 'fastapi_server'):
+            continue
+        elif(db['source']['source_type'] == 'sql'):
+            use_mapping(db, 'tables', process_sql_table)
         elif(db['source']['source_type'] == 'mongo'):
-            if('collections' not in db.keys()):
-                db['collections'] = []
-            for i in range(len(db['collections'])):
-                curr_collection = db['collections'][i]
-                year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(curr_collection['cron'])
-                curr_collection['collection_unique_id'] = unique_id + "_MIGRATION_SERVICE_" + str(i+1)
-                if(len(custom_records_to_run) == 0 or curr_collection['collection_unique_id'] in custom_records_to_run):
-                    scheduler.add_job(process_mongo_collection, 'cron', args=[db, curr_collection], id=curr_collection['collection_unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Calcutta'))
+            use_mapping(db, 'collections', process_mongo_collection)
         else:
             logging.error("Un-identified Source Type " + str(db['source']['source_type']) + " found in migration-mapping.")
-    logging.info('Added job(s) to the scheduler.')
-    uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))
+    logging.info('Added all jobs.')
+    if('fastapi_server' in mapping.keys() and mapping['fastapi_server']):
+        uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))

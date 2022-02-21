@@ -29,17 +29,17 @@ class SQLMigrate:
         self.tz_info = pytz.timezone(tz_str)
     
     def inform(self, message: str) -> None:
-        logging.info(self.table['table_unique_id'] + ": " + message)
+        logging.info(self.table['unique_id'] + ": " + message)
     
     def warn(self, message: str) -> None:
-        logging.warning(self.table['table_unique_id'] + ": " + message)
+        logging.warning(self.table['unique_id'] + ": " + message)
 
     def preprocess(self) -> None:
-        self.last_run_cron_job = get_last_run_cron_job(self.table['table_unique_id'])
+        self.last_run_cron_job = get_last_run_cron_job(self.table['unique_id'])
         if(self.db['destination']['destination_type'] == 's3'):
-            self.saver = s3Saver(db_source = self.db['source'], db_destination = self.db['destination'], unique_id = self.table['table_unique_id'])
+            self.saver = s3Saver(db_source = self.db['source'], db_destination = self.db['destination'], unique_id = self.table['unique_id'])
         elif(self.db['destination']['destination_type'] == 'redshift'):
-            self.saver = RedshiftSaver(db_source = self.db['source'], db_destination = self.db['destination'], unique_id = self.table['table_unique_id'])
+            self.saver = RedshiftSaver(db_source = self.db['source'], db_destination = self.db['destination'], unique_id = self.table['unique_id'])
         else:
             raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift.")
 
@@ -50,17 +50,17 @@ class SQLMigrate:
         df_update = pd.DataFrame({})
         for i in range(df.shape[0]):
             encr = {
-                'table': self.table['table_unique_id'],
+                'table': self.table['unique_id'],
                 'map_id': df.iloc[i].unique_migration_record_id,
                 'record_sha': hashlib.sha256(convert_list_to_string(df.loc[i, :].values.tolist()).encode()).hexdigest()
             }
-            previous_records = collection_encr.find_one({'table': self.table['table_unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
+            previous_records = collection_encr.find_one({'table': self.table['unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
             if(previous_records):
                 if(previous_records['record_sha'] == encr['record_sha']):
                     continue
                 else:
                     df_update = df_update.append(df.loc[i, :])
-                    collection_encr.delete_one({'table': self.table['table_unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
+                    collection_encr.delete_one({'table': self.table['unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
                     collection_encr.insert_one(encr)
             else:
                 df_insert = df_insert.append(df.loc[i, :])
@@ -210,5 +210,5 @@ def process_sql_table(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> No
         obj.process()
     except Exception as e:
         logging.error(traceback.format_exc())
-        logging.info(table['table_unique_id'] + ": Migration stopped.\n")
+        logging.info(table['unique_id'] + ": Migration stopped.\n")
 
