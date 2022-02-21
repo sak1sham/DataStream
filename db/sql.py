@@ -1,17 +1,14 @@
 import pandas as pd
 import psycopg2
-import pandas.io.sql as sqlio
 import pymongo
-from helper.exceptions import *
-
-import logging
-logging.getLogger().setLevel(logging.INFO)
 import traceback
 
 from dst.s3 import s3Saver
 from dst.redshift import RedshiftSaver
 from helper.util import convert_list_to_string, convert_to_datetime
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
+from helper.exceptions import *
+from helper.logging import logger
 
 import datetime
 import hashlib
@@ -29,10 +26,10 @@ class SQLMigrate:
         self.tz_info = pytz.timezone(tz_str)
     
     def inform(self, message: str) -> None:
-        logging.info(self.table['unique_id'] + ": " + message)
+        logger.inform(self.table['unique_id'] + ": " + message)
     
     def warn(self, message: str) -> None:
-        logging.warning(self.table['unique_id'] + ": " + message)
+        logger.warn(self.table['unique_id'] + ": " + message)
 
     def preprocess(self) -> None:
         self.last_run_cron_job = get_last_run_cron_job(self.table['unique_id'])
@@ -209,6 +206,6 @@ def process_sql_table(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> No
     try:
         obj.process()
     except Exception as e:
-        logging.error(traceback.format_exc())
-        logging.info(table['unique_id'] + ": Migration stopped.\n")
+        logger.err(traceback.format_exc())
+        logger.inform(table['unique_id'] + ": Migration stopped.\n")
 

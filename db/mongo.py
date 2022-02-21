@@ -3,6 +3,7 @@ from dst.s3 import s3Saver
 from dst.redshift import RedshiftSaver
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
+from helper.logging import logger
 
 from pymongo import MongoClient
 import traceback
@@ -14,9 +15,6 @@ import hashlib
 import pytz
 from typing import Dict, Any
 
-import logging
-logging.getLogger().setLevel(logging.INFO)
-
 class MongoMigrate:
     def __init__(self, db: Dict[str, Any], collection: Dict[str, Any], batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
         self.db = db
@@ -26,11 +24,11 @@ class MongoMigrate:
 
 
     def inform(self, message: str) -> None:
-        logging.info(self.collection['unique_id'] + ": " + message)
+        logger.inform(self.collection['unique_id'] + ": " + message)
 
 
     def warn(self, message: str) -> None:
-        logging.warning(self.collection['unique_id'] + ": " + message)
+        logger.warn(self.collection['unique_id'] + ": " + message)
 
 
     def get_data(self) -> None:
@@ -224,5 +222,5 @@ def process_mongo_collection(db: Dict[str, Any] = {}, collection: Dict[str, Any]
     try:
         obj.process()
     except Exception as e:
-        logging.error(traceback.format_exc())
-        logging.info(collection['unique_id'] + ": Migration stopped.\n")
+        logger.err(traceback.format_exc())
+        logger.inform(collection['unique_id'] + ": Migration stopped.\n")

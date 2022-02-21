@@ -1,7 +1,6 @@
 import awswrangler as wr
 
-import logging
-logging.getLogger().setLevel(logging.INFO)
+from helper.logging import logger
 
 from typing import List, Dict, Any
 import datetime
@@ -14,10 +13,10 @@ class s3Saver:
         self.unique_id = unique_id
 
     def inform(self, message: str = "") -> None:
-        logging.info(self.unique_id + ": " + message)
+        logger.inform(self.unique_id + ": " + message)
     
     def warn(self, message: str = "") -> None:
-        logging.warning(self.unique_id + ": " + message)
+        logger.warn(self.unique_id + ": " + message)
 
     def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = []) -> None:
         if(c_partition and len(c_partition) > 0):

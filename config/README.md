@@ -1,12 +1,28 @@
 # How to write your own Migration Mapping
 
-Migration mapping is a list of specifications for each pipeline. Each specification consist of source, destination and data_properties. Each specification is structured in following format:
+Migration mapping is a dict of specifications for each pipeline. Each specification consist of source, destination and data_properties. Each specification is structured in following format:
+```
+{
+    "job_1_unique_id": pipeline_format_1,
+    "job_2_unique_id": pipeline_format_2,
+    .
+    .
+    .
+    "job_n_unique_id": pipeline_format_n
+    "fastapi_server": True (Bool, Optional, Default=False)
+}
+```
 
+Note:
 1. No need to change the encryption_store variable
 2. No need to remove any imported libraries
-3. Use datetime
+3. Unique_id can't be "fastapi_server". It is a reserved keyword.
 
-## Specifying pipeline_properties
+## Specifying pipeline_format
+pipeline_format is a dictionary with following properties:
+1. source
+2. destination
+3. tables, or collections or api as per source['source_type'] (Data structuring)
 
 ### Source
 ```
@@ -40,7 +56,7 @@ Migration mapping is a list of specifications for each pipeline. Each specificat
 6. s3_bucket_name : str, name of the s3 bucket
 7. schema : str, name of the schema to upload the data to
 
-### Data structure (Table or Collection or JSON)
+### Data structuring (tables or collections or apis)
 If source is SQL, we need to provide a field ```tables```, which is a list of table_specifications. Table_specifications shall be in following format:
 ```
 {
@@ -77,7 +93,7 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
 }
 ```
 
-If source is API, we need to provide a field ```API```, which is a list of api_specifications. 
+If source is API, we need to provide a field ```apis```, which is a list of api_specifications. 
 Api_specifications shall be in following format:
 ```
 {
@@ -96,6 +112,9 @@ Api_specifications shall be in following format:
     'expiry': {'days': 30, 'hours': 5} (dict[str, int], Optional, used only when is_dump = True)
 }
 ```
+
+## fastapi_server
+(Bool): default = False. If user sets 'fastapi_server' to True, a uvicorn server is started.
 
 # Notes
 

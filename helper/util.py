@@ -1,14 +1,11 @@
 import json
 import datetime
-
-import logging
-logging.getLogger().setLevel(logging.INFO)
-
 import pytz
 from dateutil import parser
-
 from typing import List, Dict, Any, NewType
 import pandas as pd
+
+from helper.logging import logger
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
@@ -57,7 +54,7 @@ def convert_to_datetime(x: Any, tz_: Any) -> datetype:
             x = parser.parse(x)
             return utc_to_local(x, tz_)
         except Exception as e:
-            logging.warning("Unable to convert " + x + " to any datetime format. Returning None")
+            logger.warn("Unable to convert " + x + " to any datetime format. Returning None")
             return pd.Timestamp(None)
 
 def convert_json_to_string(x: Dict[str, Any]) -> str:
@@ -87,7 +84,7 @@ def evaluate_cron(expression: str) -> List[str]:
             year, month, day, week, day_of_week, hour, minute, second
     '''
     if(expression is None):
-        logging.warning("Cron Expression Not Specified. Unable to run job")
+        logger.warn("Cron Expression Not Specified. Unable to run job")
         expression =  '1602 * * * * * */5 0'
     vals = expression.split()
     vals = [(None if w == '?' else w) for w in vals]
@@ -130,7 +127,7 @@ def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_in
             try:
                 docu[key] = str(docu[key])
             except Exception as e:
-                logging.warning("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
+                logger.warn("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
                 docu[key] = None
     
     for key, _ in schema.items():

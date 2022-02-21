@@ -1,8 +1,7 @@
 import awswrangler as wr
 import redshift_connector
 
-import logging
-logging.getLogger().setLevel(logging.INFO)
+from helper.logging import logger
 
 from typing import List, Dict, Any
 import datetime
@@ -23,10 +22,10 @@ class RedshiftSaver:
         self.is_small_data = is_small_data
 
     def inform(self, message: str = "") -> None:
-        logging.info(self.unique_id + ": " + message)
+        logger.inform(self.unique_id + ": " + message)
     
     def warn(self, message: str = "") -> None:
-        logging.warning(self.unique_id + ": " + message)
+        logger.warn(self.unique_id + ": " + message)
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         self.name_ = processed_data['name']
