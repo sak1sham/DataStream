@@ -200,10 +200,14 @@ class SQLMigrate:
                     _ = curs.fetchone()
                     columns = [desc[0] for desc in curs.description]
                     curs.scroll(-1)
-                    for row in curs:
-                        data_df = pd.DataFrame([list(row)], columns = columns)
-                        processed_data = self.process_table(df = data_df, table_name = table_name)
-                        self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                    while(True):
+                        rows = curs.fetchmany(self.batch_size)
+                        if (not rows):
+                            break
+                        else:
+                            data_df = pd.DataFrame(rows, columns = columns)
+                            processed_data = self.process_table(df = data_df, table_name = table_name)
+                            self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
             except Exception as e:
                 raise ProcessingError("Caught some exception while processing records.")
         except Exception as e:
