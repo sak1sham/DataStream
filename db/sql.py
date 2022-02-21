@@ -215,6 +215,7 @@ class SQLMigrate:
             )
             try:
                 col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
+                print(col_dtypes)
                 with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
