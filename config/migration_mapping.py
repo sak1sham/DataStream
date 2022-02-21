@@ -95,8 +95,10 @@ mapping = {
     "job_unique_id" : {
         'source': {
             'source_type': 'sql',
-            'url': 'localhost',
-            'db_name': 'postgres'
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'cm',
+            'password': 'cm'
         },
         'destination': {
             'destination_type': 's3',
