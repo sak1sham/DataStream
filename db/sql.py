@@ -3,7 +3,7 @@ import psycopg2
 import pymongo
 import traceback
 
-from helper.util import convert_list_to_string, convert_to_datetime
+from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
 from helper.logging import logger
@@ -60,7 +60,7 @@ class SQLMigrate:
         return df_insert, df_update
 
 
-    def process_table(self, df: dftype = pd.DataFrame({}), table_name: str = None) -> Dict[str, Any]:
+    def process_table(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query']):
             self.inform("Number of records: " + str(df.shape[0]))
         collection_encr = get_data_from_encr_db()
@@ -132,6 +132,8 @@ class SQLMigrate:
         else:
             df_insert = df_consider
             df_update = pd.DataFrame({})
+        df_insert = convert_to_dtype(df_insert, col_dtypes)
+        df_update = convert_to_dtype(df_update, col_dtypes)
         return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update}
 
 
@@ -168,13 +170,31 @@ class SQLMigrate:
                 with conn.cursor() as curs:
                     curs.execute(sql_stmt)
                     rows = curs.fetchall()
-                    table_names = [str("\"" + t[0] + "\"" + "." + t[1]) for t in rows]
+                    table_names = [str(t[0] + "." + t[1]) for t in rows]
                     return table_names
             except Exception as e:
                 raise ProcessingError("Caught some exception while getting list of all tables.")
         except Exception as e:
             raise ConnectionError("Unable to connect to source.")
 
+    def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
+        tn = curr_table_name.split('.')
+        schema_name = 'public'
+        table_name = ''
+        if(len(tn) > 1):
+            schema_name = tn[0]
+            table_name = tn[1]
+        else:
+            # if table_name doesn't contain schema name
+            table_name = tn[0]
+        sql_stmt = "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = \'" + table_name + "\' AND table_schema = \'" + schema_name + "\';"
+        col_dtypes = {}
+        with conn.cursor('cursor-to-get-col-names') as curs:
+            curs.execute(sql_stmt)
+            rows = curs.fetchall()
+            for key, val in rows:
+                col_dtypes[key] = val
+        return col_dtypes
 
     def migrate_data(self, table_name: str = None) -> None:
         sql_stmt = "SELECT * FROM " + table_name
@@ -194,6 +214,7 @@ class SQLMigrate:
                 password = self.db['source']['password']
             )
             try:
+                col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
                 with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
@@ -206,7 +227,7 @@ class SQLMigrate:
                             break
                         else:
                             data_df = pd.DataFrame(rows, columns = columns)
-                            processed_data = self.process_table(df = data_df, table_name = table_name)
+                            processed_data = self.process_table(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
                             self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
             except Exception as e:
                 raise ProcessingError("Caught some exception while processing records.")

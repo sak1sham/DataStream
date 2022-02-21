@@ -164,3 +164,10 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
         else:
             df[col] = df[col].astype(str)
     return df
+
+def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
+    for col, dtype in schema.items():
+        if(dtype == 'json'):
+            df[col] = df[col].apply(convert_json_to_string)
+            df[col] = df[col].astype(str)
+        
