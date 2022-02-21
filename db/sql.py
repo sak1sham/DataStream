@@ -194,10 +194,12 @@ class SQLMigrate:
                 password = self.db['source']['password']
             )
             try:
-                with conn.cursor('cursor-name') as curs:
+                with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
+                    _ = curs.fetchone()
                     columns = [desc[0] for desc in curs.description]
+                    curs.scroll(-1)
                     for row in curs:
                         data_df = pd.DataFrame([list(row)], columns = columns)
                         processed_data = self.process_table(df = data_df, table_name = table_name)
