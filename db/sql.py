@@ -194,7 +194,7 @@ class SQLMigrate:
                 password = self.db['source']['password']
             )
             try:
-                with conn.cursor() as curs:
+                with conn.cursor('cursor-name') as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
                     columns = [desc[0] for desc in curs.description]
