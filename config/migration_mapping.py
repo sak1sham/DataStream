@@ -106,8 +106,31 @@ mapping = {
             {
             'table_name': 'phonebook',
             'is_dump': True,
-            'cron': '* * * * * * */1 40'
+            'cron': 'run'
             }
+        ]
+    },
+    'mongo_migration': {
+        'source': {
+            'source_type': 'mongo',
+            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+            'db_name': 'support-service'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp',
+        },
+        'collections': [
+            {
+                'collection_name': 'support_form_items',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': 'run',
+                'to_partition': True,
+                'is_dump': True,
+                'partition_col': 'migration_snapshot_date'
+            },
         ]
     },
     'fastapi_server': True
