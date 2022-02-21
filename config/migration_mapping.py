@@ -240,9 +240,11 @@ mapping = [
         },
         'tables': [
             {
-                'table_name': 'leader_kycs',
+                'table_name': 'localities_live',
                 'cron': 'run',
-                'to_partition': False,
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
                 'is_dump': True
             }
         ]
