@@ -193,17 +193,23 @@ class SQLMigrate:
                 user = self.db['source']['username'],
                 password = self.db['source']['password']
             )
-            try:            
+            try:
+                print(conn)            
                 with conn.cursor() as curs:
+                    print(curs)
                     curs.execute(sql_stmt)
+                    print("Again, ", curs)
                     columns = [desc[0] for desc in curs.description]
+                    print(columns)
                     while(True):
                         rows = curs.fetchmany(self.batch_size)
+                        print(self.batch_size)
                         if (not rows):
                             break
                         else:
                             data_df = pd.DataFrame(rows, columns = columns)
                             processed_data = self.process_table(df = data_df, table_name = table_name)
+                            print("Processed")
                             self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
             except Exception as e:
                 raise ProcessingError("Caught some exception while processing records.")
