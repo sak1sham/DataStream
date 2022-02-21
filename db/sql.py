@@ -18,7 +18,7 @@ dftype = NewType("dftype", pd.DataFrame)
 collectionType =  NewType("collectionType", pymongo.collection.Collection)
 
 class SQLMigrate:
-    def __init__(self, db: Dict[str, Any] = None, table: Dict[str, Any] = None, batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
+    def __init__(self, db: Dict[str, Any] = None, table: Dict[str, Any] = None, batch_size: int = 1000, tz_str: str = 'Asia/Kolkata') -> None:
         self.db = db
         self.curr_mapping = table
         self.batch_size = batch_size
