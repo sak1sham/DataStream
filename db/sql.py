@@ -194,23 +194,14 @@ class SQLMigrate:
                 password = self.db['source']['password']
             )
             try:
-                print(conn)            
                 with conn.cursor() as curs:
-                    print(curs)
+                    curs.itersize = 2
                     curs.execute(sql_stmt)
-                    print("Again, ", curs)
                     columns = [desc[0] for desc in curs.description]
-                    print(columns)
-                    while(True):
-                        rows = curs.fetchmany(self.batch_size)
-                        print(self.batch_size)
-                        if (not rows):
-                            break
-                        else:
-                            data_df = pd.DataFrame(rows, columns = columns)
-                            processed_data = self.process_table(df = data_df, table_name = table_name)
-                            print("Processed")
-                            self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                    for row in curs:
+                        data_df = pd.DataFrame([list(row)], columns = columns)
+                        processed_data = self.process_table(df = data_df, table_name = table_name)
+                        self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
             except Exception as e:
                 raise ProcessingError("Caught some exception while processing records.")
         except Exception as e:
@@ -229,13 +220,13 @@ class SQLMigrate:
         for table_name in name_tables:
             self.inform("Migrating table " + table_name + ".")
             self.migrate_data(table_name)
-            self.inform("Completed migration of table " + table_name + ".")
+            self.inform("Completed migration of table " + table_name + ".\n")
         self.inform("Overall migration complete.")
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform("Expired data removed.")
         self.saver.close()
-        self.inform("Hope to see you again :')\n")
+        self.inform("Hope to see you again :')")
 
 
 def process_sql_table(db: Dict[str, Any] = None, table: Dict[str, Any] = None) -> None:
