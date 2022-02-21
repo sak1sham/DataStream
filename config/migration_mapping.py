@@ -106,7 +106,7 @@ mapping = {
         },
         'tables': [
             {
-            'table_name': 'public.support_form_items',
+            'table_name': '*',
             'is_dump': True,
             'cron': 'run'
             }
