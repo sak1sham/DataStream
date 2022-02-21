@@ -91,6 +91,28 @@ with all_products as (
 
 '''
 
+mapping = {
+    "job_unique_id" : {
+        'source': {
+            'source_type': 'sql',
+            'url': 'localhost',
+            'db_name': 'postgres'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp',
+        },
+        'tables': [
+            {
+            'table_name': 'phonebook',
+            'is_dump': True,
+            'cron': '* * * * * * */1 10'
+            }
+        ]
+    }
+}
+
+'''
 mapping = [
     {
         'source': {
@@ -238,6 +260,7 @@ mapping = [
         ]
     }
 ]
+'''
 
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),

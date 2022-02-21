@@ -1,8 +1,8 @@
-from sqlalchemy import create_engine
 import pandas as pd
 import psycopg2
 import pandas.io.sql as sqlio
 import pymongo
+from helper.exceptions import *
 
 import logging
 logging.getLogger().setLevel(logging.INFO)
@@ -18,19 +18,8 @@ import hashlib
 import pytz
 from typing import List, Dict, Any, NewType, Tuple
 
-
 dftype = NewType("dftype", pd.DataFrame)
 collectionType =  NewType("collectionType", pymongo.collection.Collection)
-
-class ConnectionError(Exception):
-    pass
-
-class UnrecognizedFormat(Exception):
-    pass
-
-class DestinationNotFound(Exception):
-    pass
-
 
 class SQLMigrate:
     def __init__(self, db: Dict[str, Any], table: Dict[str, Any], batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
@@ -45,70 +34,14 @@ class SQLMigrate:
     def warn(self, message: str) -> None:
         logging.warning(self.table['table_unique_id'] + ": " + message)
 
-
-    def get_number_of_records(self) -> None:
-        self.source_table = "SELECT * FROM " + self.table['table_name']
-        if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
-            self.source_table = self.table['fetch_data_query']
-        sql_stmt = "SELECT COUNT(*) FROM (" + self.source_table + ") AS MIGRATION_SERVICE_DATA;"
-
-        if('username' not in self.db['source'].keys() or 'password' not in self.db['source'].keys()):
-            try:
-                engine = create_engine(self.db['source']['url'])
-                self.total_records = engine.execute().fetchall(sql_stmt)[0][0]
-            except Exception as e:
-                self.total_records = 0
-                raise ConnectionError("Unable to connect to source.")
-        else:
-            try:
-                conn = psycopg2.connect(
-                    host = self.db['source']['url'],
-                    database = self.db['source']['db_name'],
-                    user = self.db['source']['username'],
-                    password = self.db['source']['password'])
-                cursor = conn.cursor()
-                total_records = cursor.execute(sql_stmt, [])
-                self.total_records = cursor.fetchone()[0]
-            except Exception as e:
-                self.total_records = 0
-                raise ConnectionError("Unable to connect to source.")
-
-
-    def get_data(self, start: int = 0) -> dftype:
-        self.source_table = "SELECT * FROM " + self.table['table_name']
-        if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
-            self.source_table = self.table['fetch_data_query']
-        sql_stmt = "SELECT * FROM (" + self.source_table + ") AS MIGRATION_SERVICE_DATA LIMIT " + str(self.batch_size) + " OFFSET " + str(start)
-
-        if('username' not in self.db['source'].keys() or 'password' not in self.db['source'].keys()):
-            try:
-                engine = create_engine(self.db['source']['url'])
-                return pd.read_sql(sql_stmt, engine)
-            except Exception as e:
-                raise ConnectionError("Unable to connect to source.")
-        else:
-            try:
-                conn = psycopg2.connect(
-                    host = self.db['source']['url'],
-                    database = self.db['source']['db_name'],
-                    user = self.db['source']['username'],
-                    password = self.db['source']['password'])            
-                return sqlio.read_sql_query(sql_stmt, conn)
-            except Exception as e:
-                raise ConnectionError("Unable to connect to source.")
-
-
     def preprocess(self) -> None:
         self.last_run_cron_job = get_last_run_cron_job(self.table['table_unique_id'])
-        if('fetch_data_query' not in self.table.keys() or not self.table['fetch_data_query']):
-            self.inform("Number of records: " + str(self.total_records))
         if(self.db['destination']['destination_type'] == 's3'):
             self.saver = s3Saver(db_source = self.db['source'], db_destination = self.db['destination'], unique_id = self.table['table_unique_id'])
         elif(self.db['destination']['destination_type'] == 'redshift'):
             self.saver = RedshiftSaver(db_source = self.db['source'], db_destination = self.db['destination'], unique_id = self.table['table_unique_id'])
         else:
-            raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
-        self.inform("Table pre-processed.")
+            raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift.")
 
 
     def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({})) -> Tuple[dftype]:
@@ -135,7 +68,7 @@ class SQLMigrate:
         return df_insert, df_update
 
 
-    def process_table(self, df: dftype = pd.DataFrame({})) -> Tuple[dftype]:
+    def process_table(self, df: dftype = pd.DataFrame({})) -> Dict[str, Any]:
         if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query']):
             self.inform("Number of records: " + str(df.shape[0]))
         collection_encr = get_data_from_encr_db()
@@ -224,17 +157,45 @@ class SQLMigrate:
                     self.saver.save(processed_data, ['unique_migration_record_id'])
 
 
+    def migrate_data(self) -> None:
+        sql_stmt = "SELECT * FROM " + self.table['table_name']
+        if('fetch_data_query' in self.table.keys() and self.table['fetch_data_query'] and len(self.table['fetch_data_query']) > 0):
+            sql_stmt = self.table['fetch_data_query']
+
+        if('username' not in self.db['source'].keys()):
+            self.db['source']['username'] = ''
+        if('password' not in self.db['source'].keys()):
+            self.db['source']['password'] = ''
+
+        try:
+            conn = psycopg2.connect(
+                host = self.db['source']['url'],
+                database = self.db['source']['db_name'],
+                user = self.db['source']['username'],
+                password = self.db['source']['password']
+            )
+            try:            
+                with conn.cursor() as curs:
+                    curs.execute(sql_stmt)
+                    columns = [desc[0] for desc in curs.description]
+                    while(True):
+                        rows = curs.fetchmany(self.batch_size)
+                        if (not rows):
+                            break
+                        else:
+                            data_df = pd.DataFrame(rows, columns = columns)
+                            processed_data = self.process_table(df = data_df)
+                            self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+            except Exception as e:
+                raise ProcessingError("Caught some exception while processing records.")
+        except Exception as e:
+            raise ConnectionError("Unable to connect to source.")
+
+
     def process(self) -> None:
-        self.get_number_of_records()
         self.preprocess()
-        if(self.total_records and self.total_records > 0):
-            start = 0
-            while(start < self.total_records):
-                df = self.get_data(start=start)
-                if(df is not None):
-                    processed_data = self.process_table(df = df)
-                    self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
-                start += self.batch_size
+        self.inform("Table pre-processed.")
+        self.migrate_data()
         self.inform("Migration Complete.")
         if('is_dump' in self.table.keys() and self.table['is_dump'] and 'expiry' in self.table.keys() and self.table['expiry']):
             self.saver.expire(self.table['expiry'], self.tz_info)
@@ -250,3 +211,4 @@ def process_sql_table(db: Dict[str, Any] = {}, table: Dict[str, Any] = {}) -> No
     except Exception as e:
         logging.error(traceback.format_exc())
         logging.info(table['table_unique_id'] + ": Migration stopped.\n")
+

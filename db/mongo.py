@@ -2,6 +2,7 @@ from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, 
 from dst.s3 import s3Saver
 from dst.redshift import RedshiftSaver
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
+from helper.exceptions import *
 
 from pymongo import MongoClient
 import traceback
@@ -15,15 +16,6 @@ from typing import Dict, Any
 
 import logging
 logging.getLogger().setLevel(logging.INFO)
-
-class ConnectionError(Exception):
-    pass
-
-class UnrecognizedFormat(Exception):
-    pass
-
-class DestinationNotFound(Exception):
-    pass
 
 class MongoMigrate:
     def __init__(self, db: Dict[str, Any], collection: Dict[str, Any], batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
