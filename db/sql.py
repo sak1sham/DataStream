@@ -148,7 +148,7 @@ class SQLMigrate:
     
     def get_list_tables(self) -> List[str]:
         sql_stmt = '''
-            SELECT tablename
+            SELECT schemaname, tablename
             FROM pg_catalog.pg_tables
             WHERE schemaname != 'pg_catalog' AND 
             schemaname != 'information_schema';
@@ -168,7 +168,7 @@ class SQLMigrate:
                 with conn.cursor() as curs:
                     curs.execute(sql_stmt)
                     rows = curs.fetchall()
-                    table_names = [item for t in rows for item in t]
+                    table_names = [str("\"" + t[0] + "\"" + "." + t[1]) for t in rows]
                     return table_names
             except Exception as e:
                 raise ProcessingError("Caught some exception while getting list of all tables.")
@@ -217,7 +217,7 @@ class SQLMigrate:
             name_tables = self.get_list_tables()
         else:
             name_tables = [self.curr_mapping['table_name']]
-        self.inform(' '.join(name_tables))
+        self.inform("Found following " + str(len(name_tables)) + " tables:\n" + '\n'.join(name_tables))
         self.preprocess()
         self.inform("Mapping pre-processed.")
         for table_name in name_tables:
