@@ -106,7 +106,7 @@ mapping = {
         },
         'tables': [
             {
-            'table_name': '"public".order_item_state_transitions',
+            'table_name': '*',
             'is_dump': True,
             'cron': 'run'
             }
