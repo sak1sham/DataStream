@@ -92,7 +92,7 @@ with all_products as (
 '''
 
 mapping = {
-    'sql_dumping': {
+    "job_unique_id" : {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -102,39 +102,17 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'migration-service-temp',
         },
-        'tables':[
+        'tables': [
             {
-                'table_name': 'localities_live',
-                'cron': 'run',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True
-            },
-            {
-                'table_name': 'inventory_snapshot_wms',
-                'cron': 'run',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-                'fetch_data_query': query_1
-            },
-            {
-                'table_name': 'cmocx_cl_in_vicinity',
-                'cron': 'run',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-                'expiry': {
-                    'days': 30
-                },
+            'table_name': '*',
+            'is_dump': True,
+            'cron': 'run'
             }
         ]
     },
+
     'fastapi_server': True
 }
 

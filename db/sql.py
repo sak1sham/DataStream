@@ -23,6 +23,7 @@ class SQLMigrate:
         self.curr_mapping = table
         self.batch_size = batch_size
         self.tz_info = pytz.timezone(tz_str)
+        self.last_run_cron_job = pd.Timestamp(None)
     
     def inform(self, message: str = None) -> None:
         logger.inform(self.curr_mapping['unique_id'] + ": " + message)
@@ -59,7 +60,7 @@ class SQLMigrate:
         return df_insert, df_update
 
 
-    def process_table(self, df: dftype = pd.DataFrame({})) -> Dict[str, Any]:
+    def process_table(self, df: dftype = pd.DataFrame({}), table_name: str = None) -> Dict[str, Any]:
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query']):
             self.inform("Number of records: " + str(df.shape[0]))
         collection_encr = get_data_from_encr_db()
@@ -131,7 +132,7 @@ class SQLMigrate:
         else:
             df_insert = df_consider
             df_update = pd.DataFrame({})
-        return {'name': self.curr_mapping['table_name'], 'df_insert': df_insert, 'df_update': df_update}
+        return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update}
 
 
     def save_data(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = None) -> None:
@@ -144,9 +145,39 @@ class SQLMigrate:
                 prim_keys = ['unique_migration_record_id']
             self.saver.save(processed_data = processed_data, primary_keys = prim_keys, c_partition = c_partition)
 
+    
+    def get_list_tables(self) -> List[str]:
+        sql_stmt = '''
+            SELECT tablename
+            FROM pg_catalog.pg_tables
+            WHERE schemaname != 'pg_catalog' AND 
+            schemaname != 'information_schema';
+        '''
+        if('username' not in self.db['source'].keys()):
+            self.db['source']['username'] = ''
+        if('password' not in self.db['source'].keys()):
+            self.db['source']['password'] = ''
+        try:
+            conn = psycopg2.connect(
+                host = self.db['source']['url'],
+                database = self.db['source']['db_name'],
+                user = self.db['source']['username'],
+                password = self.db['source']['password']
+            )
+            try:            
+                with conn.cursor() as curs:
+                    curs.execute(sql_stmt)
+                    rows = curs.fetchall()
+                    table_names = [item for t in rows for item in t]
+                    return table_names
+            except Exception as e:
+                raise ProcessingError("Caught some exception while getting list of all tables.")
+        except Exception as e:
+            raise ConnectionError("Unable to connect to source.")
 
-    def migrate_data(self) -> None:
-        sql_stmt = "SELECT * FROM " + self.curr_mapping['table_name']
+
+    def migrate_data(self, table_name: str = None) -> None:
+        sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             sql_stmt = self.curr_mapping['fetch_data_query']
 
@@ -172,7 +203,7 @@ class SQLMigrate:
                             break
                         else:
                             data_df = pd.DataFrame(rows, columns = columns)
-                            processed_data = self.process_table(df = data_df)
+                            processed_data = self.process_table(df = data_df, table_name = table_name)
                             self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
             except Exception as e:
                 raise ProcessingError("Caught some exception while processing records.")
@@ -181,10 +212,19 @@ class SQLMigrate:
 
 
     def process(self) -> None:
+        name_tables = []
+        if(self.curr_mapping['table_name'] == '*'):
+            name_tables = self.get_list_tables()
+        else:
+            name_tables = [self.curr_mapping['table_name']]
+        self.inform(' '.join(name_tables))
         self.preprocess()
-        self.inform("Table pre-processed.")
-        self.migrate_data()
-        self.inform("Migration Complete.")
+        self.inform("Mapping pre-processed.")
+        for table_name in name_tables:
+            self.inform("Migrating table " + table_name + ".")
+            self.migrate_data(table_name)
+            self.inform("Completed migration of table " + table_name + ".")
+        self.inform("Overall migration complete.")
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform("Expired data removed.")

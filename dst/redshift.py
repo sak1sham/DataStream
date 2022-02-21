@@ -20,6 +20,8 @@ class RedshiftSaver:
         )
         self.schema = db_destination['schema']
         self.is_small_data = is_small_data
+        self.name_ = ""
+        self.table_list = []
 
     def inform(self, message: str = "") -> None:
         logger.inform(self.unique_id + ": " + message)
@@ -28,6 +30,8 @@ class RedshiftSaver:
         logger.warn(self.unique_id + ": " + message)
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
+        if(not self.name_ or not(self.name_ == processed_data['name'])):
+            self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
         file_name = self.s3_location + self.name_ + "/"
         self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
@@ -92,9 +96,10 @@ class RedshiftSaver:
         ## i.e. the saved data will have a migration_snapshot_date column
         ## We just have to query using that column to delete old data
         delete_before_date_str = delete_before_date.strftime('%Y-%m-%d %H:%M:%S')
-        query = "DELETE FROM " + self.schema + "." + self.name_ + " WHERE migration_snapshot_date <= " + delete_before_date_str + ";"
-        with self.conn.cursor() as cursor:
-            cursor.execute(query)
+        for table_name in self.table_list:
+            query = "DELETE FROM " + self.schema + "." + table_name + " WHERE migration_snapshot_date <= " + delete_before_date_str + ";"
+            with self.conn.cursor() as cursor:
+                cursor.execute(query)
     
     def close(self):
         self.conn.close()

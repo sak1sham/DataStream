@@ -5,13 +5,10 @@ from typing import List, Dict, Any
 
 class Central_saving_unit:
     def __init__(self, db: Dict[str, Any] = None, uid: str = None, partition: List[str] = None) -> None:
-        self.db = db
-        self.uid = uid
-        self.partition = partition
         if(db['destination']['destination_type'] == 's3'):
-            self.saver = s3Saver(db_source = self.db['source'], db_destination = self.db['destination'], c_partition = self.partition, unique_id = self.uid)
+            self.saver = s3Saver(db_source = db['source'], db_destination = db['destination'], c_partition = partition, unique_id = uid)
         elif(self.db['destination']['destination_type'] == 'redshift'): 
-            self.saver = RedshiftSaver(db_source = self.db['source'], db_destination = self.db['destination'], unique_id = self.uid)
+            self.saver = RedshiftSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid)
         else:
             raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
 

@@ -11,6 +11,8 @@ class s3Saver:
         self.s3_location = "s3://" + db_destination['s3_bucket_name'] + "/" + db_source['source_type'] + "/" + db_source['db_name'] + "/"
         self.partition_cols = c_partition
         self.unique_id = unique_id
+        self.name_ = ""
+        self.table_list = []
 
     def inform(self, message: str = "") -> None:
         logger.inform(self.unique_id + ": " + message)
@@ -21,6 +23,8 @@ class s3Saver:
     def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = []) -> None:
         if(c_partition and len(c_partition) > 0):
             self.partition_cols = c_partition
+        if(not self.name_ or not(self.name_ == processed_data['name'])):
+            self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
         file_name = self.s3_location + processed_data['name'] + "/"
         self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
@@ -65,10 +69,11 @@ class s3Saver:
             hours = expiry['hours']
         delete_before_date = today_ - datetime.timedelta(days=days, hours=hours)
         self.inform("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d'))
-        wr.s3.delete_objects(
-            path = self.s3_location + self.name_ + "/",
-            last_modified_end = delete_before_date
-        )
+        for table_name in self.table_list:
+            wr.s3.delete_objects(
+                path = self.s3_location + table_name + "/",
+                last_modified_end = delete_before_date
+            )
     
     def close(self):
         # This function is required here to make it consistent with redshift connection closing counterpart
