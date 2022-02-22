@@ -1,5 +1,5 @@
 from db.mongo import process_mongo_collection
-from db.sql import process_sql_table
+from db.pgsql import process_sql_table
 from typing import Dict, Any
 
 class Central_processing_unit:
