@@ -168,7 +168,7 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
 def convert_jsonb_to_string(x: Any) -> str:
     if(isinstance(x, list)):
         return convert_list_to_string(x)
-    elif(isinstance(x, json)):
+    elif(isinstance(x, dict)):
         return convert_json_to_string(x)
     else:
         try:
