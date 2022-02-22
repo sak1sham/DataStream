@@ -3,7 +3,6 @@ import uvicorn
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 import sys
-import threading
 from typing import Tuple
 
 from config.migration_mapping import mapping
@@ -42,8 +41,7 @@ def healthcheck():
 def create_new_job(db, list_specs, uid, i, is_fastapi):
     list_specs['unique_id'] = uid + "_MIGRATION_SERVICE_" + str(i+1)
     if(list_specs['cron'] == 'run'):
-        th = threading.Thread(target = central_processer, args = (db, list_specs))
-        th.start()
+        central_processer(db, list_specs)
     elif(is_fastapi):
         year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(list_specs['cron'])
         scheduler.add_job(central_processer, 'cron', args=[db, list_specs], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Kolkata'))
