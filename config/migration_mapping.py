@@ -106,7 +106,7 @@ mapping = {
         },
         'tables': [
             {
-            'table_name': 'public.shipment_rto_commands',
+            'table_name': 'public.support_form_items',
             'is_dump': True,
             'cron': 'run'
             }
