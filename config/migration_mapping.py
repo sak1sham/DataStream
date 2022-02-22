@@ -238,7 +238,6 @@ mapping = {
             },
         ]
     },
-    'fastapi_server': True
 }
 
 encryption_store = {

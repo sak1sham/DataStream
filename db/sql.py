@@ -12,6 +12,7 @@ from dst.main import Central_saving_unit
 import datetime
 import hashlib
 import pytz
+from joblib import Parallel, delayed
 from typing import List, Dict, Any, NewType, Tuple
 
 dftype = NewType("dftype", pd.DataFrame)
@@ -197,6 +198,7 @@ class SQLMigrate:
         return col_dtypes
 
     def migrate_data(self, table_name: str = None) -> None:
+        self.inform("Migrating table " + table_name + ".")
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             sql_stmt = self.curr_mapping['fetch_data_query']
@@ -215,7 +217,6 @@ class SQLMigrate:
             )
             try:
                 col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
-                print(col_dtypes)
                 with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
@@ -230,6 +231,7 @@ class SQLMigrate:
                             data_df = pd.DataFrame(rows, columns = columns)
                             processed_data = self.process_table(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
                             self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                self.inform("Completed migration of table " + table_name + ".\n")
             except Exception as e:
                 raise ProcessingError("Caught some exception while processing records.")
         except Exception as e:
@@ -242,13 +244,18 @@ class SQLMigrate:
             name_tables = self.get_list_tables()
         else:
             name_tables = [self.curr_mapping['table_name']]
-        self.inform("Found following " + str(len(name_tables)) + " tables:\n" + '\n'.join(name_tables))
+        b_start = 0
+        b_end = len(name_tables)
+        if('batch_start' in self.curr_mapping.keys()):
+            b_start = self.curr_mapping['batch_start']
+        if('batch_end' in self.curr_mapping.keys()):
+            b_end = self.curr_mapping['batch_end']
+        name_tables = name_tables[b_start:b_end]
+        self.inform("Migrating following " + str(len(name_tables)) + " tables:\n" + '\n'.join(name_tables))
         self.preprocess()
         self.inform("Mapping pre-processed.")
         for table_name in name_tables:
-            self.inform("Migrating table " + table_name + ".")
             self.migrate_data(table_name)
-            self.inform("Completed migration of table " + table_name + ".\n")
         self.inform("Overall migration complete.")
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)

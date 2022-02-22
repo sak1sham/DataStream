@@ -9,3 +9,9 @@ class DestinationNotFound(Exception):
 
 class ProcessingError(Exception):
     pass
+
+class InvalidArguments(Exception):
+    pass
+
+class SourceNotFound(Exception):
+    pass
