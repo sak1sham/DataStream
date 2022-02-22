@@ -165,11 +165,23 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
             df[col] = df[col].astype(str)
     return df
 
+def convert_jsonb_to_string(x: Any) -> str:
+    if(isinstance(x, list)):
+        return convert_list_to_string(x)
+    elif(isinstance(x, json)):
+        return convert_json_to_string(x)
+    else:
+        try:
+            x = str(x)
+            return x
+        except Exception as e:
+            return None
+
 def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
     if(df.shape[0]):
         for col, dtype in schema.items():
             if(dtype == 'jsonb'):
-                df[col] = df[col].apply(lambda x: convert_json_to_string(x))
+                df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
                 df[col] = df[col].astype(str)
     return df
         
