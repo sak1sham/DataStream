@@ -175,6 +175,7 @@ def convert_jsonb_to_string(x: Any) -> str:
             x = str(x)
             return x
         except Exception as e:
+            logger.warn("Can't convert jsonb to str, returning None")
             return None
 
 def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
