@@ -3,7 +3,7 @@ from dst.s3 import s3Saver
 from helper.exceptions import *
 from typing import List, Dict, Any
 
-class Central_saving_unit:
+class DMS_exporter:
     def __init__(self, db: Dict[str, Any] = None, uid: str = None, partition: List[str] = None) -> None:
         if(db['destination']['destination_type'] == 's3'):
             self.saver = s3Saver(db_source = db['source'], db_destination = db['destination'], c_partition = partition, unique_id = uid)

@@ -2,10 +2,9 @@ from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, 
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
 from helper.logging import logger
-from dst.main import Central_saving_unit
+from dst.main import DMS_exporter
 
 from pymongo import MongoClient
-import traceback
 import certifi
 import pandas as pd
 import datetime
@@ -96,7 +95,7 @@ class MongoMigrate:
                 else:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")            
 
-        self.saver = Central_saving_unit(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
         
 
     def process_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
@@ -205,12 +204,3 @@ class MongoMigrate:
             self.inform("Expired data removed.")
         self.saver.close()
         self.inform("Hope to see you again :')\n")
-
-
-def process_mongo_collection(db: Dict[str, Any] = None, collection: Dict[str, Any] = None) -> None:
-    obj = MongoMigrate(db, collection)
-    try:
-        obj.process()
-    except Exception as e:
-        logger.err(traceback.format_exc())
-        logger.inform(collection['unique_id'] + ": Migration stopped.\n")

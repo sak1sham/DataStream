@@ -3,10 +3,10 @@ import uvicorn
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 import sys
-from typing import Tuple
+from typing import Tuple, Dict, Any
 
 from config.migration_mapping import mapping
-from db.main import central_processer
+from db.main import DMS_importer
 from helper.logging import logger
 from helper.util import evaluate_cron
 from helper.exceptions import InvalidArguments, SourceNotFound
@@ -38,13 +38,17 @@ def healthcheck():
     logger.inform('Health check done.')
     pass
 
+def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}) -> None:
+    obj = DMS_importer(db, curr_mapping)
+    obj.process()
+
 def create_new_job(db, list_specs, uid, i, is_fastapi):
     list_specs['unique_id'] = uid + "_MIGRATION_SERVICE_" + str(i+1)
     if(list_specs['cron'] == 'run'):
-        central_processer(db, list_specs)
+        migration_service_of_job(db, list_specs)
     elif(is_fastapi):
         year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(list_specs['cron'])
-        scheduler.add_job(central_processer, 'cron', args=[db, list_specs], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Kolkata'))
+        scheduler.add_job(migration_service_of_job, 'cron', args=[db, list_specs], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Kolkata'))
     else:
         logger.warn("Jobs can be scheduled only if fastapi_server is enabled. Skipping " + str(uid) + ".")
 
@@ -68,6 +72,7 @@ if __name__ == "__main__":
         is_fastapi = True
     n = len(args)
     if(n > 0):
+        ## If some command line arguments are provided, process only that data
         i = 0
         while(i < n):
             unique_id = args[i]

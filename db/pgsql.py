@@ -1,24 +1,22 @@
 import pandas as pd
 import psycopg2
 import pymongo
-import traceback
 
 from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
 from helper.logging import logger
-from dst.main import Central_saving_unit
+from dst.main import DMS_exporter
 
 import datetime
 import hashlib
 import pytz
-from joblib import Parallel, delayed
 from typing import List, Dict, Any, NewType, Tuple
 
 dftype = NewType("dftype", pd.DataFrame)
 collectionType =  NewType("collectionType", pymongo.collection.Collection)
 
-class SQLMigrate:
+class PGSQLMigrate:
     def __init__(self, db: Dict[str, Any] = None, table: Dict[str, Any] = None, batch_size: int = 1000, tz_str: str = 'Asia/Kolkata') -> None:
         self.db = db
         self.curr_mapping = table
@@ -34,7 +32,7 @@ class SQLMigrate:
 
     def preprocess(self) -> None:
         self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
-        self.saver = Central_saving_unit(db = self.db, uid = self.curr_mapping['unique_id'])
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
 
     def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({})) -> Tuple[dftype]:
@@ -262,13 +260,3 @@ class SQLMigrate:
             self.inform("Expired data removed.")
         self.saver.close()
         self.inform("Hope to see you again :')")
-
-
-def process_sql_table(db: Dict[str, Any] = None, table: Dict[str, Any] = None) -> None:
-    obj = SQLMigrate(db, table)
-    try:
-        obj.process()
-    except Exception as e:
-        logger.err(traceback.format_exc())
-        logger.inform(table['unique_id'] + ": Migration stopped.\n")
-

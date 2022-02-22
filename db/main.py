@@ -1,16 +1,21 @@
-from db.mongo import process_mongo_collection
-from db.pgsql import process_sql_table
+from db.mongo import MongoMigrate
+from db.pgsql import PGSQLMigrate
 from typing import Dict, Any
+from helper.logging import logger
+import traceback
 
-class Central_processing_unit:
+class DMS_importer:
     def __init__(self, db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}) -> None:
+        self.db = db
+        self.curr_mapping = curr_mapping
         if(db['source']['source_type'] == 'mongo'):
-            process_mongo_collection(db, curr_mapping)
+            self.obj = MongoMigrate(db, curr_mapping)
         elif(db['source']['source_type'] == 'sql'):
-            process_sql_table(db, curr_mapping)
+            self.obj = PGSQLMigrate(db, curr_mapping)
     
-def central_processer(db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}) -> None:
-    if(db['source']['source_type'] == 'mongo'):
-        process_mongo_collection(db, curr_mapping)
-    elif(db['source']['source_type'] == 'sql'):
-        process_sql_table(db, curr_mapping)
+    def process(self):
+        try:
+            self.obj.process()
+        except Exception as e:
+            logger.err(traceback.format_exc())
+            logger.inform(self.curr_mapping['unique_id'] + ": Migration stopped.\n")
