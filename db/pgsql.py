@@ -58,7 +58,6 @@ class PGSQLMigrate:
                 collection_encr.insert_one(encr)
         return df_insert, df_update
 
-
     def process_table(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query']):
             self.inform("Number of records: " + str(df.shape[0]))
@@ -249,17 +248,24 @@ class PGSQLMigrate:
         if('batch_end' in self.curr_mapping.keys()):
             b_end = self.curr_mapping['batch_end']
         name_tables = name_tables[b_start:b_end]
-        self.inform("Migrating following " + str(len(name_tables)) + " tables:\n" + '\n'.join(name_tables))
+        self.inform("Found following " + str(len(name_tables)) + " tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
         self.preprocess()
         self.inform("Mapping pre-processed.")
+        
         if('exclude_tables' not in self.curr_mapping.keys()):
             self.curr_mapping['exclude_tables'] = []
         elif(isinstance(self.curr_mapping['exclude_tables'], str)):
             self.curr_mapping['exclude_tables'] = [self.curr_mapping['exclude_tables']]
+        useful_tables = []
+        for name_ in name_tables:
+            if(name_ not in self.curr_mapping['exclude_tables']):
+                useful_tables.append(name_)
+        name_tables = useful_tables
+        self.inform("Starting to migrating following " + str(len(name_tables)) + " useful tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
+        
         for table_name in name_tables:
-            if(table_name in self.curr_mapping['exclude_tables']):
-                continue
             self.migrate_data(table_name)
+
         self.inform("Overall migration complete.")
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
