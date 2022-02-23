@@ -241,6 +241,9 @@ class PGSQLMigrate:
             name_tables = self.get_list_tables()
         else:
             name_tables = [self.curr_mapping['table_name']]
+        name_tables.sort()
+        self.inform("Found following " + str(len(name_tables)) + " tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
+        
         b_start = 0
         b_end = len(name_tables)
         if('batch_start' in self.curr_mapping.keys()):
@@ -248,7 +251,6 @@ class PGSQLMigrate:
         if('batch_end' in self.curr_mapping.keys()):
             b_end = self.curr_mapping['batch_end']
         name_tables = name_tables[b_start:b_end]
-        self.inform("Found following " + str(len(name_tables)) + " tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
         self.preprocess()
         self.inform("Mapping pre-processed.")
         
@@ -261,6 +263,7 @@ class PGSQLMigrate:
             if(name_ not in self.curr_mapping['exclude_tables']):
                 useful_tables.append(name_)
         name_tables = useful_tables
+        name_tables.sort()
         self.inform("Starting to migrating following " + str(len(name_tables)) + " useful tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
         
         for table_name in name_tables:

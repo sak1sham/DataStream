@@ -128,7 +128,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * */1 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -153,7 +153,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
             {
@@ -161,7 +161,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -173,7 +173,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
             {
@@ -181,7 +181,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
             {
@@ -196,7 +196,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 4 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {
@@ -215,7 +215,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 4 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {
@@ -226,7 +226,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {
@@ -234,7 +234,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
         ]
