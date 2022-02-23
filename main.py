@@ -4,6 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 import sys
 from typing import Tuple, Dict, Any
+import threading
 
 from config.migration_mapping import mapping
 from db.main import DMS_importer
@@ -45,7 +46,8 @@ def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, An
 def create_new_job(db, list_specs, uid, i, is_fastapi):
     list_specs['unique_id'] = uid + "_MIGRATION_SERVICE_" + str(i+1)
     if(list_specs['cron'] == 'self-managed'):
-        migration_service_of_job(db, list_specs)
+        th = threading.Thread(target=migration_service_of_job, args=(db, list_specs))
+        th.start()
     elif(is_fastapi):
         year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(list_specs['cron'])
         scheduler.add_job(migration_service_of_job, 'cron', args=[db, list_specs], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Kolkata'))
