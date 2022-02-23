@@ -128,13 +128,29 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': 'self-managed',
+                'cron': '* * * * * */1 0 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
                 'is_dump': True,
                 'fetch_data_query': query_1
             },
+            {
+                'table_name': 'localities_live',
+                'cron': '* * * * * 22 30 0',
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
+                'is_dump': True,
+            },
+            {
+                'table_name': 'cmocx_cl_in_vicinity',
+                'cron': '* * * * * 22 45 0',
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
+                'is_dump': True,
+            }
         ]
     },
     "mongo_support_service_to_s3": {
@@ -153,7 +169,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
             {
@@ -161,7 +177,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -173,7 +189,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
             {
@@ -181,7 +197,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
             {
@@ -196,7 +212,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 22 4 0',
                 'to_partition': True,
             },
             {
@@ -215,7 +231,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 22 4 0',
                 'to_partition': True,
             },
             {
@@ -226,7 +242,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True,
             },
             {
@@ -234,7 +250,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
         ]
