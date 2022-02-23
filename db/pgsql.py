@@ -252,7 +252,13 @@ class PGSQLMigrate:
         self.inform("Migrating following " + str(len(name_tables)) + " tables:\n" + '\n'.join(name_tables))
         self.preprocess()
         self.inform("Mapping pre-processed.")
+        if('exclude_tables' not in self.curr_mapping.keys()):
+            self.curr_mapping['exclude_tables'] = []
+        elif(isinstance(self.curr_mapping['exclude_tables'], str)):
+            self.curr_mapping['exclude_tables'] = [self.curr_mapping['exclude_tables']]
         for table_name in name_tables:
+            if(table_name in self.curr_mapping['exclude_tables']):
+                continue
             self.migrate_data(table_name)
         self.inform("Overall migration complete.")
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):

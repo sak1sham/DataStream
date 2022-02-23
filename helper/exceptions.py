@@ -15,3 +15,6 @@ class InvalidArguments(Exception):
 
 class SourceNotFound(Exception):
     pass
+
+class MissingData(Exception):
+    pass

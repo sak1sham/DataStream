@@ -64,7 +64,7 @@ If source is SQL, we need to provide a field ```tables```, which is a list of ta
     'bookmark_creation': False or 'field_name' (optional, Default=False, for example - 'created_at'),
     'bookmark': False or 'field_name' (optional, Default=False, for example - 'updated_at'),
     'primary_keys': string or list of unique specifiers for records (Optional),
-    'archive': "SQL_query" or False,
+    'exclude_tables': [] (List[str] or str, list of table names to exclude from entire database),
     'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the column (str or list of str),
@@ -145,3 +145,4 @@ True or False. If set to true, it adds a column 'migration_snapshot_date' to dat
 ## Notes:
 1. If fastapi server is started, then data can migrated on scheduled basis, as well as immediate basis (i.e., migrating data just once).
 2. If fastapi server is not started, then data can only be migrated on immediate basis (i.e., migrating data just once). To run scheduled jobs in such cases, an external scheduler is required.
+3. In case of sql, we can migrate all tables of database by passing 'table_name' as '*'. We can also add a list of tables to exclude them in such cases.

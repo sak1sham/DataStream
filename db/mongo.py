@@ -15,6 +15,8 @@ from typing import Dict, Any
 
 class MongoMigrate:
     def __init__(self, db: Dict[str, Any] = None, collection: Dict[str, Any] = None, batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
+        if (not db or not collection):
+            raise MissingData("db or collection can not be None.")
         self.db = db
         self.curr_mapping = collection
         self.batch_size = batch_size
