@@ -1,14 +1,11 @@
 import json
 import datetime
-
-import logging
-logging.getLogger().setLevel(logging.INFO)
-
 import pytz
 from dateutil import parser
-
 from typing import List, Dict, Any, NewType
 import pandas as pd
+
+from helper.logging import logger
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
@@ -36,7 +33,9 @@ def convert_list_to_string(l: List[Any]) -> str:
             item = item.strftime(std_datetime_format)
         else:
             item = str(item)
-        val = val + item
+        val = val + item + ", "
+    if(len(val) > 1):
+        val = val[:-2]
     val = val + ']'
     return val
 
@@ -48,13 +47,14 @@ def convert_to_datetime(x: Any, tz_: Any) -> datetype:
     if(x is None):
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
-        return utc_to_local(x, tz_)
+        x = utc_to_local(x, tz_)
+        return x
     else:
         try:
             x = parser.parse(x)
             return utc_to_local(x, tz_)
-        except:
-            logging.warning("Unable to convert " + x + " to any datetime format. Returning None")
+        except Exception as e:
+            logger.warn("Unable to convert " + x + " to any datetime format. Returning None")
             return pd.Timestamp(None)
 
 def convert_json_to_string(x: Dict[str, Any]) -> str:
@@ -71,7 +71,7 @@ def convert_json_to_string(x: Dict[str, Any]) -> str:
         elif(isinstance(value, bool) or isinstance(value, float) or isinstance(value, complex) or isinstance(value, int)):
             x[item] = str(x[item])
         elif(isinstance(value, dict)):
-            x[item] = json.dumps(x[item])
+            x[item] = convert_json_to_string(x[item])
         elif(isinstance(value, datetime.datetime)):
             x[item] = x[item].strftime(std_datetime_format)
         else:
@@ -84,13 +84,14 @@ def evaluate_cron(expression: str) -> List[str]:
             year, month, day, week, day_of_week, hour, minute, second
     '''
     if(expression is None):
-        logging.warning("Cron Expression Not Specified. Unable to run job")
+        logger.warn("Cron Expression Not Specified. Unable to run job")
         expression =  '1602 * * * * * */5 0'
     vals = expression.split()
     vals = [(None if w == '?' else w) for w in vals]
     return vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], vals[7]
 
-def validate_or_convert(docu: Dict[str, Any], schema: Dict[str, str], tz_info: Any) -> Dict[str, Any]:
+def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_info: Any) -> Dict[str, Any]:
+    docu = docu_orig.copy()
     for key, _ in docu.items():
         if(key == '_id'):
             docu[key] = str(docu[key])
@@ -101,34 +102,32 @@ def validate_or_convert(docu: Dict[str, Any], schema: Dict[str, str], tz_info: A
         elif(key in schema.keys()):
             if(schema[key] == 'int'):
                 try:
-                    docu[key] = int(docu[key])
-                except:
+                    docu[key] = int(float(docu[key]))
+                except Exception as e:
                     docu[key] = 0
             elif(schema[key] == 'float'):
                 try:
                     docu[key] = float(docu[key])
-                except:
+                except Exception as e:
                     docu[key] = None
             elif(schema[key] == 'datetime'):
                 docu[key] = convert_to_datetime(docu[key], tz_info)
             elif(schema[key] == 'bool'):
-                try:
-                    docu[key] = bool(docu[key])
-                except:
-                    docu[key] = docu[key].lower() in ['true', '1', 't', 'y', 'yes']
+                docu[key] = str(docu[key])
+                docu[key] = bool(docu[key].lower() in ['true', '1', 't', 'y', 'yes'])
             elif(schema[key] == 'complex'):
                 try:
                     docu[key] = complex(docu[key])
-                except:
+                except Exception as e:
                     docu[key] = None
         elif(isinstance(docu[key], datetime.datetime)):
             docu[key] = utc_to_local(docu[key], tz_info)
-            docu[key] = docu[key].strftime("%Y-%m-%dT%H:%M:%S")
+            docu[key] = docu[key].strftime(std_datetime_format)
         else:
             try:
                 docu[key] = str(docu[key])
-            except:
-                logging.warning("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
+            except Exception as e:
+                logger.warn("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
                 docu[key] = None
     
     for key, _ in schema.items():
@@ -165,3 +164,25 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
         else:
             df[col] = df[col].astype(str)
     return df
+
+def convert_jsonb_to_string(x: Any) -> str:
+    if(isinstance(x, list)):
+        return convert_list_to_string(x)
+    elif(isinstance(x, dict)):
+        return convert_json_to_string(x)
+    else:
+        try:
+            x = str(x)
+            return x
+        except Exception as e:
+            logger.warn("Can't convert jsonb to str, returning None")
+            return None
+
+def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
+    if(df.shape[0]):
+        for col, dtype in schema.items():
+            if(dtype == 'jsonb'):
+                df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
+                df[col] = df[col].astype(str)
+    return df
+        

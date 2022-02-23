@@ -91,8 +91,28 @@ with all_products as (
 
 '''
 
-mapping = [
-    {
+mapping = {
+    "entire_cmdb_to_s3_migration" : {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'cm',
+            'password': 'cm'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'data-migration-server',
+        },
+        'tables': [
+            {
+            'table_name': '*',
+            'is_dump': True,
+            'cron': 'self-managed'
+            }
+        ]
+    },
+    "cmdb_inventory_snapshot_wms_to_s3": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -106,28 +126,20 @@ mapping = [
         },
         'tables': [
             {
-                'table_name': 'localities_live',
-                'cron': '* * * * * 18 47 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True
-            },
-            {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * 18 47 0',
+                'cron': '* * * * * */1 0 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
                 'is_dump': True,
                 'fetch_data_query': query_1
-            }
+            },
         ]
     },
-    {
+    "mongo_support_service_to_s3": {
         'source': {
             'source_type': 'mongo',
-            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservice.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
             'db_name': 'support-service'
         },
         'destination': {
@@ -140,7 +152,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 18 47 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
             {
@@ -148,7 +160,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 18 47 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -160,7 +172,7 @@ mapping = [
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 18 47 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
             {
@@ -168,7 +180,7 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 18 47 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
             {
@@ -183,7 +195,7 @@ mapping = [
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 18 47 0',
+                'cron': '* * * * * 22 4 0',
                 'to_partition': True,
             },
             {
@@ -202,7 +214,7 @@ mapping = [
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 18 47 0',
+                'cron': '* * * * * 22 4 0',
                 'to_partition': True,
             },
             {
@@ -213,7 +225,7 @@ mapping = [
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 18 47 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True,
             },
             {
@@ -221,35 +233,12 @@ mapping = [
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 18 47 0',
+                'cron': '* * * * * 22 0 0',
                 'to_partition': True
             },
         ]
     },
-    {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'cm',
-            'password': 'cm'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server'
-        },
-        'tables': [
-            {
-                'table_name': 'localities_live',
-                'cron': 'run',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True
-            }
-        ]
-    }
-]
+}
 
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),

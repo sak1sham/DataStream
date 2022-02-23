@@ -13,4 +13,8 @@ services:
       - AWS_ACCESS_KEY_ID=AKIA3RSHCMQMTLUCYGU2
       - AWS_SECRET_ACCESS_KEY=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
       - PYTHONUNBUFFERED=1
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
 
