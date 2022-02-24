@@ -107,7 +107,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -116,7 +116,7 @@ mapping = {
             },
             {
                 'table_name': 'localities_live',
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -124,7 +124,7 @@ mapping = {
             },
             {
                 'table_name': 'cmocx_cl_in_vicinity',
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -152,7 +152,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -166,7 +166,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -189,7 +189,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True
             },
             {
@@ -197,7 +197,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -209,7 +209,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True
             },
             {
@@ -217,7 +217,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True
             },
             {
@@ -232,7 +232,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True,
             },
             {
@@ -251,7 +251,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True,
             },
             {
@@ -264,7 +264,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True,
             },
             {
@@ -272,7 +272,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 47 0',
+                'cron': '* * * * * * 50 0',
                 'to_partition': True
             },
         ]
