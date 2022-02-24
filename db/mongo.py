@@ -36,7 +36,6 @@ class MongoMigrate:
             client = MongoClient(self.db['source']['url'], tlsCAFile=certifi.where())
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
-            print("Number of documents found:", self.db_collection.count_documents({}))
         except Exception as e:
             self.db_collection = None
             raise ConnectionError("Unable to connect to source.")

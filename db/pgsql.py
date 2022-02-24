@@ -176,6 +176,8 @@ class PGSQLMigrate:
             raise ConnectionError("Unable to connect to source.")
 
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
+        if('fetch_data_query' in self.curr_mapping.keys() and isinstance(self.curr_mapping['fetch_data_query'], str) and len(self.curr_mapping['fetch_data_query']) > 0):
+            return {}
         tn = curr_table_name.split('.')
         schema_name = 'public'
         table_name = ''
