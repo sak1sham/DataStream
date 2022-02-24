@@ -2,6 +2,7 @@ import json
 import datetime
 import pytz
 from dateutil import parser
+import dateutil
 from typing import List, Dict, Any, NewType
 import pandas as pd
 
@@ -39,20 +40,29 @@ def convert_list_to_string(l: List[Any]) -> str:
     val = val + ']'
     return val
 
-def utc_to_local(utc_dt: datetype, tz_: Any) -> datetype:
+def utc_to_local(utc_dt: datetype = None, tz_: Any = pytz.utc) -> datetype:
     local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(tz_)
     return tz_.normalize(local_dt)
 
-def convert_to_datetime(x: Any, tz_: Any) -> datetype:
-    if(x is None):
+def convert_to_utc(dt: datetype = None) -> datetype:
+    if(dt.tzinfo is None):
+        dt = pytz.utc.localize(dt)
+    dt = dt.astimezone(pytz.utc)
+    return dt
+
+def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
+    if(x is None or x == pd.Timestamp(None) or x is pd.NaT):
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
-        x = utc_to_local(x, tz_)
+        x = convert_to_utc(dt = x)
+        x = utc_to_local(utc_dt = x, tz_ = tz_)
         return x
     else:
         try:
             x = parser.parse(x)
-            return utc_to_local(x, tz_)
+            x = convert_to_utc(dt = x)
+            x = utc_to_local(utc_dt = x, tz_ = tz_)
+            return x
         except Exception as e:
             logger.warn("Unable to convert " + x + " to any datetime format. Returning None")
             return pd.Timestamp(None)
@@ -158,7 +168,7 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
         elif(tp == 'complex'):
             df[col] = df[col].astype('|S')
         elif(tp == 'datetime'):
-            df[col] = pd.to_datetime(df[col], utc=False).dt.tz_convert(pytz.utc).apply(lambda x: pd.Timestamp(x))
+            df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
         elif(tp == 'bool'):
             df[col] = df[col].astype(bool)
         else:
@@ -184,5 +194,13 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
             if(dtype == 'jsonb'):
                 df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
                 df[col] = df[col].astype(str)
+            elif(dtype.startswith('timestamp')):
+                df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
+            elif(dtype == 'boolean'):
+                df[col] = df[col].astype(bool)
+            elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype == 'serial'):
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+            elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real'):
+                df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
     return df
         

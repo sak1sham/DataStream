@@ -137,8 +137,10 @@ class MongoMigrate:
             if('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump']):
                 if(insertion_time < self.last_run_cron_job):
                     if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
+                        if(self.curr_mapping['bookmark'] not in document.keys()):
+                            document[self.curr_mapping['bookmark']] = None
                         docu_bookmark_date = convert_to_datetime(document[self.curr_mapping['bookmark']], self.tz_info)
-                        if(docu_bookmark_date is pd.Timestamp(None) or docu_bookmark_date <= self.last_run_cron_job):
+                        if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date <= self.last_run_cron_job):
                             continue
                         else:
                             updation = True

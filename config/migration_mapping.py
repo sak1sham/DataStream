@@ -102,14 +102,14 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server',
+            's3_bucket_name': 'migration-service-temp',
         },
         'tables': [
             {
-            'table_name': '*',
-            'is_dump': True,
-            'cron': 'self-managed',
-            'exclude_tables': ['public.inventory_snapshot_record', 'public.inventory_snapshot_wms', 'public.bd_leader_mapping_change_logs', 'public.events_staging_queue', 'public.stream_follows', 'public.user_segment_tags', 'public.notifications', 'public.order_actions', 'public.order_items', 'public.orders', 'public.team_leaders', 'public.products', 'public.product_master']
+                'table_name': 'cl_prod.add_customer_success',
+                'is_dump': True,
+                'cron': 'self-managed',
+                'exclude_tables': ['public.inventory_snapshot_record', 'public.inventory_snapshot_wms', 'public.bd_leader_mapping_change_logs', 'public.events_staging_queue', 'public.stream_follows', 'public.user_segment_tags', 'public.notifications', 'public.order_actions', 'public.order_items', 'public.orders', 'public.team_leaders', 'public.products', 'public.product_master']
             }
         ]
     },
@@ -123,7 +123,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server'
+            's3_bucket_name': 'migration-service-temp'
         },
         'tables': [
             {
@@ -161,7 +161,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server',
+            's3_bucket_name': 'migration-service-temp',
         },
         'collections': [
             {
@@ -169,7 +169,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
             {
@@ -177,7 +177,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -189,7 +189,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
             {
@@ -197,7 +197,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
             {
@@ -212,7 +212,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 4 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {
@@ -231,7 +231,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 4 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {
@@ -239,10 +239,12 @@ mapping = {
                 'fields': {
                     'rating': 'int',
                     '__v': 'int',
+                    'updatedAt': 'datetime',
+                    'createdAt': 'datetime',
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {
@@ -250,12 +252,13 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
         ]
     },
-    'fastapi_server': True
+    'fastapi_server': True,
+    'timezone': 'Asia/Kolkata',
 }
 
 encryption_store = {

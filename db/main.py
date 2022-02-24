@@ -5,13 +5,13 @@ from helper.logging import logger
 import traceback
 
 class DMS_importer:
-    def __init__(self, db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}) -> None:
+    def __init__(self, db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
         self.db = db
         self.curr_mapping = curr_mapping
         if(db['source']['source_type'] == 'mongo'):
-            self.obj = MongoMigrate(db, curr_mapping)
+            self.obj = MongoMigrate(db = db, collection = curr_mapping, tz_str = tz__)
         elif(db['source']['source_type'] == 'sql'):
-            self.obj = PGSQLMigrate(db, curr_mapping)
+            self.obj = PGSQLMigrate(db = db, table = curr_mapping, tz_str = tz__)
     
     def process(self):
         try:

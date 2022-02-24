@@ -59,8 +59,6 @@ class PGSQLMigrate:
         return df_insert, df_update
 
     def process_table(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
-        if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query']):
-            self.inform("Number of records: " + str(df.shape[0]))
         collection_encr = get_data_from_encr_db()
         last_run_cron_job = self.last_run_cron_job
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):

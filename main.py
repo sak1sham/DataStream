@@ -23,6 +23,7 @@ group_key = {
     'mongo': 'collections',
     'api': 'apis'
 }
+tz__ = 'Asia/Kolkata'
 
 @app.on_event("startup")
 def scheduled_migration():
@@ -39,18 +40,18 @@ def healthcheck():
     logger.inform('Health check done.')
     pass
 
-def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}) -> None:
+def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
     obj = DMS_importer(db, curr_mapping)
     obj.process()
 
 def create_new_job(db, list_specs, uid, i, is_fastapi):
     list_specs['unique_id'] = uid + "_MIGRATION_SERVICE_" + str(i+1)
     if(list_specs['cron'] == 'self-managed'):
-        th = threading.Thread(target=migration_service_of_job, args=(db, list_specs))
+        th = threading.Thread(target=migration_service_of_job, args=(db, list_specs, tz__))
         th.start()
     elif(is_fastapi):
         year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(list_specs['cron'])
-        scheduler.add_job(migration_service_of_job, 'cron', args=[db, list_specs], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Kolkata'))
+        scheduler.add_job(migration_service_of_job, 'cron', args=[db, list_specs, tz__], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone(tz__))
     else:
         logger.warn("Jobs can be scheduled only if fastapi_server is enabled. Skipping " + str(uid) + ".")
 
@@ -72,6 +73,8 @@ if __name__ == "__main__":
     is_fastapi = False
     if('fastapi_server' in mapping.keys() and mapping['fastapi_server']):
         is_fastapi = True
+    if('timezone' in mapping.keys() and mapping['timezone']):
+        tz__ = mapping['timezone']
     n = len(args)
     if(n > 0):
         ## If some command line arguments are provided, process only that data

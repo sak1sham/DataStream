@@ -3,6 +3,11 @@ import logging
 
 class Log_manager:
     def __init__(self) -> None:
+        logging.basicConfig(
+            format = '%(asctime)s %(levelname)-8s %(message)s',
+            level = logging.INFO,
+            datefmt = '%Y-%m-%d %H:%M:%S'
+        )
         logging.getLogger().setLevel(logging.INFO)
     def inform(self, s: str) -> None:
         logging.info(s)

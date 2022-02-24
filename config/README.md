@@ -23,6 +23,7 @@ pipeline_format is a dictionary with following properties:
 1. source
 2. destination
 3. tables, or collections or api as per source['source_type'] (Data structuring)
+4. timezone
 
 ### Source
 ```
@@ -115,6 +116,9 @@ Api_specifications shall be in following format:
 
 ## fastapi_server
 (Bool): default = False. If user sets 'fastapi_server' to True, a uvicorn server is started.
+
+## timezone
+(Str): default = 'Asia/Kolkata'. Used for processing dates in given timezone, using last_run_cron_job, etc. For mongo as the source, this service saves dates in UTC timezone, and for sql as the source, this service saves dates without changing their timezone.
 
 # Notes
 
