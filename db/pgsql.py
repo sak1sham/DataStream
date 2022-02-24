@@ -21,6 +21,8 @@ class PGSQLMigrate:
         self.db = db
         self.curr_mapping = table
         self.batch_size = batch_size
+        if('batch_size' in table.keys()):
+            self.batch_size = int(table['batch_size'])
         self.tz_info = pytz.timezone(tz_str)
         self.last_run_cron_job = pd.Timestamp(None)
     

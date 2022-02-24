@@ -200,7 +200,7 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 df[col] = df[col].astype(bool)
             elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype == 'serial'):
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-            elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real'):
+            elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double'):
                 df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
     return df
         

@@ -92,27 +92,6 @@ with all_products as (
 '''
 
 mapping = {
-    "entire_cmdb_to_s3_migration" : {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'cm',
-            'password': 'cm'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp',
-        },
-        'tables': [
-            {
-                'table_name': 'cl_prod.add_customer_success',
-                'is_dump': True,
-                'cron': 'self-managed',
-                'exclude_tables': ['public.inventory_snapshot_record', 'public.inventory_snapshot_wms', 'public.bd_leader_mapping_change_logs', 'public.events_staging_queue', 'public.stream_follows', 'public.user_segment_tags', 'public.notifications', 'public.order_actions', 'public.order_items', 'public.orders', 'public.team_leaders', 'public.products', 'public.product_master']
-            }
-        ]
-    },
     "cmdb_inventory_snapshot_wms_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -128,7 +107,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * */1 0 0',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -137,7 +116,7 @@ mapping = {
             },
             {
                 'table_name': 'localities_live',
-                'cron': '* * * * * 22 30 0',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -145,11 +124,52 @@ mapping = {
             },
             {
                 'table_name': 'cmocx_cl_in_vicinity',
-                'cron': '* * * * * 22 45 0',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
                 'is_dump': True,
+            }
+        ]
+    },
+    "cm_audit_logs_to_metabase_s3": {
+        'source': {
+            'source_type': 'mongo',
+            'url': 'mongodb://cm-audit-logs:d1TCvFEVX4UbwuuYlM9EwJlkhV2K4NdWRyKASYn4cwj87157zUv73IGE85YAh2DsVJO7HrtWNzOvVvwWjn56ww==@cm-audit-logs.mongo.cosmos.azure.com:10255/?ssl=true&retrywrites=false&replicaSet=globaldb&maxIdleTimeMS=120000&appName=@cm-audit-logs@',
+            'db_name': 'test'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp',
+        },
+        'collections': [
+            {
+                'collection_name': 'audit_logs',
+                'fields': {
+                    'user_id_bigint': 'int',
+                    'created_at': 'datetime',
+                    'lat': 'float',
+                    'long': 'float'
+                },
+                'is_dump': True,
+                'cron': '* * * * * * 45 0',
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
+            },
+            {
+                'collection_name': 'product_audit_logs',
+                'fields': {
+                    'user_id_bigint': 'int',
+                    'created_at': 'datetime',
+                    'lat': 'float',
+                    'long': 'float'
+                },
+                'is_dump': True,
+                'cron': '* * * * * * 45 0',
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
             }
         ]
     },
@@ -169,7 +189,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True
             },
             {
@@ -177,7 +197,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -189,7 +209,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True
             },
             {
@@ -197,7 +217,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True
             },
             {
@@ -212,7 +232,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True,
             },
             {
@@ -231,7 +251,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True,
             },
             {
@@ -244,7 +264,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True,
             },
             {
@@ -252,7 +272,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * * 45 0',
                 'to_partition': True
             },
         ]
