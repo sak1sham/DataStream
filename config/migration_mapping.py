@@ -92,87 +92,6 @@ with all_products as (
 '''
 
 mapping = {
-    "cmdb_inventory_snapshot_wms_localities_live_cmocx_cl_in_vicinity_to_s3": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'cm',
-            'password': 'cm'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server'
-        },
-        'tables': [
-            {
-                'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * * 40 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-                'fetch_data_query': query_1
-            },
-            {
-                'table_name': 'localities_live',
-                'cron': '* * * * * * 40 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-            },
-            {
-                'table_name': 'cmocx_cl_in_vicinity',
-                'cron': '* * * * * * 40 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-            }
-        ]
-    },
-    "cm_audit_logs_to_metabase_s3": {
-        'source': {
-            'source_type': 'mongo',
-            'url': 'mongodb://cm-audit-logs:d1TCvFEVX4UbwuuYlM9EwJlkhV2K4NdWRyKASYn4cwj87157zUv73IGE85YAh2DsVJO7HrtWNzOvVvwWjn56ww==@cm-audit-logs.mongo.cosmos.azure.com:10255/?ssl=true&retrywrites=false&replicaSet=globaldb&maxIdleTimeMS=120000&appName=@cm-audit-logs@',
-            'db_name': 'test'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server',
-        },
-        'collections': [
-            {
-                'collection_name': 'audit_logs',
-                'fields': {
-                    'user_id_bigint': 'int',
-                    'created_at': 'datetime',
-                    'lat': 'float',
-                    'long': 'float'
-                },
-                'is_dump': True,
-                'cron': '* * * * * * 40 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-            },
-            {
-                'collection_name': 'product_audit_logs',
-                'fields': {
-                    'user_id_bigint': 'int',
-                    'created_at': 'datetime',
-                    'lat': 'float',
-                    'long': 'float'
-                },
-                'is_dump': True,
-                'cron': '* * * * * * 40 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-            }
-        ]
-    },
     "mongo_support_service_to_s3": {
         'source': {
             'source_type': 'mongo',
@@ -185,76 +104,6 @@ mapping = {
         },
         'collections': [
             {
-                'collection_name': 'leader_kyc',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * * 40 0',
-                'to_partition': True
-            },
-            {
-                'collection_name': 'support_form_items',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * * 40 0',
-                'to_partition': True,
-                'is_dump': True,
-                'partition_col': 'migration_snapshot_date'
-            },
-            {
-                'collection_name': 'support_items',
-                'fields': {
-                    'priority': 'int',
-                },
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * * 40 0',
-                'to_partition': True
-            },
-            {
-                'collection_name': 'support_list',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * * 40 0',
-                'to_partition': True
-            },
-            {
-                'collection_name': 'support_ticket_conversations',
-                'fields': {
-                    'incoming': 'bool',
-                    'private': 'bool',
-                    'freshdesk_user_id': 'int',
-                    '__v': 'int',
-                    'created_at': 'datetime',
-                    'updated_at': 'datetime'
-                },
-                'bookmark': 'updated_at',
-                'archive': False,
-                'cron': '* * * * * * 40 0',
-                'to_partition': True,
-            },
-            {
-                'collection_name': 'support_tickets',
-                'fields': {
-                    'created_at': 'datetime',
-                    'spam': 'bool',
-                    'priority': 'int',
-                    'source': 'int',
-                    'status': 'int',
-                    'is_escalated': 'bool',
-                    'updated_at': 'datetime',
-                    'nr_escalated': 'bool',
-                    'fr_escalated': 'bool',
-                    '__v': 'int',
-                },
-                'bookmark': 'updated_at',
-                'archive': False,
-                'cron': '* * * * * * 40 0',
-                'to_partition': True,
-            },
-            {
                 'collection_name': 'support_tickets_rating',
                 'fields': {
                     'rating': 'int',
@@ -264,17 +113,9 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * * 40 0',
+                'cron': 'self-managed',
                 'to_partition': True,
-            },
-            {
-                'collection_name': 'webhook_error_logs',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * * 40 0',
-                'to_partition': True
-            },
+            }
         ]
     },
     'fastapi_server': True,
