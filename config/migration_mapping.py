@@ -102,12 +102,12 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server'
+            's3_bucket_name': 'migration-service-temp'
         },
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '* * * * * */1 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -116,7 +116,7 @@ mapping = {
             },
             {
                 'table_name': 'localities_live',
-                'cron': '* * * * * 22 45 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -124,7 +124,7 @@ mapping = {
             },
             {
                 'table_name': 'cmocx_cl_in_vicinity',
-                'cron': '* * * * * 22 30 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -140,7 +140,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server',
+            's3_bucket_name': 'migration-service-temp',
         },
         'collections': [
             {
@@ -152,7 +152,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * * * * */1 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -166,7 +166,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * * * * */1 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -181,7 +181,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server',
+            's3_bucket_name': 'migration-service-temp',
         },
         'collections': [
             {
@@ -189,7 +189,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
             {
@@ -197,7 +197,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -209,7 +209,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
             {
@@ -217,7 +217,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
             {
@@ -232,7 +232,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 22 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {
@@ -251,7 +251,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 15 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {
@@ -264,7 +264,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {
@@ -272,7 +272,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True
             },
         ]

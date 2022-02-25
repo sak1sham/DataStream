@@ -2,7 +2,7 @@ import pandas as pd
 import psycopg2
 import pymongo
 
-from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype
+from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, utc_to_local
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
 from helper.logging import logger
@@ -34,6 +34,7 @@ class PGSQLMigrate:
 
     def preprocess(self) -> None:
         self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
+        self.curr_run_cron_job = utc_to_local(datetime.datetime.utcnow(), self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
 
@@ -64,7 +65,7 @@ class PGSQLMigrate:
         collection_encr = get_data_from_encr_db()
         last_run_cron_job = self.last_run_cron_job
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
-            df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = self.tz_info)
+            df['migration_snapshot_date'] = self.curr_run_cron_job
         self.partition_for_parquet = []
         if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
             if('partition_col' in self.curr_mapping.keys()):
@@ -81,11 +82,13 @@ class PGSQLMigrate:
                     col_form = self.curr_mapping['partition_col_format'][i]
                     parq_col = "parquet_format_" + col
                     if(col == 'migration_snapshot_date'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour", parq_col + "_minute"])
                         temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
                         df[parq_col + "_year"] = temp.dt.year
                         df[parq_col + "_month"] = temp.dt.month
                         df[parq_col + "_day"] = temp.dt.day
+                        df[parq_col + "_hour"] = temp.dt.hour
+                        df[parq_col + "_minute"] = temp.dt.minute
                     elif(col_form == 'str'):
                         self.partition_for_parquet.extend([parq_col])
                         df[parq_col] = df[col].astype(str)
@@ -93,11 +96,13 @@ class PGSQLMigrate:
                         self.partition_for_parquet.extend([parq_col])
                         df[parq_col] = df[col].astype(int)
                     elif(col_form == 'datetime'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour", parq_col + "_minute"])
                         temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
                         df[parq_col + "_year"] = temp.dt.year
                         df[parq_col + "_month"] = temp.dt.month
                         df[parq_col + "_day"] = temp.dt.day
+                        df[parq_col + "_hour"] = temp.dt.hour
+                        df[parq_col + "_minute"] = temp.dt.minute
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime.") 
             else:
@@ -139,11 +144,7 @@ class PGSQLMigrate:
         if(not processed_data):
             return
         else:
-            prim_keys = []
-            if(self.db['destination']['destination_type'] == 'redshift' and ('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump'])):
-                ## In case of syncing (not simply dumping) with redshift, we need to specify some primary keys for it to do the updations
-                prim_keys = ['unique_migration_record_id']
-            self.saver.save(processed_data = processed_data, primary_keys = prim_keys, c_partition = c_partition)
+            self.saver.save(processed_data = processed_data, primary_keys = ['unique_migration_record_id'], c_partition = c_partition)
 
     
     def get_list_tables(self) -> List[str]:

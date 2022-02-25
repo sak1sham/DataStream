@@ -20,7 +20,7 @@ class s3Saver:
     def warn(self, message: str = "") -> None:
         logger.warn(self.unique_id + ": " + message)
 
-    def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = []) -> None:
+    def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = [], primary_keys: List[str] = None) -> None:
         if(c_partition and len(c_partition) > 0):
             self.partition_cols = c_partition
         if(not self.name_ or not(self.name_ == processed_data['name'])):
@@ -47,7 +47,7 @@ class s3Saver:
                 path = file_name_u,
                 dataset = True
             )
-            df_to_be_updated[df_to_be_updated['_id'] == processed_data['df_update'].iloc[i]['_id']] = processed_data['df_update'].iloc[i]
+            df_to_be_updated[df_to_be_updated[primary_keys[0]] == processed_data['df_update'].iloc[i][primary_keys[0]]] = processed_data['df_update'].iloc[i]
             wr.s3.to_parquet(
                 df = df_to_be_updated,
                 mode = 'overwrite',

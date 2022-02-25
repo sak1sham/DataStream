@@ -46,6 +46,7 @@ class MongoMigrate:
             self.curr_mapping['fields'] = {}
         
         self.last_run_cron_job = utc_to_local(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
+        self.curr_run_cron_job = utc_to_local(datetime.datetime.utcnow(), self.tz_info)
         self.partition_for_parquet = []
 
         if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
@@ -71,15 +72,19 @@ class MongoMigrate:
                 if(col == 'migration_snapshot_date'):
                     self.curr_mapping['partition_col_format'][i] = 'datetime'
                     self.curr_mapping['fields'][col] = 'datetime'
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour", parq_col + "_minute"])
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
+                    self.curr_mapping['fields'][parq_col + "_hour"] = 'int'
+                    self.curr_mapping['fields'][parq_col + "_minute"] = 'int'
                 elif(col == '_id'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour", parq_col + "_minute"])
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
+                    self.curr_mapping['fields'][parq_col + "_hour"] = 'int'
+                    self.curr_mapping['fields'][parq_col + "_minute"] = 'int'
                 elif(col_form == 'str'):
                     self.partition_for_parquet.extend([parq_col])
                     self.curr_mapping['fields'][parq_col] = 'str'
@@ -90,10 +95,12 @@ class MongoMigrate:
                     self.partition_for_parquet.extend([parq_col])
                     self.curr_mapping['fields'][parq_col] = 'float'
                 elif(col_form == 'datetime'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour", parq_col + "_minute"])
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
+                    self.curr_mapping['fields'][parq_col + "_hour"] = 'int'
+                    self.curr_mapping['fields'][parq_col + "_minute"] = 'int'
                 else:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")            
 
@@ -110,7 +117,7 @@ class MongoMigrate:
         for document in all_documents:
             insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
             if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
-                document['migration_snapshot_date'] = utc_to_local(datetime.datetime.utcnow(), self.tz_info)
+                document['migration_snapshot_date'] = self.curr_run_cron_job
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
                 for i in range(len(self.curr_mapping['partition_col'])):
                     col = self.curr_mapping['partition_col'][i]
@@ -120,6 +127,8 @@ class MongoMigrate:
                         document[parq_col + "_year"] = insertion_time.year
                         document[parq_col + "_month"] = insertion_time.month
                         document[parq_col + "_day"] = insertion_time.day
+                        document[parq_col + "_hour"] = insertion_time.hour
+                        document[parq_col + "_minute"] = insertion_time.minute
                     elif(col_form == 'str'):
                         document[parq_col] = str(document[col])
                     elif(col_form == 'int'):
@@ -131,6 +140,8 @@ class MongoMigrate:
                         document[parq_col + "_year"] = document[col].year
                         document[parq_col + "_month"] = document[col].month
                         document[parq_col + "_day"] = document[col].day
+                        document[parq_col + "_hour"] = document[col].hour
+                        document[parq_col + "_minute"] = document[col].minute
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")                    
             updation = False
@@ -184,11 +195,7 @@ class MongoMigrate:
         if(not processed_collection):
             return
         else:
-            prim_keys = []
-            if(self.db['destination']['destination_type'] == 'redshift' and ('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump'])):
-                ## In case of syncing (not simply dumping) with redshift, we need to specify some primary keys for it to do the updations
-                prim_keys = ['_id']
-            self.saver.save(processed_data = processed_collection, primary_keys = prim_keys)
+            self.saver.save(processed_data = processed_collection, primary_keys = ['_id'])
 
 
     def process(self) -> None:

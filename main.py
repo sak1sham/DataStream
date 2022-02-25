@@ -24,6 +24,7 @@ group_key = {
     'api': 'apis'
 }
 tz__ = 'Asia/Kolkata'
+reserved_mapping_keys = ['fastapi_server', 'timezone']
 
 @app.on_event("startup")
 def scheduled_migration():
@@ -81,8 +82,8 @@ if __name__ == "__main__":
         i = 0
         while(i < n):
             unique_id = args[i]
-            if(unique_id == 'fastapi_server'):
-                raise InvalidArguments("Can\'t use fastapi_server as job id. It is a reserved keyword.")
+            if(unique_id in reserved_mapping_keys):
+                raise InvalidArguments("Can\'t use fastapi_server, timezone as job id. It is a reserved keyword.")
             db = mapping[unique_id]
             s_type = db['source']['source_type']
             if(s_type not in group_key.keys()):
@@ -97,7 +98,7 @@ if __name__ == "__main__":
             i += 1
     else:
         for unique_id, db in mapping.items():
-            if(unique_id == 'fastapi_server'):
+            if(unique_id in reserved_mapping_keys):
                 continue
             s_type = db['source']['source_type']
             if(s_type not in group_key.keys()):
