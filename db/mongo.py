@@ -72,19 +72,17 @@ class MongoMigrate:
                 if(col == 'migration_snapshot_date'):
                     self.curr_mapping['partition_col_format'][i] = 'datetime'
                     self.curr_mapping['fields'][col] = 'datetime'
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour", parq_col + "_minute"])
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_hour"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_minute"] = 'int'
                 elif(col == '_id'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour", parq_col + "_minute"])
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_hour"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_minute"] = 'int'
                 elif(col_form == 'str'):
                     self.partition_for_parquet.extend([parq_col])
                     self.curr_mapping['fields'][parq_col] = 'str'
@@ -95,12 +93,11 @@ class MongoMigrate:
                     self.partition_for_parquet.extend([parq_col])
                     self.curr_mapping['fields'][parq_col] = 'float'
                 elif(col_form == 'datetime'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour", parq_col + "_minute"])
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_hour"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_minute"] = 'int'
                 else:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")            
 
@@ -128,7 +125,6 @@ class MongoMigrate:
                         document[parq_col + "_month"] = insertion_time.month
                         document[parq_col + "_day"] = insertion_time.day
                         document[parq_col + "_hour"] = insertion_time.hour
-                        document[parq_col + "_minute"] = insertion_time.minute
                     elif(col_form == 'str'):
                         document[parq_col] = str(document[col])
                     elif(col_form == 'int'):
@@ -141,7 +137,6 @@ class MongoMigrate:
                         document[parq_col + "_month"] = document[col].month
                         document[parq_col + "_day"] = document[col].day
                         document[parq_col + "_hour"] = document[col].hour
-                        document[parq_col + "_minute"] = document[col].minute
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")                    
             updation = False

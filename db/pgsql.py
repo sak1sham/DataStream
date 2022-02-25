@@ -82,13 +82,12 @@ class PGSQLMigrate:
                     col_form = self.curr_mapping['partition_col_format'][i]
                     parq_col = "parquet_format_" + col
                     if(col == 'migration_snapshot_date'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour", parq_col + "_minute"])
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
                         temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
                         df[parq_col + "_year"] = temp.dt.year
                         df[parq_col + "_month"] = temp.dt.month
                         df[parq_col + "_day"] = temp.dt.day
                         df[parq_col + "_hour"] = temp.dt.hour
-                        df[parq_col + "_minute"] = temp.dt.minute
                     elif(col_form == 'str'):
                         self.partition_for_parquet.extend([parq_col])
                         df[parq_col] = df[col].astype(str)
@@ -96,13 +95,12 @@ class PGSQLMigrate:
                         self.partition_for_parquet.extend([parq_col])
                         df[parq_col] = df[col].astype(int)
                     elif(col_form == 'datetime'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour", parq_col + "_minute"])
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
                         temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
                         df[parq_col + "_year"] = temp.dt.year
                         df[parq_col + "_month"] = temp.dt.month
                         df[parq_col + "_day"] = temp.dt.day
                         df[parq_col + "_hour"] = temp.dt.hour
-                        df[parq_col + "_minute"] = temp.dt.minute
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime.") 
             else:
