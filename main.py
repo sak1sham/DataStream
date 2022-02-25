@@ -45,8 +45,9 @@ def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, An
     obj = DMS_importer(db, curr_mapping)
     obj.process()
 
-def create_new_job(db, list_specs, uid, i, is_fastapi):
-    list_specs['unique_id'] = uid + "_MIGRATION_SERVICE_" + str(i+1)
+def create_new_job(db, list_specs, uid, is_fastapi):
+    specs_name_type = group_key[db['source']['source_type']][:-1] + "_name"
+    list_specs['unique_id'] = uid + "_DMS_" + list_specs[specs_name_type]
     if(list_specs['cron'] == 'self-managed'):
         th = threading.Thread(target=migration_service_of_job, args=(db, list_specs, tz__))
         th.start()
@@ -59,8 +60,8 @@ def create_new_job(db, list_specs, uid, i, is_fastapi):
 def use_mapping(db, key, is_fastapi):
     if(key not in db.keys()):
         db[key] = []
-    for i, curr_mapping in enumerate(db[key]):
-        create_new_job(db, curr_mapping, unique_id, i, is_fastapi)
+    for curr_mapping in db[key]:
+        create_new_job(db, curr_mapping, unique_id, is_fastapi)
 
 def get_batch_size(s) -> Tuple[int]:
     b = s.split(',')
