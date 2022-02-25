@@ -102,7 +102,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'data-migration-server'
         },
         'tables': [
             {
@@ -140,7 +140,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp',
+            's3_bucket_name': 'data-migration-server',
         },
         'collections': [
             {
@@ -181,7 +181,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp',
+            's3_bucket_name': 'data-migration-server',
         },
         'collections': [
             {
