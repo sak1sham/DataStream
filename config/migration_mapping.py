@@ -18,7 +18,7 @@ mapping = {
         'tables': [
             {
                 'table_name': '*',
-                'cron': '2022 2 25 * * 20 17 0',
+                'cron': '2022 2 25 * * 20 24 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
