@@ -4,7 +4,7 @@ from helper.logging import logger
 
 from typing import List, Dict, Any
 import datetime
-from helper.util import utc_to_local
+from helper.util import utc_to_local, df_upsert
 
 class s3Saver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, c_partition: List[str] = [], unique_id: str = "") -> None:
@@ -47,7 +47,7 @@ class s3Saver:
                 path = file_name_u,
                 dataset = True
             )
-            df_to_be_updated[df_to_be_updated[primary_keys[0]] == processed_data['df_update'].iloc[i][primary_keys[0]]] = processed_data['df_update'].iloc[i]
+            df_to_be_updated = df_upsert(df = df_to_be_updated, df_u = processed_data['df_update'].iloc[i:i+1], primary_key = primary_keys[0])
             wr.s3.to_parquet(
                 df = df_to_be_updated,
                 mode = 'overwrite',

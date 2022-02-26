@@ -196,6 +196,9 @@ class PGSQLMigrate:
         return col_dtypes
 
     def migrate_data(self, table_name: str = None) -> None:
+        if(table_name.count('.') >= 2):
+            self.inform("Can not migrate table with table_name: " + table_name)
+            return
         self.inform("Migrating table " + table_name + ".")
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):

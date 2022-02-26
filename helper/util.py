@@ -173,6 +173,8 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
             df[col] = df[col].astype(bool)
         else:
             df[col] = df[col].astype(str)
+    if(df.shape[0]):
+        df = df.reindex(sorted(df.columns), axis=1)
     return df
 
 def convert_jsonb_to_string(x: Any) -> str:
@@ -203,4 +205,8 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
             elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double'):
                 df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
     return df
-        
+    
+def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> dftype:
+    final_df = df.merge(df_u, on = primary_key, how = 'outer', suffixes=('', '_dms'))
+    final_df.drop(list(final_df.filter(regex=r'.*_dms$').columns), axis=1, inplace=True)
+    return final_df

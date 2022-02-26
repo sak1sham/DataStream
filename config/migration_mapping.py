@@ -18,6 +18,7 @@ mapping = {
         'tables': [
             {
                 'table_name': '*',
+                'exclude_tables': ['public.inventory_snapshot_record', 'public.inventory_snapshot_wms', 'public.bd_leader_mapping_change_logs', 'public.events_staging_queue', 'public.stream_follows', 'public.user_segment_tags', 'public.notifications', 'public.order_actions', 'public.order_items', 'public.orders', 'public.team_leaders', 'public.products', 'public.product_master'],
                 'cron': '2022 2 25 * * 20 24 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
