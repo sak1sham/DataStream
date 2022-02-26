@@ -190,20 +190,44 @@ def convert_jsonb_to_string(x: Any) -> str:
             logger.warn("Can't convert jsonb to str, returning None")
             return None
 
+def convert_range_to_str(r) -> str:
+    if(r.isempty):
+        return ""
+    left = "None"
+    if(not r.lower_inf):
+        left = str(r.lower)
+    right = "None"
+    if(not r.upper_inf):
+        right = str(r.upper)
+    l1 = '('
+    if(not r.lower_inf and r.lower_inc):
+        l1 = '['
+    r1 = ')'
+    if(not r.upper_inf and r.upper_inc):
+        r1 = ']'
+    ret = l1 + left + ", " + right + r1
+    return ret
+
+
 def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
     if(df.shape[0]):
         for col, dtype in schema.items():
-            if(dtype == 'jsonb'):
+            dtype = dtype.lower()
+            if(dtype == 'jsonb' or dtype == 'json'):
                 df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
                 df[col] = df[col].astype(str)
-            elif(dtype.startswith('timestamp')):
+            elif(dtype.startswith('timestamp') or dtype.startswith('date')):
                 df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
             elif(dtype == 'boolean'):
                 df[col] = df[col].astype(bool)
             elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype == 'serial'):
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-            elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double'):
+            elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money'):
                 df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
+            elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
+                df[col] = df[col].astype(str)
+            elif('range' in dtype or 'interval' in dtype):
+                df[col] = df[col].apply(convert_range_to_str).astype(str)
     return df
     
 def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> dftype:
