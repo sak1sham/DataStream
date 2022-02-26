@@ -92,7 +92,7 @@ with all_products as (
 '''
 
 mapping = {
-    "cmdb_inventory_snapshot_wms_localities_live_cmocx_cl_in_vicinity_to_s3": {
+    "cmdb_tables_to_s3": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
