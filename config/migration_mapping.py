@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-mapping = {
+'''mapping = {
     "cmdb_tables_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -275,6 +275,35 @@ mapping = {
                 'cron': '* * * * * 22 10 0',
                 'to_partition': True
             },
+        ]
+    },
+    'fastapi_server': True,
+    'timezone': 'Asia/Kolkata',
+}'''
+
+mapping = {
+    "entire_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr2.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'cm',
+            'password': 'cm'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': '*',
+                'exclude_tables': ['public.inventory_snapshot_record', 'public.inventory_snapshot_wms', 'public.bd_leader_mapping_change_logs', 'public.events_staging_queue', 'public.stream_follows', 'public.user_segment_tags', 'public.notifications', 'public.order_actions', 'public.order_items', 'public.orders', 'public.team_leaders', 'public.products', 'public.product_master'],
+                'cron': 'self-managed',
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
+                'is_dump': True,
+            }
         ]
     },
     'fastapi_server': True,
