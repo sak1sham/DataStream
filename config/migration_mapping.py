@@ -95,7 +95,7 @@ mapping = {
     "cmdb_tables_to_s3": {
         'source': {
             'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'url': 'cmdb-rr2.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
             'db_name': 'cmdb',
             'username': 'cm',
             'password': 'cm'
