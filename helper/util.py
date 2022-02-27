@@ -231,6 +231,10 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
     return df
     
 def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> dftype:
-    final_df = df.merge(df_u, on = primary_key, how = 'outer', suffixes=('', '_dms'))
-    final_df.drop(list(final_df.filter(regex=r'.*_dms$').columns), axis=1, inplace=True)
-    return final_df
+    df_common = pd.merge(df, df_u, on=[primary_key], how='inner')
+    if(df_common.shape[0]):
+        final_df = df.merge(df_u, on = primary_key, how = 'outer', suffixes=('', '_dms'))
+        final_df.drop(list(final_df.filter(regex=r'.*_dms$').columns), axis=1, inplace=True)
+        return final_df
+    else:
+        return df

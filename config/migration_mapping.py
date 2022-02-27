@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-'''mapping = {
+mapping = {
     "cmdb_tables_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -197,7 +197,7 @@ with all_products as (
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * * 10 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -209,7 +209,7 @@ with all_products as (
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * * 10 0',
                 'to_partition': True
             },
             {
@@ -217,7 +217,7 @@ with all_products as (
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * * 10 0',
                 'to_partition': True
             },
             {
@@ -232,7 +232,7 @@ with all_products as (
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 15 0',
+                'cron': '* * * * * * 15 0',
                 'to_partition': True,
             },
             {
@@ -251,7 +251,7 @@ with all_products as (
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 15 0',
+                'cron': '* * * * * * 15 0',
                 'to_partition': True,
             },
             {
@@ -279,9 +279,9 @@ with all_products as (
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}'''
+}
 
-mapping = {
+'''mapping = {
     "entire_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -308,7 +308,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}
+}'''
 
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),
