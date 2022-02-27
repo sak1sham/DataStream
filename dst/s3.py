@@ -51,8 +51,7 @@ class s3Saver:
             self.inform("Found all files related to record: " + str(i))
             for file_ in prev_files:
                 df_to_be_updated = wr.s3.read_parquet(
-                    path = file_,
-                    dataset = True
+                    path = [file_],
                 )
                 df_to_be_updated, modified = df_upsert(df = df_to_be_updated, df_u = processed_data['df_update'].iloc[i:i+1], primary_key = primary_keys[0])
                 if(modified):
@@ -61,8 +60,6 @@ class s3Saver:
                         mode = 'overwrite',
                         path = file_,
                         compression = 'snappy',
-                        dataset = True,
-                        schema_evolution = True,
                     )
                     break
         self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
