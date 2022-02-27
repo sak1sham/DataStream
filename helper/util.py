@@ -3,7 +3,7 @@ import datetime
 import pytz
 from dateutil import parser
 import dateutil
-from typing import List, Dict, Any, NewType
+from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
 
 from helper.logging import logger
@@ -230,11 +230,15 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 df[col] = df[col].apply(convert_range_to_str).astype(str)
     return df
     
-def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> dftype:
-    df_common = pd.merge(df, df_u, on=[primary_key], how='inner')
-    if(df_common.shape[0]):
+def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> Tuple[dftype, bool]:
+    '''
+        While upserting the data, we will be having only one record in df_u, as we are upserting record by record in s3
+    '''
+    pkey = df_u.iloc[0][primary_key]
+    modify = pkey in df[primary_key].values
+    if(modify):
         final_df = df.merge(df_u, on = primary_key, how = 'outer', suffixes=('', '_dms'))
         final_df.drop(list(final_df.filter(regex=r'.*_dms$').columns), axis=1, inplace=True)
-        return final_df
+        return final_df, True
     else:
-        return df
+        return df, False

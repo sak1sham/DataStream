@@ -47,28 +47,24 @@ class s3Saver:
             file_name_u = self.s3_location + processed_data['name'] + "/"
             for x in self.partition_cols:
                 file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[i][x]) + "/"
-            print(file_name_u)
-            dfs_to_be_updated = wr.s3.read_parquet(
-                path = file_name_u,
-                dataset = True,
-                chunked = 1000
-            )
             prev_files = wr.s3.list_objects(file_name_u)
-            print(prev_files)
-            self.inform("Read all the partition files to be updated for record: " + str(i))
-            for df_to_be_updated in dfs_to_be_updated:
-                df_to_be_updated = df_upsert(df = df_to_be_updated, df_u = processed_data['df_update'].iloc[i:i+1], primary_key = primary_keys[0])
-                wr.s3.to_parquet(
-                    df = df_to_be_updated,
-                    mode = 'append',
-                    path = file_name_u,
-                    compression = 'snappy',
-                    dataset = True,
-                    schema_evolution = True,
+            self.inform("Found all files related to record: " + str(i))
+            for file_ in prev_files:
+                df_to_be_updated = wr.s3.read_parquet(
+                    path = file_,
+                    dataset = True
                 )
-            self.inform("Inserted updated records -- done. Attempting to delete old records....")
-            for old_file in prev_files:
-                wr.s3.delete_objects(path = old_file)
+                df_to_be_updated, modified = df_upsert(df = df_to_be_updated, df_u = processed_data['df_update'].iloc[i:i+1], primary_key = primary_keys[0])
+                if(modified):
+                    wr.s3.to_parquet(
+                        df = df_to_be_updated,
+                        mode = 'overwrite',
+                        path = file_,
+                        compression = 'snappy',
+                        dataset = True,
+                        schema_evolution = True,
+                    )
+                    break
         self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
     
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
