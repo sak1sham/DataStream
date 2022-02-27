@@ -41,17 +41,14 @@ class s3Saver:
                 schema_evolution = True,
             )
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
-
-        self.inform("Attempting to update " + str(processed_data['df_update'].shape[0]) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
-        if(processed_data['df_update'].shape[0]):
-            self.inform("There is something to update\n\n")
-
-        for i in range(processed_data['df_update'].shape[0]):
+        n_updations = processed_data['df_update'].shape[0]
+        self.inform("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
+        for i in range(n_updations):
             file_name_u = self.s3_location + processed_data['name'] + "/"
             for x in self.partition_cols:
                 file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[i][x]) + "/"
             prev_files = wr.s3.list_objects(file_name_u)
-            self.inform("Found all files while updating record: " + str(i))
+            self.inform("Found all files while updating record: " + str(i+1) + "/" + str(n_updations))
             for file_ in prev_files:
                 df_to_be_updated = wr.s3.read_parquet(
                     path = [file_],
@@ -64,7 +61,7 @@ class s3Saver:
                         compression = 'snappy',
                     )
                     break
-        self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
+        self.inform(str(n_updations) + " updations done.")
     
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()
