@@ -232,7 +232,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * * 15 0',
+                'cron': '* * * * * * 20 0',
                 'to_partition': True,
             },
             {
@@ -251,7 +251,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * * 15 0',
+                'cron': '* * * * * * 19 0',
                 'to_partition': True,
             },
             {
@@ -264,7 +264,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * * 15 0',
+                'cron': '* * * * * * 16 0',
                 'to_partition': True,
             },
             {
