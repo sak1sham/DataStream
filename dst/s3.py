@@ -40,13 +40,14 @@ class s3Saver:
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
 
         self.inform("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
-        file_name_u = self.s3_location + processed_data['name'] + "/"
         if(processed_data['df_update'].shape[0]):
             self.inform("There is something to update\n\n\n\n\n\n\n\n\n")
+
         for i in range(processed_data['df_update'].shape[0]):
+            file_name_u = self.s3_location + processed_data['name'] + "/"
             for x in self.partition_cols:
                 file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[i][x]) + "/"
-            self.inform(file_name_u)
+            print(file_name_u)
             dfs_to_be_updated = wr.s3.read_parquet(
                 path = file_name_u,
                 dataset = True,
@@ -54,8 +55,8 @@ class s3Saver:
             )
             prev_files = wr.s3.list_objects(file_name_u)
             print(prev_files)
+            self.inform("Read all the partition files to be updated for record: " + str(i))
             for df_to_be_updated in dfs_to_be_updated:
-                self.inform("Read the partition to be updated.")
                 df_to_be_updated = df_upsert(df = df_to_be_updated, df_u = processed_data['df_update'].iloc[i:i+1], primary_key = primary_keys[0])
                 wr.s3.to_parquet(
                     df = df_to_be_updated,
@@ -65,6 +66,7 @@ class s3Saver:
                     dataset = True,
                     schema_evolution = True,
                 )
+            self.inform("Inserted updated records -- done. Attempting to delete old records....")
             for old_file in prev_files:
                 wr.s3.delete_objects(path = old_file)
         self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
