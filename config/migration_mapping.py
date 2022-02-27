@@ -272,7 +272,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * * 10 0',
                 'to_partition': True
             },
         ]
