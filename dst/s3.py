@@ -6,6 +6,9 @@ from typing import List, Dict, Any
 import datetime
 from helper.util import utc_to_local, df_upsert
 
+from dotenv import load_dotenv
+load_dotenv()
+
 class s3Saver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, c_partition: List[str] = [], unique_id: str = "") -> None:
         self.s3_location = "s3://" + db_destination['s3_bucket_name'] + "/" + db_source['source_type'] + "/" + db_source['db_name'] + "/"
@@ -39,16 +42,16 @@ class s3Saver:
             )
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
 
-        self.inform("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
+        self.inform("Attempting to update " + str(processed_data['df_update'].shape[0]) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
         if(processed_data['df_update'].shape[0]):
-            self.inform("There is something to update\n\n\n\n\n\n\n\n\n")
+            self.inform("There is something to update\n\n")
 
         for i in range(processed_data['df_update'].shape[0]):
             file_name_u = self.s3_location + processed_data['name'] + "/"
             for x in self.partition_cols:
                 file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[i][x]) + "/"
             prev_files = wr.s3.list_objects(file_name_u)
-            self.inform("Found all files related to record: " + str(i))
+            self.inform("Found all files while updating record: " + str(i))
             for file_ in prev_files:
                 df_to_be_updated = wr.s3.read_parquet(
                     path = [file_],
