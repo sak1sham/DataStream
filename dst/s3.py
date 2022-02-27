@@ -57,7 +57,6 @@ class s3Saver:
                 if(modified):
                     wr.s3.to_parquet(
                         df = df_to_be_updated,
-                        mode = 'overwrite',
                         path = file_,
                         compression = 'snappy',
                     )
