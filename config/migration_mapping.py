@@ -197,7 +197,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 10 0',
+                'cron': '* * * * * 22 10 0',
                 'to_partition': True,
                 'is_dump': True,
                 'partition_col': 'migration_snapshot_date'
@@ -209,7 +209,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 10 0',
+                'cron': '* * * * * 22 10 0',
                 'to_partition': True
             },
             {
@@ -217,7 +217,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 10 0',
+                'cron': '* * * * * 22 10 0',
                 'to_partition': True
             },
             {
@@ -232,7 +232,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * * 20 0',
+                'cron': '* * * * * 22 15 0',
                 'to_partition': True,
             },
             {
@@ -251,7 +251,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * * 19 0',
+                'cron': '* * * * * 22 25 0',
                 'to_partition': True,
             },
             {
@@ -264,7 +264,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * * 16 0',
+                'cron': '* * * * * 22 15 0',
                 'to_partition': True,
             },
             {
@@ -272,7 +272,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * * 10 0',
+                'cron': '* * * * * 22 10 0',
                 'to_partition': True
             },
         ]
