@@ -253,7 +253,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 25 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {

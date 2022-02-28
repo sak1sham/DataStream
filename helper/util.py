@@ -64,6 +64,7 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
             x = utc_to_local(utc_dt = x, tz_ = tz_)
             return x
         except Exception as e:
+            logger.err(e)
             logger.warn("Unable to convert " + x + " to any datetime format. Returning None")
             return pd.Timestamp(None)
 
@@ -100,7 +101,7 @@ def evaluate_cron(expression: str) -> List[str]:
     vals = [(None if w == '?' else w) for w in vals]
     return vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], vals[7]
 
-def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_info: Any) -> Dict[str, Any]:
+def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] = {}, tz_info: Any = pytz.utc) -> Dict[str, Any]:
     docu = docu_orig.copy()
     for key, _ in docu.items():
         if(key == '_id'):
@@ -114,11 +115,13 @@ def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_in
                 try:
                     docu[key] = int(float(docu[key]))
                 except Exception as e:
+                    logger.err(e)
                     docu[key] = 0
             elif(schema[key] == 'float'):
                 try:
                     docu[key] = float(docu[key])
                 except Exception as e:
+                    logger.err(e)
                     docu[key] = None
             elif(schema[key] == 'datetime'):
                 docu[key] = convert_to_datetime(docu[key], tz_info)
@@ -129,6 +132,7 @@ def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_in
                 try:
                     docu[key] = complex(docu[key])
                 except Exception as e:
+                    logger.err(e)
                     docu[key] = None
         elif(isinstance(docu[key], datetime.datetime)):
             docu[key] = utc_to_local(docu[key], tz_info)
@@ -137,6 +141,7 @@ def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_in
             try:
                 docu[key] = str(docu[key])
             except Exception as e:
+                logger.err(e)
                 logger.warn("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
                 docu[key] = None
     
@@ -187,6 +192,7 @@ def convert_jsonb_to_string(x: Any) -> str:
             x = str(x)
             return x
         except Exception as e:
+            logger.err(e)
             logger.warn("Can't convert jsonb to str, returning None")
             return None
 
