@@ -32,6 +32,9 @@ class PGSQLMigrate:
     def warn(self, message: str = None) -> None:
         logger.warn(self.curr_mapping['unique_id'] + ": " + message)
 
+    def err(self, error: Any = None) -> None:
+        logger.err(error)
+
     def preprocess(self) -> None:
         self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
         self.curr_run_cron_job = utc_to_local(datetime.datetime.utcnow(), self.tz_info)
@@ -137,13 +140,11 @@ class PGSQLMigrate:
         df_update = convert_to_dtype(df_update, col_dtypes)
         return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update}
 
-
     def save_data(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = None) -> None:
         if(not processed_data):
             return
         else:
             self.saver.save(processed_data = processed_data, primary_keys = ['unique_migration_record_id'], c_partition = c_partition)
-
     
     def get_list_tables(self) -> List[str]:
         sql_stmt = '''
@@ -170,8 +171,10 @@ class PGSQLMigrate:
                     table_names = [str(t[0] + "." + t[1]) for t in rows]
                     return table_names
             except Exception as e:
+                self.err(e)
                 raise ProcessingError("Caught some exception while getting list of all tables.")
         except Exception as e:
+            self.err(e)
             raise ConnectionError("Unable to connect to source.")
 
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
@@ -234,8 +237,12 @@ class PGSQLMigrate:
                             self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                 self.inform("Completed migration of table " + table_name + ".\n")
             except Exception as e:
+                self.err(e)
                 raise ProcessingError("Caught some exception while processing records.")
+        except ProcessingError:
+            raise
         except Exception as e:
+            self.err(e)
             raise ConnectionError("Unable to connect to source.")
 
 
@@ -272,7 +279,7 @@ class PGSQLMigrate:
         
         for table_name in name_tables:
             self.migrate_data(table_name)
-
+                
         self.inform("Overall migration complete.")
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)

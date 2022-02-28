@@ -1,5 +1,5 @@
-from distutils.log import Log
 import logging
+from typing import Any
 
 class Log_manager:
     def __init__(self) -> None:
@@ -13,7 +13,7 @@ class Log_manager:
         logging.info(s)
     def warn(self, s: str) -> None:
         logging.warning(s)
-    def err(self, s: str) -> None:
+    def err(self, s: Any) -> None:
         logging.error(s)
 
 logger = Log_manager()

@@ -152,10 +152,12 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
+                'batch_size': 200,
+                'time_delay': 1,
             },
             {
                 'collection_name': 'product_audit_logs',
@@ -166,10 +168,12 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * * * * 22 0 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
+                'batch_size': 200,
+                'time_delay': 1,
             }
         ]
     },

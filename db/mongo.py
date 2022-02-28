@@ -12,24 +12,32 @@ import json
 import hashlib
 import pytz
 from typing import Dict, Any
+import time
 
 class MongoMigrate:
-    def __init__(self, db: Dict[str, Any] = None, collection: Dict[str, Any] = None, batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
-        if (not db or not collection):
-            raise MissingData("db or collection can not be None.")
+    def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
+        if (not db or not curr_mapping):
+            raise MissingData("db or curr_mapping can not be None.")
+        if('batch_size' in curr_mapping.keys() and isinstance(curr_mapping['batch_size'], int)):
+            self.batch_size = curr_mapping['batch_size']
+        else:
+            self.batch_size = batch_size
+        if('time_delay' in curr_mapping.keys() and isinstance(curr_mapping['time_delay'], int)):
+            self.time_delay = curr_mapping['time_delay']
+        else:
+            self.time_delay = 0
         self.db = db
-        self.curr_mapping = collection
-        self.batch_size = batch_size
+        self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
-
 
     def inform(self, message: str = None) -> None:
         logger.inform(self.curr_mapping['unique_id'] + ": " + message)
 
-
     def warn(self, message: str = None) -> None:
         logger.warn(self.curr_mapping['unique_id'] + ": " + message)
 
+    def err(self, error: Any = None) -> None:
+        logger.err(error)
 
     def get_data(self) -> None:
         try:
@@ -37,9 +45,9 @@ class MongoMigrate:
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
         except Exception as e:
+            self.err(e)
             self.db_collection = None
             raise ConnectionError("Unable to connect to source.")
-
 
     def preprocess(self) -> None:
         if('fields' not in self.curr_mapping.keys()):
@@ -103,7 +111,6 @@ class MongoMigrate:
 
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
         
-
     def process_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
         docu_insert = []
         docu_update = []
@@ -185,13 +192,11 @@ class MongoMigrate:
         ret_df_update = typecast_df_to_schema(pd.DataFrame(docu_update), self.curr_mapping['fields'])
         return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': ret_df_update}
 
-
     def save_data(self, processed_collection: Dict[str, Any] = None) -> None:
         if(not processed_collection):
             return
         else:
             self.saver.save(processed_data = processed_collection, primary_keys = ['_id'])
-
 
     def process(self) -> None:
         self.get_data()
@@ -203,6 +208,7 @@ class MongoMigrate:
         while(start < size_):    
             processed_collection = self.process_data(start=start, end=min(start+self.batch_size, size_))
             self.save_data(processed_collection=processed_collection)
+            time.sleep(self.time_delay)
             start += self.batch_size
         self.inform("Migration Complete.")
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
