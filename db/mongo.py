@@ -116,8 +116,9 @@ class MongoMigrate:
         docu_update = []
 
         collection_encr = get_data_from_encr_db()
-        all_documents = self.db_collection.find()[start:end]
-
+        all_documents = list(self.db_collection.find()[start:end])
+        if(not all_documents or len(all_documents) == 0):
+            return None
         for document in all_documents:
             insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
             if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
@@ -204,9 +205,12 @@ class MongoMigrate:
         self.preprocess()
         self.inform("Collection pre-processed.")
         start = 0
-        size_ = self.db_collection.count_documents({})
-        while(start < size_):    
-            processed_collection = self.process_data(start=start, end=min(start+self.batch_size, size_))
+        while(True):    
+            end = start + self.batch_size
+            processed_collection = self.process_data(start=start, end=end)
+            if(not processed_collection):
+                self.inform("Processed all records from collection.")
+                break
             self.save_data(processed_collection=processed_collection)
             time.sleep(self.time_delay)
             start += self.batch_size
