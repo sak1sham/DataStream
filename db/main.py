@@ -9,9 +9,9 @@ class DMS_importer:
         self.db = db
         self.curr_mapping = curr_mapping
         if(db['source']['source_type'] == 'mongo'):
-            self.obj = MongoMigrate(db = db, collection = curr_mapping, tz_str = tz__)
+            self.obj = MongoMigrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
         elif(db['source']['source_type'] == 'sql'):
-            self.obj = PGSQLMigrate(db = db, table = curr_mapping, tz_str = tz__)
+            self.obj = PGSQLMigrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
     
     def process(self):
         try:

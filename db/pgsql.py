@@ -17,12 +17,13 @@ dftype = NewType("dftype", pd.DataFrame)
 collectionType =  NewType("collectionType", pymongo.collection.Collection)
 
 class PGSQLMigrate:
-    def __init__(self, db: Dict[str, Any] = None, table: Dict[str, Any] = None, batch_size: int = 1000, tz_str: str = 'Asia/Kolkata') -> None:
+    def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, batch_size: int = 1000, tz_str: str = 'Asia/Kolkata') -> None:
         self.db = db
-        self.curr_mapping = table
-        self.batch_size = batch_size
-        if('batch_size' in table.keys()):
-            self.batch_size = int(table['batch_size'])
+        self.curr_mapping = curr_mapping
+        if('batch_size' in curr_mapping.keys()):
+            self.batch_size = int(curr_mapping['batch_size'])
+        else:
+            self.batch_size = batch_size
         self.tz_info = pytz.timezone(tz_str)
         self.last_run_cron_job = pd.Timestamp(None)
     
