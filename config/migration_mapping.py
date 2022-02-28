@@ -283,7 +283,7 @@ mapping = {
     'timezone': 'Asia/Kolkata',
 }
 
-mapping = {
+'''mapping = {
     "entire_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -310,7 +310,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}
+}'''
 
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),
