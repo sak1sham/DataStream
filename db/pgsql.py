@@ -174,6 +174,8 @@ class PGSQLMigrate:
             except Exception as e:
                 self.err(e)
                 raise ProcessingError("Caught some exception while getting list of all tables.")
+        except ProcessingError:
+            raise
         except Exception as e:
             self.err(e)
             raise ConnectionError("Unable to connect to source.")
@@ -245,7 +247,6 @@ class PGSQLMigrate:
         except Exception as e:
             self.err(e)
             raise ConnectionError("Unable to connect to source.")
-
 
     def process(self) -> None:
         name_tables = []
