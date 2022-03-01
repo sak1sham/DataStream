@@ -2,7 +2,7 @@ import pandas as pd
 import psycopg2
 import pymongo
 
-from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype
+from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, utc_to_local
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
 from helper.logging import logger
@@ -17,10 +17,13 @@ dftype = NewType("dftype", pd.DataFrame)
 collectionType =  NewType("collectionType", pymongo.collection.Collection)
 
 class PGSQLMigrate:
-    def __init__(self, db: Dict[str, Any] = None, table: Dict[str, Any] = None, batch_size: int = 1000, tz_str: str = 'Asia/Kolkata') -> None:
+    def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, batch_size: int = 1000, tz_str: str = 'Asia/Kolkata') -> None:
         self.db = db
-        self.curr_mapping = table
-        self.batch_size = batch_size
+        self.curr_mapping = curr_mapping
+        if('batch_size' in curr_mapping.keys()):
+            self.batch_size = int(curr_mapping['batch_size'])
+        else:
+            self.batch_size = batch_size
         self.tz_info = pytz.timezone(tz_str)
         self.last_run_cron_job = pd.Timestamp(None)
     
@@ -30,8 +33,12 @@ class PGSQLMigrate:
     def warn(self, message: str = None) -> None:
         logger.warn(self.curr_mapping['unique_id'] + ": " + message)
 
+    def err(self, error: Any = None) -> None:
+        logger.err(error)
+
     def preprocess(self) -> None:
         self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
+        self.curr_run_cron_job = utc_to_local(datetime.datetime.utcnow(), self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
 
@@ -58,14 +65,11 @@ class PGSQLMigrate:
                 collection_encr.insert_one(encr)
         return df_insert, df_update
 
-
     def process_table(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
-        if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query']):
-            self.inform("Number of records: " + str(df.shape[0]))
         collection_encr = get_data_from_encr_db()
         last_run_cron_job = self.last_run_cron_job
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
-            df['migration_snapshot_date'] = datetime.datetime.utcnow().replace(tzinfo = self.tz_info)
+            df['migration_snapshot_date'] = self.curr_run_cron_job
         self.partition_for_parquet = []
         if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
             if('partition_col' in self.curr_mapping.keys()):
@@ -82,11 +86,12 @@ class PGSQLMigrate:
                     col_form = self.curr_mapping['partition_col_format'][i]
                     parq_col = "parquet_format_" + col
                     if(col == 'migration_snapshot_date'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
                         temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
                         df[parq_col + "_year"] = temp.dt.year
                         df[parq_col + "_month"] = temp.dt.month
                         df[parq_col + "_day"] = temp.dt.day
+                        df[parq_col + "_hour"] = temp.dt.hour
                     elif(col_form == 'str'):
                         self.partition_for_parquet.extend([parq_col])
                         df[parq_col] = df[col].astype(str)
@@ -94,11 +99,12 @@ class PGSQLMigrate:
                         self.partition_for_parquet.extend([parq_col])
                         df[parq_col] = df[col].astype(int)
                     elif(col_form == 'datetime'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
                         temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
                         df[parq_col + "_year"] = temp.dt.year
                         df[parq_col + "_month"] = temp.dt.month
                         df[parq_col + "_day"] = temp.dt.day
+                        df[parq_col + "_hour"] = temp.dt.hour
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime.") 
             else:
@@ -135,17 +141,11 @@ class PGSQLMigrate:
         df_update = convert_to_dtype(df_update, col_dtypes)
         return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update}
 
-
     def save_data(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = None) -> None:
         if(not processed_data):
             return
         else:
-            prim_keys = []
-            if(self.db['destination']['destination_type'] == 'redshift' and ('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump'])):
-                ## In case of syncing (not simply dumping) with redshift, we need to specify some primary keys for it to do the updations
-                prim_keys = ['unique_migration_record_id']
-            self.saver.save(processed_data = processed_data, primary_keys = prim_keys, c_partition = c_partition)
-
+            self.saver.save(processed_data = processed_data, primary_keys = ['unique_migration_record_id'], c_partition = c_partition)
     
     def get_list_tables(self) -> List[str]:
         sql_stmt = '''
@@ -172,11 +172,17 @@ class PGSQLMigrate:
                     table_names = [str(t[0] + "." + t[1]) for t in rows]
                     return table_names
             except Exception as e:
+                self.err(e)
                 raise ProcessingError("Caught some exception while getting list of all tables.")
+        except ProcessingError:
+            raise
         except Exception as e:
+            self.err(e)
             raise ConnectionError("Unable to connect to source.")
 
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
+        if('fetch_data_query' in self.curr_mapping.keys() and isinstance(self.curr_mapping['fetch_data_query'], str) and len(self.curr_mapping['fetch_data_query']) > 0):
+            return {}
         tn = curr_table_name.split('.')
         schema_name = 'public'
         table_name = ''
@@ -196,6 +202,9 @@ class PGSQLMigrate:
         return col_dtypes
 
     def migrate_data(self, table_name: str = None) -> None:
+        if(table_name.count('.') >= 2):
+            self.inform("Can not migrate table with table_name: " + table_name)
+            return
         self.inform("Migrating table " + table_name + ".")
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
@@ -231,10 +240,13 @@ class PGSQLMigrate:
                             self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                 self.inform("Completed migration of table " + table_name + ".\n")
             except Exception as e:
+                self.err(e)
                 raise ProcessingError("Caught some exception while processing records.")
+        except ProcessingError:
+            raise
         except Exception as e:
+            self.err(e)
             raise ConnectionError("Unable to connect to source.")
-
 
     def process(self) -> None:
         name_tables = []
@@ -242,6 +254,9 @@ class PGSQLMigrate:
             name_tables = self.get_list_tables()
         else:
             name_tables = [self.curr_mapping['table_name']]
+        name_tables.sort()
+        self.inform("Found following " + str(len(name_tables)) + " tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
+        
         b_start = 0
         b_end = len(name_tables)
         if('batch_start' in self.curr_mapping.keys()):
@@ -249,17 +264,24 @@ class PGSQLMigrate:
         if('batch_end' in self.curr_mapping.keys()):
             b_end = self.curr_mapping['batch_end']
         name_tables = name_tables[b_start:b_end]
-        self.inform("Migrating following " + str(len(name_tables)) + " tables:\n" + '\n'.join(name_tables))
         self.preprocess()
         self.inform("Mapping pre-processed.")
+        
         if('exclude_tables' not in self.curr_mapping.keys()):
             self.curr_mapping['exclude_tables'] = []
         elif(isinstance(self.curr_mapping['exclude_tables'], str)):
             self.curr_mapping['exclude_tables'] = [self.curr_mapping['exclude_tables']]
+        useful_tables = []
+        for name_ in name_tables:
+            if(name_ not in self.curr_mapping['exclude_tables']):
+                useful_tables.append(name_)
+        name_tables = useful_tables
+        name_tables.sort()
+        self.inform("Starting to migrating following " + str(len(name_tables)) + " useful tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
+        
         for table_name in name_tables:
-            if(table_name in self.curr_mapping['exclude_tables']):
-                continue
             self.migrate_data(table_name)
+                
         self.inform("Overall migration complete.")
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)

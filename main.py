@@ -22,6 +22,8 @@ group_key = {
     'mongo': 'collections',
     'api': 'apis'
 }
+tz__ = 'Asia/Kolkata'
+reserved_mapping_keys = ['fastapi_server', 'timezone']
 
 @app.on_event("startup")
 def scheduled_migration():
@@ -38,25 +40,26 @@ def healthcheck():
     logger.inform('Health check done.')
     pass
 
-def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}) -> None:
+def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
     obj = DMS_importer(db, curr_mapping)
     obj.process()
 
-def create_new_job(db, list_specs, uid, i, is_fastapi):
-    list_specs['unique_id'] = uid + "_MIGRATION_SERVICE_" + str(i+1)
+def create_new_job(db, list_specs, uid, is_fastapi):
+    specs_name_type = group_key[db['source']['source_type']][:-1] + "_name"
+    list_specs['unique_id'] = uid + "_DMS_" + list_specs[specs_name_type]
     if(list_specs['cron'] == 'self-managed'):
-        migration_service_of_job(db, list_specs)
+        migration_service_of_job(db, list_specs, tz__)
     elif(is_fastapi):
         year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(list_specs['cron'])
-        scheduler.add_job(migration_service_of_job, 'cron', args=[db, list_specs], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone('Asia/Kolkata'))
+        scheduler.add_job(migration_service_of_job, 'cron', args=[db, list_specs, tz__], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone(tz__))
     else:
         logger.warn("Jobs can be scheduled only if fastapi_server is enabled. Skipping " + str(uid) + ".")
 
 def use_mapping(db, key, is_fastapi):
     if(key not in db.keys()):
         db[key] = []
-    for i, curr_mapping in enumerate(db[key]):
-        create_new_job(db, curr_mapping, unique_id, i, is_fastapi)
+    for curr_mapping in db[key]:
+        create_new_job(db, curr_mapping, unique_id, is_fastapi)
 
 def get_batch_size(s) -> Tuple[int]:
     b = s.split(',')
@@ -70,14 +73,16 @@ if __name__ == "__main__":
     is_fastapi = False
     if('fastapi_server' in mapping.keys() and mapping['fastapi_server']):
         is_fastapi = True
+    if('timezone' in mapping.keys() and mapping['timezone']):
+        tz__ = mapping['timezone']
     n = len(args)
     if(n > 0):
         ## If some command line arguments are provided, process only that data
         i = 0
         while(i < n):
             unique_id = args[i]
-            if(unique_id == 'fastapi_server'):
-                raise InvalidArguments("Can\'t use fastapi_server as job id. It is a reserved keyword.")
+            if(unique_id in reserved_mapping_keys):
+                raise InvalidArguments("Can\'t use fastapi_server, timezone as job id. It is a reserved keyword.")
             db = mapping[unique_id]
             s_type = db['source']['source_type']
             if(s_type not in group_key.keys()):
@@ -92,7 +97,7 @@ if __name__ == "__main__":
             i += 1
     else:
         for unique_id, db in mapping.items():
-            if(unique_id == 'fastapi_server'):
+            if(unique_id in reserved_mapping_keys):
                 continue
             s_type = db['source']['source_type']
             if(s_type not in group_key.keys()):

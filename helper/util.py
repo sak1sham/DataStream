@@ -2,7 +2,8 @@ import json
 import datetime
 import pytz
 from dateutil import parser
-from typing import List, Dict, Any, NewType
+import dateutil
+from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
 
 from helper.logging import logger
@@ -39,21 +40,31 @@ def convert_list_to_string(l: List[Any]) -> str:
     val = val + ']'
     return val
 
-def utc_to_local(utc_dt: datetype, tz_: Any) -> datetype:
+def utc_to_local(utc_dt: datetype = None, tz_: Any = pytz.utc) -> datetype:
     local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(tz_)
     return tz_.normalize(local_dt)
 
-def convert_to_datetime(x: Any, tz_: Any) -> datetype:
-    if(x is None):
+def convert_to_utc(dt: datetype = None) -> datetype:
+    if(dt.tzinfo is None):
+        dt = pytz.utc.localize(dt)
+    dt = dt.astimezone(pytz.utc)
+    return dt
+
+def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
+    if(x is None or x == pd.Timestamp(None) or x is pd.NaT):
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
-        x = utc_to_local(x, tz_)
+        x = convert_to_utc(dt = x)
+        x = utc_to_local(utc_dt = x, tz_ = tz_)
         return x
     else:
         try:
             x = parser.parse(x)
-            return utc_to_local(x, tz_)
+            x = convert_to_utc(dt = x)
+            x = utc_to_local(utc_dt = x, tz_ = tz_)
+            return x
         except Exception as e:
+            logger.err(e)
             logger.warn("Unable to convert " + x + " to any datetime format. Returning None")
             return pd.Timestamp(None)
 
@@ -90,7 +101,7 @@ def evaluate_cron(expression: str) -> List[str]:
     vals = [(None if w == '?' else w) for w in vals]
     return vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6], vals[7]
 
-def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_info: Any) -> Dict[str, Any]:
+def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] = {}, tz_info: Any = pytz.utc) -> Dict[str, Any]:
     docu = docu_orig.copy()
     for key, _ in docu.items():
         if(key == '_id'):
@@ -104,11 +115,13 @@ def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_in
                 try:
                     docu[key] = int(float(docu[key]))
                 except Exception as e:
+                    logger.err(e)
                     docu[key] = 0
             elif(schema[key] == 'float'):
                 try:
                     docu[key] = float(docu[key])
                 except Exception as e:
+                    logger.err(e)
                     docu[key] = None
             elif(schema[key] == 'datetime'):
                 docu[key] = convert_to_datetime(docu[key], tz_info)
@@ -119,6 +132,7 @@ def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_in
                 try:
                     docu[key] = complex(docu[key])
                 except Exception as e:
+                    logger.err(e)
                     docu[key] = None
         elif(isinstance(docu[key], datetime.datetime)):
             docu[key] = utc_to_local(docu[key], tz_info)
@@ -127,6 +141,7 @@ def validate_or_convert(docu_orig: Dict[str, Any], schema: Dict[str, str], tz_in
             try:
                 docu[key] = str(docu[key])
             except Exception as e:
+                logger.err(e)
                 logger.warn("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
                 docu[key] = None
     
@@ -158,11 +173,13 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
         elif(tp == 'complex'):
             df[col] = df[col].astype('|S')
         elif(tp == 'datetime'):
-            df[col] = pd.to_datetime(df[col], utc=False).dt.tz_convert(pytz.utc).apply(lambda x: pd.Timestamp(x))
+            df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
         elif(tp == 'bool'):
             df[col] = df[col].astype(bool)
         else:
             df[col] = df[col].astype(str)
+    if(df.shape[0]):
+        df = df.reindex(sorted(df.columns), axis=1)
     return df
 
 def convert_jsonb_to_string(x: Any) -> str:
@@ -175,14 +192,59 @@ def convert_jsonb_to_string(x: Any) -> str:
             x = str(x)
             return x
         except Exception as e:
+            logger.err(e)
             logger.warn("Can't convert jsonb to str, returning None")
             return None
+
+def convert_range_to_str(r) -> str:
+    if(r.isempty):
+        return ""
+    left = "None"
+    if(not r.lower_inf):
+        left = str(r.lower)
+    right = "None"
+    if(not r.upper_inf):
+        right = str(r.upper)
+    l1 = '('
+    if(not r.lower_inf and r.lower_inc):
+        l1 = '['
+    r1 = ')'
+    if(not r.upper_inf and r.upper_inc):
+        r1 = ']'
+    ret = l1 + left + ", " + right + r1
+    return ret
+
 
 def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
     if(df.shape[0]):
         for col, dtype in schema.items():
-            if(dtype == 'jsonb'):
+            dtype = dtype.lower()
+            if(dtype == 'jsonb' or dtype == 'json'):
                 df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
                 df[col] = df[col].astype(str)
+            elif(dtype.startswith('timestamp') or dtype.startswith('date')):
+                df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
+            elif(dtype == 'boolean'):
+                df[col] = df[col].astype(bool)
+            elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype == 'serial'):
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+            elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money'):
+                df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
+            elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
+                df[col] = df[col].astype(str)
+            elif('range' in dtype or 'interval' in dtype):
+                df[col] = df[col].apply(convert_range_to_str).astype(str)
     return df
-        
+    
+def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> Tuple[dftype, bool]:
+    '''
+        While upserting the data, we will be having only one record in df_u, as we are upserting record by record in s3
+    '''
+    pkey = df_u.iloc[0][primary_key]
+    modify = pkey in df[primary_key].values
+    if(modify):
+        final_df = df.merge(df_u, on = primary_key, how = 'outer', suffixes=('', '_dms'))
+        final_df.drop(list(final_df.filter(regex=r'.*_dms$').columns), axis=1, inplace=True)
+        return final_df, True
+    else:
+        return df, False

@@ -12,9 +12,10 @@ services:
       - HOST=0.0.0.0
       - AWS_ACCESS_KEY_ID=AKIA3RSHCMQMTLUCYGU2
       - AWS_SECRET_ACCESS_KEY=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
+      - AWS_DEFAULT_REGION=ap-south-1
       - PYTHONUNBUFFERED=1
     deploy:
       resources:
         limits:
-          memory: 1024M
+          memory: 2048M
 

@@ -4,7 +4,10 @@ from helper.logging import logger
 
 from typing import List, Dict, Any
 import datetime
-from helper.util import utc_to_local
+from helper.util import utc_to_local, df_upsert
+
+from dotenv import load_dotenv
+load_dotenv()
 
 class s3Saver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, c_partition: List[str] = [], unique_id: str = "") -> None:
@@ -20,7 +23,7 @@ class s3Saver:
     def warn(self, message: str = "") -> None:
         logger.warn(self.unique_id + ": " + message)
 
-    def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = []) -> None:
+    def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = [], primary_keys: List[str] = None) -> None:
         if(c_partition and len(c_partition) > 0):
             self.partition_cols = c_partition
         if(not self.name_ or not(self.name_ == processed_data['name'])):
@@ -35,27 +38,30 @@ class s3Saver:
                 compression='snappy',
                 dataset = True,
                 partition_cols = self.partition_cols,
+                schema_evolution = True,
             )
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
-
-        self.inform("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")    
-        file_name_u = self.s3_location + processed_data['name'] + "/"
-        for i in range(processed_data['df_update'].shape[0]):
+        n_updations = processed_data['df_update'].shape[0]
+        self.inform("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
+        for i in range(n_updations):
+            file_name_u = self.s3_location + processed_data['name'] + "/"
             for x in self.partition_cols:
                 file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[i][x]) + "/"
-            df_to_be_updated = wr.s3.read_parquet(
-                path = file_name_u,
-                dataset = True
-            )
-            df_to_be_updated[df_to_be_updated['_id'] == processed_data['df_update'].iloc[i]['_id']] = processed_data['df_update'].iloc[i]
-            wr.s3.to_parquet(
-                df = df_to_be_updated,
-                mode = 'overwrite',
-                path = file_name_u,
-                compression = 'snappy',
-                dataset = True,
-            )
-        self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
+            prev_files = wr.s3.list_objects(file_name_u)
+            self.inform("Found all files while updating record: " + str(i+1) + "/" + str(n_updations))
+            for file_ in prev_files:
+                df_to_be_updated = wr.s3.read_parquet(
+                    path = [file_],
+                )
+                df_to_be_updated, modified = df_upsert(df = df_to_be_updated, df_u = processed_data['df_update'].iloc[i:i+1], primary_key = primary_keys[0])
+                if(modified):
+                    wr.s3.to_parquet(
+                        df = df_to_be_updated,
+                        path = file_,
+                        compression = 'snappy',
+                    )
+                    break
+        self.inform(str(n_updations) + " updations done.")
     
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()
