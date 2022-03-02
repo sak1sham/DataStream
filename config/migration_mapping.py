@@ -352,7 +352,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'analytics.habitual_users',
-                'cron': '* * * * * 19 50 0',
+                'cron': '* * * * * 20 0 0',
                 'bookmark_creation': 'created_at',
                 'bookmark': 'created_at',
             }
