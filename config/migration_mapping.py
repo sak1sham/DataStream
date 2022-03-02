@@ -283,6 +283,84 @@ mapping = {
     'timezone': 'Asia/Kolkata',
 }
 
+mapping = {
+    "order_actions_cmdb": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'database-migration-service-prod'
+        },
+        'tables': [
+            {
+                'table_name': 'order_actions',
+                'cron': '* * * * * 23 0 0',
+                'to_partition': True,
+                'bookmark_creation': 'created_at',
+                'bookmark': 'created_at',
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+            }
+        ]
+    },
+    "inventory_transactions_wms": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'wms-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'wms',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'database-migration-service-prod'
+        },
+        'tables': [
+            {
+                'table_name': 'inventory_transactions',
+                'cron': '* * * * * 23 0 0',
+                'to_partition': True,
+                'bookmark_creation': 'created_at',
+                'bookmark': 'created_at',
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+            }
+        ]
+    },
+    "habitual_users_cmdb_redshift": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 'redshift',
+            'host': 'http://redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com/',
+            'database': 'dev',
+            'user': 'admin-redshift',
+            'password': 'CitymallDevAdmin123',
+            'schema': 'migration_service',
+            's3_bucket_name': 'database-migration-service-prod',
+        },
+        'tables': [
+            {
+                'table_name': 'analytics.habitual_users',
+                'cron': '* * * * * 19 50 0',
+                'bookmark_creation': 'created_at',
+                'bookmark': 'created_at',
+            }
+        ]
+    }
+}
+
+
 '''mapping = {
     "entire_cmdb_to_s3": {
         'source': {

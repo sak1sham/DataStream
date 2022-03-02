@@ -41,7 +41,6 @@ class PGSQLMigrate:
         self.curr_run_cron_job = convert_to_datetime(utc_to_local(datetime.datetime.utcnow(), self.tz_info), self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
-
     def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({})) -> Tuple[dftype]:
         df = df.sort_index(axis = 1)
         df_insert = pd.DataFrame({})
