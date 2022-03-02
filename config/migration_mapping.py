@@ -106,7 +106,7 @@ mapping = {
         },
         'tables': [
             {
-                'table_name': 'inventory_snapshot_wms',
+                'table_name': 'inventory_snapshot_wms_query',
                 'cron': '* * * * * */1 0 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
@@ -283,7 +283,7 @@ mapping = {
     'timezone': 'Asia/Kolkata',
 }
 
-'''mapping = {
+mapping = {
     "entire_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -299,7 +299,7 @@ mapping = {
         'tables': [
             {
                 'table_name': '*',
-                'exclude_tables': ['public.inventory_snapshot_record', 'public.inventory_snapshot_wms', 'public.bd_leader_mapping_change_logs', 'public.events_staging_queue', 'public.stream_follows', 'public.user_segment_tags', 'public.notifications', 'public.order_actions', 'public.order_items', 'public.orders', 'public.team_leaders', 'public.products', 'public.product_master'],
+                'exclude_tables': ['public.inventory_snapshot_record', 'public.inventory_snapshot_wms', 'public.bd_leader_mapping_change_logs', 'public.events_staging_queue', 'public.stream_follows', 'public.user_segment_tags', 'public.notifications', 'public.order_actions', 'public.order_items', 'public.orders', 'public.team_leaders', 'public.products', 'public.product_master', 'public.regions', 'public.removed_from_cart_logs', 'public.refund_payout_links', 'public.refresh_ticket_details'],
                 'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
@@ -310,9 +310,9 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}'''
+}
 
-mapping = {
+'''mapping = {
     "cmdb_inventory_snapshot_wms_Support_ratings": {
         'source': {
             'source_type': 'sql',
@@ -348,7 +348,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}
+}'''
 
 
 encryption_store = {

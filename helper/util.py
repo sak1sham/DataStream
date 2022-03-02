@@ -232,8 +232,10 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
             elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
                 df[col] = df[col].astype(str)
-            elif('range' in dtype or 'interval' in dtype):
+            elif('range' in dtype):
                 df[col] = df[col].apply(convert_range_to_str).astype(str)
+            elif('interval' in dtype):
+                df[col] = df[col].astype(str)
     return df
     
 def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> Tuple[dftype, bool]:

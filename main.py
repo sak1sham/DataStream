@@ -65,7 +65,7 @@ def get_batch_size(s) -> Tuple[int]:
     b = s.split(',')
     b = [int(x) for x in b]
     if(len(b) != 3):
-        raise InvalidArguments("Batch (\'-b\' or \'-batch\') shall be provided in format \'X,Y,Z\' without quotes, without any spaces. X = index of target mapping for the unique_job_id. Y and Z represent start (inclusive) and end (exclusive) of table numbers to fetch. Batches are used only when all tables of the database are fetched.")
+        raise InvalidArguments("Batch (\'-b\' or \'-batch\') shall be provided in format \'X,Y,Z\' without any quotes or spaces. X = index of target mapping for the unique_job_id. Y and Z represent start (inclusive) and end (exclusive) of table numbers to fetch. Batches are used only when all tables of the database are fetched.")
     return b[0], b[1], b[2]
 
 if __name__ == "__main__":
