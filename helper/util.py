@@ -56,12 +56,12 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
     elif(isinstance(x, datetime.datetime)):
         x = convert_to_utc(dt = x)
         x = utc_to_local(utc_dt = x, tz_ = tz_)
+        x = x.strftime(std_datetime_format)
+        x = pd.to_datetime(x, utc=True)
         return x
     else:
         try:
-            x = parser.parse(x)
-            x = convert_to_utc(dt = x)
-            x = utc_to_local(utc_dt = x, tz_ = tz_)
+            x = pd.to_datetime(x, utc = True)
             return x
         except Exception as e:
             logger.err(e)

@@ -53,8 +53,8 @@ class MongoMigrate:
         if('fields' not in self.curr_mapping.keys()):
             self.curr_mapping['fields'] = {}
         
-        self.last_run_cron_job = utc_to_local(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
-        self.curr_run_cron_job = utc_to_local(datetime.datetime.utcnow(), self.tz_info)
+        self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
+        self.curr_run_cron_job = convert_to_datetime(datetime.datetime.utcnow(), self.tz_info)
         self.partition_for_parquet = []
 
         if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):

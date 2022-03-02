@@ -37,8 +37,8 @@ class PGSQLMigrate:
         logger.err(error)
 
     def preprocess(self) -> None:
-        self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
-        self.curr_run_cron_job = utc_to_local(datetime.datetime.utcnow(), self.tz_info)
+        self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
+        self.curr_run_cron_job = convert_to_datetime(utc_to_local(datetime.datetime.utcnow(), self.tz_info), self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
 

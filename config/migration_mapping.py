@@ -328,15 +328,16 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '2022 3 2 * * 10 35 0',
+                'cron': '2022 3 2 * * 11 5 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
-                'bookmark_creation': 'created_at'
+                'bookmark_creation': 'created_at',
+                'bookmark': 'created_at'
             },
             {
                 'table_name': 'support_tickets_rating',
-                'cron': '2022 3 2 * * 10 35 0',
+                'cron': '2022 3 2 * * 11 5 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
