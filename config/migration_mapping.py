@@ -357,7 +357,9 @@ mapping = {
                 'bookmark': 'created_at',
             }
         ]
-    }
+    },
+    'fastapi_server': True,
+    'timezone': 'Asia/Kolkata',
 }
 
 
