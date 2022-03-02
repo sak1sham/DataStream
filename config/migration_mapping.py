@@ -342,7 +342,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 'redshift',
-            'host': 'http://redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com/',
+            'host': 'redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com/',
             'database': 'dev',
             'user': 'admin-redshift',
             'password': 'CitymallDevAdmin123',
@@ -352,7 +352,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'analytics.habitual_users',
-                'cron': '* * * * * 20 10 0',
+                'cron': 'self-managed',
                 'bookmark_creation': 'created_at',
                 'bookmark': 'created_at',
             }
