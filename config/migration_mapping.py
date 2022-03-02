@@ -342,7 +342,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 'redshift',
-            'host': 'redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com/',
+            'host': 'redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
             'database': 'dev',
             'user': 'admin-redshift',
             'password': 'CitymallDevAdmin123',
