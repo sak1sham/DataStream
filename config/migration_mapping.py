@@ -327,8 +327,8 @@ mapping = {
         },
         'tables': [
             {
-                'table_name': 'cmdb_inventory_snapshot_wms',
-                'cron': '2022 3 2 * * 10 20 0',
+                'table_name': 'inventory_snapshot_wms',
+                'cron': '2022 3 2 * * 10 35 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
@@ -336,7 +336,7 @@ mapping = {
             },
             {
                 'table_name': 'support_tickets_rating',
-                'cron': '2022 3 2 * * 10 20 0',
+                'cron': '2022 3 2 * * 10 35 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',

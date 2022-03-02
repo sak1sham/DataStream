@@ -29,7 +29,7 @@ def get_last_run_cron_job(id: str):
         db.insert_one({'last_run_cron_job_for_id': id, 'timing': datetime.datetime.utcnow()})
         return timing
     else:
-        timing = datetime.datetime(1602, 8, 20, 0, 0, 0, 0)
-        logging.info(id + ": Never seen it before. Taking previously run cron job time as on August 20, 1602.")
+        timing = datetime.datetime(1900, 1, 1, 0, 0, 0, 0)
+        logging.info(id + ": Never seen it before. Taking previously run cron job time as on January 1, 1900.")
         db.insert_one({'last_run_cron_job_for_id': id, 'timing': datetime.datetime.utcnow()})
         return timing
