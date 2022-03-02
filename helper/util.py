@@ -64,7 +64,6 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
             x = pd.to_datetime(x, utc = True)
             return x
         except Exception as e:
-            logger.err(e)
             logger.warn("Unable to convert " + x + " to any datetime format. Returning None")
             return pd.Timestamp(None)
 
@@ -115,13 +114,11 @@ def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] =
                 try:
                     docu[key] = int(float(docu[key]))
                 except Exception as e:
-                    logger.err(e)
                     docu[key] = 0
             elif(schema[key] == 'float'):
                 try:
                     docu[key] = float(docu[key])
                 except Exception as e:
-                    logger.err(e)
                     docu[key] = None
             elif(schema[key] == 'datetime'):
                 docu[key] = convert_to_datetime(docu[key], tz_info)
@@ -132,7 +129,6 @@ def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] =
                 try:
                     docu[key] = complex(docu[key])
                 except Exception as e:
-                    logger.err(e)
                     docu[key] = None
         elif(isinstance(docu[key], datetime.datetime)):
             docu[key] = utc_to_local(docu[key], tz_info)
@@ -141,7 +137,6 @@ def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] =
             try:
                 docu[key] = str(docu[key])
             except Exception as e:
-                logger.err(e)
                 logger.warn("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
                 docu[key] = None
     
@@ -192,7 +187,6 @@ def convert_jsonb_to_string(x: Any) -> str:
             x = str(x)
             return x
         except Exception as e:
-            logger.err(e)
             logger.warn("Can't convert jsonb to str, returning None")
             return None
 
