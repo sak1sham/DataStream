@@ -345,6 +345,8 @@ mapping = {
             }
         ]
     },
+    'fastapi_server': True,
+    'timezone': 'Asia/Kolkata',
 }
 
 
