@@ -107,7 +107,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms_query',
-                'cron': '* * * * * 16 47 0',
+                'cron': '* * * * * 16 49 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -116,7 +116,7 @@ mapping = {
             },
             {
                 'table_name': 'localities_live',
-                'cron': '* * * * * 16 47 0',
+                'cron': '* * * * * 16 49 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -124,7 +124,7 @@ mapping = {
             },
             {
                 'table_name': 'cmocx_cl_in_vicinity',
-                'cron': '* * * * * 16 47 0',
+                'cron': '* * * * * 16 49 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -193,7 +193,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 16 47 0',
+                'cron': '* * * * * 16 49 0',
                 'to_partition': True
             },
             {
@@ -201,7 +201,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 16 47 0',
+                'cron': '* * * * * 16 49 0',
                 'to_partition': True,
             },
             {
@@ -211,7 +211,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 16 47 0',
+                'cron': '* * * * * 16 49 0',
                 'to_partition': True
             },
             {
@@ -219,7 +219,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 16 47 0',
+                'cron': '* * * * * 16 49 0',
                 'to_partition': True
             },
             {
@@ -234,7 +234,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 16 50 0',
+                'cron': '* * * * * 16 52 0',
                 'to_partition': True,
             },
             {
@@ -253,7 +253,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 16 50 0',
+                'cron': '* * * * * 16 52 0',
                 'to_partition': True,
             },
             {
@@ -266,7 +266,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 16 50 0',
+                'cron': '* * * * * 16 52 0',
                 'to_partition': True,
             },
             {
@@ -274,7 +274,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 16 47 0',
+                'cron': '* * * * * 16 49 0',
                 'to_partition': True
             },
         ]
@@ -312,7 +312,7 @@ mapping = {
     'timezone': 'Asia/Kolkata',
 }'''
 
-mapping = {
+'''mapping = {
     "cmdb_inventory_snapshot_wms_Support_ratings": {
         'source': {
             'source_type': 'sql',
@@ -348,7 +348,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}
+}'''
 
 
 encryption_store = {
