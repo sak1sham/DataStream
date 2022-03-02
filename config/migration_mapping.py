@@ -312,6 +312,42 @@ mapping = {
     'timezone': 'Asia/Kolkata',
 }'''
 
+mapping = {
+    "cmdb_inventory_snapshot_wms_Support_ratings": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'data-migration-server'
+        },
+        'tables': [
+            {
+                'table_name': 'cmdb_inventory_snapshot_wms',
+                'cron': '2022 3 2 * * 10 20 0',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark_creation': 'created_at'
+            },
+            {
+                'table_name': 'support_tickets_rating',
+                'cron': '2022 3 2 * * 10 20 0',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark_creation': 'created_at',
+                'bookmark': 'updated_at',
+            }
+        ]
+    },
+}
+
+
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),
     'db_name': os.getenv('DB_NAME'),
