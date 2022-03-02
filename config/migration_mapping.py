@@ -312,7 +312,7 @@ mapping = {
     'timezone': 'Asia/Kolkata',
 }'''
 
-'''mapping = {
+mapping = {
     "cmdb_inventory_snapshot_wms_Support_ratings": {
         'source': {
             'source_type': 'sql',
@@ -328,7 +328,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '2022 3 2 * * 11 5 0',
+                'cron': '2022 3 2 * * 12 55 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
@@ -337,7 +337,7 @@ mapping = {
             },
             {
                 'table_name': 'support_tickets_rating',
-                'cron': '2022 3 2 * * 11 5 0',
+                'cron': '2022 3 2 * * 12 55 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
@@ -348,7 +348,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}'''
+}
 
 
 encryption_store = {
