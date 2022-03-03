@@ -308,8 +308,7 @@ mapping = {
             {
                 'table_name': 'analytics.habitual_users',
                 'cron': 'self-managed',
-                'bookmark_creation': 'created_at',
-                'bookmark': 'created_at',
+                'is_dump': True,
             }
         ]
     },
