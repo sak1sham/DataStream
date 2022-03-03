@@ -431,6 +431,80 @@ mapping = {
 }'''
 
 
+mapping = {
+    "Rohan_audit_logs": {
+        'source': {
+            'source_type': 'mongo',
+            'url': 'mongodb://cm-audit-logs:d1TCvFEVX4UbwuuYlM9EwJlkhV2K4NdWRyKASYn4cwj87157zUv73IGE85YAh2DsVJO7HrtWNzOvVvwWjn56ww==@cm-audit-logs.mongo.cosmos.azure.com:10255/?ssl=true&retrywrites=false&replicaSet=globaldb&maxIdleTimeMS=120000&appName=@cm-audit-logs@',
+            'db_name': 'test'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'database-migration-service-prod',
+        },
+        'collections': [
+            {
+                'collection_name': 'audit_logs',
+                'fields': {
+                    'user_id_bigint': 'int',
+                    'created_at': 'datetime',
+                    'lat': 'float',
+                    'long': 'float'
+                },
+                'is_dump': True,
+                'cron': '* * 3 * * 10 25 0',
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
+                'batch_size': 200,
+                'time_delay': 1,
+            },
+            {
+                'collection_name': 'product_audit_logs',
+                'fields': {
+                    'user_id_bigint': 'int',
+                    'created_at': 'datetime',
+                    'lat': 'float',
+                    'long': 'float'
+                },
+                'is_dump': True,
+                'cron': '* * 3 * * 10 25 0',
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
+                'batch_size': 200,
+                'time_delay': 1,
+            }
+        ]
+    },
+    "Rohan_notifications_cmdb" : {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'database-migration-service-prod'
+        },
+        'tables': [
+            {
+                'table_name': 'notifications',
+                'cron': '* * 3 * * 10 25 0',
+                'is_dump': True,
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
+            }
+        ]
+    },
+    'fastapi_server': True,
+    'timezone': 'Asia/Kolkata',
+}
+
+
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),
     'db_name': os.getenv('DB_NAME'),
