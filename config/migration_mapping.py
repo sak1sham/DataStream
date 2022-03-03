@@ -350,7 +350,7 @@ mapping = {
     'timezone': 'Asia/Kolkata',
 }'''
 
-mapping = {
+'''mapping = {
     "cmdb_inventory_snapshot_wms_support_tickets_ratings": {
         'source': {
             'source_type': 'sql',
@@ -387,9 +387,9 @@ mapping = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
 }
+'''
 
-
-'''mapping = {
+mapping = {
     "Rohan_audit_logs": {
         'source': {
             'source_type': 'mongo',
@@ -410,7 +410,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * * * * 22 50 0',
+                'cron': '* * 3 * * 23 30 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -426,7 +426,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * * * * 22 50 0',
+                'cron': '* * 3 * * 23 30 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -450,7 +450,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'notifications',
-                'cron': '* * * * * 22 50 0',
+                'cron': '* * 3 * * 23 30 0',
                 'is_dump': True,
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
@@ -464,7 +464,7 @@ mapping = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
 }
-'''
+
 
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),
