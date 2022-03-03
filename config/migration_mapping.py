@@ -349,7 +349,7 @@ mapping = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
 }'''
-
+'''
 mapping = {
     "cmdb_inventory_snapshot_wms_support_tickets_ratings": {
         'source': {
@@ -386,7 +386,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}
+}'''
 
 
 '''mapping = {
