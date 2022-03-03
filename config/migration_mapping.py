@@ -254,7 +254,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'order_actions',
-                'cron': '* * * * * 23 0 0',
+                'cron': '2022 3 3 * * 16 50 0',
                 'to_partition': True,
                 'bookmark_creation': 'created_at',
                 'bookmark': 'created_at',
@@ -278,7 +278,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_transactions',
-                'cron': '* * * * * 23 0 0',
+                'cron': '2022 3 3 * * 16 50 0',
                 'to_partition': True,
                 'bookmark_creation': 'created_at',
                 'bookmark': 'created_at',
@@ -287,6 +287,11 @@ mapping = {
             }
         ]
     },
+    'fastapi_server': True,
+    'timezone': 'Asia/Kolkata',
+}
+
+'''mapping = {
     "habitual_users_cmdb_redshift": {
         'source': {
             'source_type': 'sql',
@@ -314,8 +319,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}
-
+}'''
 
 '''mapping = {
     "entire_cmdb_to_s3": {
@@ -346,7 +350,7 @@ mapping = {
     'timezone': 'Asia/Kolkata',
 }'''
 
-mapping = {
+'''mapping = {
     "cmdb_inventory_snapshot_wms_support_tickets_ratings": {
         'source': {
             'source_type': 'sql',
@@ -382,7 +386,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}
+}'''
 
 
 '''mapping = {
