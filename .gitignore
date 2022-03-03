@@ -7,5 +7,6 @@ Migration Service.code-workspace
 temp
 credentials.py
 AWSCLIV2.pkg
+.env
 dms-v2.pem
 metadata_deletion.py

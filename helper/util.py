@@ -259,8 +259,8 @@ def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
             athena_types[key] = 'timestamp'
         elif(dtype == 'bool' or dtype == 'boolean'):
             athena_types[key] = 'boolean'
-        elif(dtype == 'int' or dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype == 'serial'):
-            athena_types[key] = 'int'
-        elif(dtype == 'float' or dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money'):
+        elif(dtype == 'int' or dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype == 'serial' or dtype.startswith('serial') or dtype.startswith('int')):
+            athena_types[key] = 'bigint'
+        elif(dtype == 'float' or dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
             athena_types[key] = 'float'
     return athena_types
