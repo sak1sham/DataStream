@@ -3,12 +3,12 @@ services:
   order_actions_cmdb_inventory_transactions_wms:
     build: .
     ports:
-      - "8000:8000"
+      - "9000:9000"
     environment:
       - ENCR_MONGO_URL=mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority
       - DB_NAME=migration_update_check
       - COLLECTION_NAME=migration_update_check
-      - PORT=8000
+      - PORT=9000
       - HOST=0.0.0.0
       - AWS_ACCESS_KEY_ID=AKIAWA2LKV64N6ADAGNO
       - AWS_SECRET_ACCESS_KEY=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
