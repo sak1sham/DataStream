@@ -410,7 +410,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * 3 * * 23 35 0',
+                'cron': '* * 3 * * 23 38 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -426,7 +426,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * 3 * * 23 35 0',
+                'cron': '* * 3 * * 23 38 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -450,7 +450,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'notifications',
-                'cron': '* * 3 * * 23 30 0',
+                'cron': '* * 3 * * 23 38 0',
                 'is_dump': True,
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
