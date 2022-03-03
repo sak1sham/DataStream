@@ -346,8 +346,8 @@ mapping = {
     'timezone': 'Asia/Kolkata',
 }'''
 
-'''mapping = {
-    "cmdb_inventory_snapshot_wms_Support_ratings": {
+mapping = {
+    "cmdb_inventory_snapshot_wms_support_tickets_ratings": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -357,12 +357,12 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms',
-                'cron': '2022 3 2 * * 12 55 0',
+                'cron': '2022 3 3 * * 14 15 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
@@ -371,7 +371,7 @@ mapping = {
             },
             {
                 'table_name': 'support_tickets_rating',
-                'cron': '2022 3 2 * * 12 55 0',
+                'cron': '2022 3 3 * * 14 15 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
@@ -382,7 +382,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}'''
+}
 
 
 '''mapping = {
@@ -406,7 +406,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * 3 * * 10 25 0',
+                'cron': '* * * * * 22 50 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -422,7 +422,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * 3 * * 10 25 0',
+                'cron': '* * * * * 22 50 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -446,11 +446,14 @@ mapping = {
         'tables': [
             {
                 'table_name': 'notifications',
-                'cron': '* * 3 * * 10 25 0',
+                'cron': '* * * * * 22 50 0',
                 'is_dump': True,
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
+                'expiry': {
+                    'days': 15
+                },
             }
         ]
     },

@@ -70,7 +70,8 @@ If source is SQL, we need to provide a field ```tables```, which is a list of ta
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the column (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 3),
-    'is_dump': False (Optional, Default=False, Refer Notes 4)
+    'is_dump': False (Optional, Default=False, Refer Notes 4),
+    'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True)
 }
 ```
 
