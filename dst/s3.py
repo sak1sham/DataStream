@@ -19,7 +19,6 @@ class s3Saver:
         self.database = db_source["source_type"] + "_" + db_source["db_name"]
         self.database = self.database.replace(".", "_")
         self.database = self.database.replace("-", "_")
-        self.database = 'default'
         self.description = "Data migrated from " + self.database
 
     def inform(self, message: str = "") -> None:
