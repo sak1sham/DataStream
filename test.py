@@ -1,15 +1,15 @@
-import awswrangler as wr
+from pymongo import MongoClient
+import certifi
+import datetime
+import pytz
 
-import pandas as pd
+client = MongoClient('mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', tlsCAFile=certifi.where())
+database_ = client['support-service']
+coll = database_['support_tickets']
 
-from dotenv import load_dotenv
-load_dotenv() 
+start = pytz.utc.localize(datetime.datetime(2022, 2, 22))
+end = pytz.utc.localize(datetime.datetime(2022, 2, 23))
 
-df = wr.s3.read_parquet(
-    path = ['s3://database-migration-service-prod/mongo/support-service/support_tickets_rating/parquet_format__id_year=2021/parquet_format__id_month=12/parquet_format__id_day=10/parquet_format__id_hour=0/128c253e6aee44499f86034b4b2ded3b.snappy.parquet'],
-)
-
-print(df.head())
-
-print(df.columns.tolist())
-print(df.dtypes)
+curs = coll.find({'created_at': {'$gte': start, '$lt': end}})
+ls = list(curs)
+print(len(ls))
