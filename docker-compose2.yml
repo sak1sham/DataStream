@@ -1,6 +1,6 @@
 version: "3.9"
 services:
-  web_01:
+  web_02:
     build: .
     ports:
       - "8011:8011"
