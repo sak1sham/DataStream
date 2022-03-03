@@ -198,7 +198,7 @@ class MongoMigrate:
             return
         else:
             primary_keys = []
-            if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
+            if('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump']):
                 primary_keys = ['_id']
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
 

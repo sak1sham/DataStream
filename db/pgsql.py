@@ -145,7 +145,7 @@ class PGSQLMigrate:
             return
         else:
             primary_keys = []
-            if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
+            if('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump']):
                 primary_keys = ['unique_migration_record_id']
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
     
