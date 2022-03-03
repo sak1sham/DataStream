@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-mapping = {
+'''mapping = {
     "cmdb_tables_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -236,7 +236,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}
+}'''
 '''
 mapping = {
     "order_actions_cmdb_s3": {
