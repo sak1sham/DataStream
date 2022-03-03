@@ -144,7 +144,10 @@ class PGSQLMigrate:
         if(not processed_data):
             return
         else:
-            self.saver.save(processed_data = processed_data, primary_keys = ['unique_migration_record_id'], c_partition = c_partition)
+            primary_keys = []
+            if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
+                primary_keys = ['unique_migration_record_id']
+            self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
     
     def get_list_tables(self) -> List[str]:
         sql_stmt = '''
