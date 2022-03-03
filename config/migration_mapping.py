@@ -102,12 +102,12 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod'
+            's3_bucket_name': 'database-migration-server'
         },
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms_query',
-                'cron': '* * * * * 20 25 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',

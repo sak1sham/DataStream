@@ -21,6 +21,7 @@ def get_data_from_encr_db():
         raise ConnectionError("Unable to connect to Encryption DB.")
 
 def get_last_run_cron_job(id: str):
+    return datetime.datetime(1900, 1, 1, 0, 0, 0, 0, tzinfo=pytz.utc)
     db = get_data_from_encr_db()
     prev = db.find_one({'last_run_cron_job_for_id': id})
     if(prev):

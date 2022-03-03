@@ -211,24 +211,29 @@ def convert_range_to_str(r) -> str:
 
 def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
     if(df.shape[0]):
-        for col, dtype in schema.items():
-            dtype = dtype.lower()
-            if(dtype == 'jsonb' or dtype == 'json'):
-                df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
-                df[col] = df[col].astype(str)
-            elif(dtype.startswith('timestamp') or dtype.startswith('date')):
-                df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
-            elif(dtype == 'boolean'):
-                df[col] = df[col].astype(bool)
-            elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype == 'serial'):
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-            elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money'):
-                df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
-            elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
-                df[col] = df[col].astype(str)
-            elif('range' in dtype):
-                df[col] = df[col].apply(convert_range_to_str).astype(str)
-            elif('interval' in dtype):
+        for col in df.columns.tolist():
+            if(col in schema.keys()):
+                dtype = schema[col].lower()
+                if(dtype == 'jsonb' or dtype == 'json'):
+                    df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
+                    df[col] = df[col].astype(str)
+                elif(dtype.startswith('timestamp') or dtype.startswith('date')):
+                    df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
+                elif(dtype == 'boolean' or dtype == 'bool'):
+                    df[col] = df[col].astype(bool)
+                elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype.startswith('serial') or dtype.startswith('int')):
+                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+                elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
+                    df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
+                elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
+                    df[col] = df[col].astype(str)
+                elif('range' in dtype):
+                    df[col] = df[col].apply(convert_range_to_str).astype(str)
+                elif('interval' in dtype):
+                    df[col] = df[col].astype(str)
+                else:
+                    df[col] = df[col].astype(str)
+            else:
                 df[col] = df[col].astype(str)
     return df
     
