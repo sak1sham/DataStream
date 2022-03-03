@@ -132,9 +132,8 @@ For example: '* * * * * 7-19 */1 0' represents every minute between 7AM to 7PM.
 Only specify if the field belongs to one of the following category:
 1. 'bool'
 2. 'float'
-3. 'complex'
-4. 'int'
-5. 'datetime'
+3. 'int'
+4. 'datetime'
 
 Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string. By default, datetime is converted to strings in MongoDB processing.
 

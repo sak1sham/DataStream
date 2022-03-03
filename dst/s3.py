@@ -16,6 +16,10 @@ class s3Saver:
         self.unique_id = unique_id
         self.name_ = ""
         self.table_list = []
+        self.database = db_source["source_type"] + "_" + db_source["db_name"]
+        self.database = self.database.replace(".", "_")
+        self.database = self.database.replace("-", "_")
+        self.description = "Data migrated from " + self.database
 
     def inform(self, message: str = "") -> None:
         logger.inform(self.unique_id + ": " + message)
@@ -36,6 +40,11 @@ class s3Saver:
                 df = processed_data['df_insert'],
                 path = file_name,
                 compression='snappy',
+                mode = 'append',
+                database = self.database,
+                table = self.name_,
+                dtype = processed_data['dtypes'],
+                description = self.description,
                 dataset = True,
                 partition_cols = self.partition_cols,
                 schema_evolution = True,

@@ -2,7 +2,7 @@ import pandas as pd
 import psycopg2
 import pymongo
 
-from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, utc_to_local
+from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, utc_to_local, get_athena_dtypes
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
 from helper.logging import logger
@@ -85,12 +85,11 @@ class PGSQLMigrate:
                     col_form = self.curr_mapping['partition_col_format'][i]
                     parq_col = "parquet_format_" + col
                     if(col == 'migration_snapshot_date'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                         temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
                         df[parq_col + "_year"] = temp.dt.year
                         df[parq_col + "_month"] = temp.dt.month
                         df[parq_col + "_day"] = temp.dt.day
-                        df[parq_col + "_hour"] = temp.dt.hour
                     elif(col_form == 'str'):
                         self.partition_for_parquet.extend([parq_col])
                         df[parq_col] = df[col].astype(str)
@@ -98,12 +97,11 @@ class PGSQLMigrate:
                         self.partition_for_parquet.extend([parq_col])
                         df[parq_col] = df[col].astype(int)
                     elif(col_form == 'datetime'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                         temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
                         df[parq_col + "_year"] = temp.dt.year
                         df[parq_col + "_month"] = temp.dt.month
                         df[parq_col + "_day"] = temp.dt.day
-                        df[parq_col + "_hour"] = temp.dt.hour
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime.") 
             else:
@@ -138,7 +136,8 @@ class PGSQLMigrate:
             df_update = pd.DataFrame({})
         df_insert = convert_to_dtype(df_insert, col_dtypes)
         df_update = convert_to_dtype(df_update, col_dtypes)
-        return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update}
+        dtypes = get_athena_dtypes(col_dtypes)
+        return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update, 'dtypes': dtypes}
 
     def save_data(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = None) -> None:
         if(not processed_data):

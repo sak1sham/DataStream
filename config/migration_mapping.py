@@ -107,7 +107,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms_query',
-                'cron': '* * * * * */1 0 0',
+                'cron': '* * * * * 20 10 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -116,7 +116,7 @@ mapping = {
             },
             {
                 'table_name': 'localities_live',
-                'cron': '* * * * * 22 0 0',
+                'cron': '* * * * * 20 10 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -124,7 +124,7 @@ mapping = {
             },
             {
                 'table_name': 'cmocx_cl_in_vicinity',
-                'cron': '* * * * * 22 0 0',
+                'cron': '* * * * * 20 10 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -148,7 +148,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * 20 10 0',
                 'to_partition': True
             },
             {
@@ -156,7 +156,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * 20 10 0',
                 'to_partition': True,
             },
             {
@@ -166,7 +166,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * 20 10 0',
                 'to_partition': True
             },
             {
@@ -174,7 +174,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * 20 10 0',
                 'to_partition': True
             },
             {
@@ -189,7 +189,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 15 0',
+                'cron': '* * * * * 20 15 0',
                 'to_partition': True,
             },
             {
@@ -208,7 +208,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 15 0',
+                'cron': '* * * * * 20 10 0',
                 'to_partition': True,
             },
             {
@@ -221,7 +221,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * 20 10 0',
                 'to_partition': True,
             },
             {
@@ -229,7 +229,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * 20 10 0',
                 'to_partition': True
             },
         ]
@@ -237,7 +237,7 @@ mapping = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
 }
-
+'''
 mapping = {
     "order_actions_cmdb_s3": {
         'source': {
@@ -289,7 +289,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}
+}'''
 
 '''mapping = {
     "habitual_users_cmdb_redshift": {

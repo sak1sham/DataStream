@@ -244,3 +244,18 @@ def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), pr
         return final_df, True
     else:
         return df, False
+
+def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
+    athena_types = {}
+    for key, dtype in maps.items():
+        if(dtype == 'str' or dtype == 'string' or dtype == 'jsonb' or dtype == 'json' or dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml' or 'range' in dtype or 'interval' in dtype):
+            athena_types[key] = 'string'
+        elif(dtype == 'datetime' or dtype.startswith('timestamp') or dtype.startswith('date')):
+            athena_types[key] = 'timestamp'
+        elif(dtype == 'bool' or dtype == 'boolean'):
+            athena_types[key] = 'boolean'
+        elif(dtype == 'int' or dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype == 'serial'):
+            athena_types[key] = 'int'
+        elif(dtype == 'float' or dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money'):
+            athena_types[key] = 'float'
+    return athena_types

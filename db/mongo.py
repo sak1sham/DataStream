@@ -1,4 +1,4 @@
-from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema
+from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema, get_athena_dtypes
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
 from helper.logging import logger
@@ -80,17 +80,15 @@ class MongoMigrate:
                 if(col == 'migration_snapshot_date'):
                     self.curr_mapping['partition_col_format'][i] = 'datetime'
                     self.curr_mapping['fields'][col] = 'datetime'
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_hour"] = 'int'
                 elif(col == '_id'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_hour"] = 'int'
                 elif(col_form == 'str'):
                     self.partition_for_parquet.extend([parq_col])
                     self.curr_mapping['fields'][parq_col] = 'str'
@@ -101,11 +99,10 @@ class MongoMigrate:
                     self.partition_for_parquet.extend([parq_col])
                     self.curr_mapping['fields'][parq_col] = 'float'
                 elif(col_form == 'datetime'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_hour"] = 'int'
                 else:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")            
 
@@ -132,7 +129,6 @@ class MongoMigrate:
                         document[parq_col + "_year"] = insertion_time.year
                         document[parq_col + "_month"] = insertion_time.month
                         document[parq_col + "_day"] = insertion_time.day
-                        document[parq_col + "_hour"] = insertion_time.hour
                     elif(col_form == 'str'):
                         document[parq_col] = str(document[col])
                     elif(col_form == 'int'):
@@ -144,7 +140,6 @@ class MongoMigrate:
                         document[parq_col + "_year"] = document[col].year
                         document[parq_col + "_month"] = document[col].month
                         document[parq_col + "_day"] = document[col].day
-                        document[parq_col + "_hour"] = document[col].hour
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")                    
             updation = False
@@ -191,7 +186,8 @@ class MongoMigrate:
                 docu_update.append(document)
         ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.curr_mapping['fields'])
         ret_df_update = typecast_df_to_schema(pd.DataFrame(docu_update), self.curr_mapping['fields'])
-        return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': ret_df_update}
+        dtypes = get_athena_dtypes(self.curr_mapping['fields'])
+        return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': ret_df_update, 'dtypes': dtypes}
 
     def save_data(self, processed_collection: Dict[str, Any] = None) -> None:
         if(not processed_collection):
