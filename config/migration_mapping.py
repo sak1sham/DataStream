@@ -132,51 +132,6 @@ mapping = {
             }
         ]
     },
-    "cm_audit_logs_to_metabase_s3": {
-        'source': {
-            'source_type': 'mongo',
-            'url': 'mongodb://cm-audit-logs:d1TCvFEVX4UbwuuYlM9EwJlkhV2K4NdWRyKASYn4cwj87157zUv73IGE85YAh2DsVJO7HrtWNzOvVvwWjn56ww==@cm-audit-logs.mongo.cosmos.azure.com:10255/?ssl=true&retrywrites=false&replicaSet=globaldb&maxIdleTimeMS=120000&appName=@cm-audit-logs@',
-            'db_name': 'test'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod',
-        },
-        'collections': [
-            {
-                'collection_name': 'audit_logs',
-                'fields': {
-                    'user_id_bigint': 'int',
-                    'created_at': 'datetime',
-                    'lat': 'float',
-                    'long': 'float'
-                },
-                'is_dump': True,
-                'cron': '* * * * * 22 40 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'batch_size': 1000,
-                'time_delay': 1,
-            },
-            {
-                'collection_name': 'product_audit_logs',
-                'fields': {
-                    'user_id_bigint': 'int',
-                    'created_at': 'datetime',
-                    'lat': 'float',
-                    'long': 'float'
-                },
-                'is_dump': True,
-                'cron': '* * * * * 22 40 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'batch_size': 1000,
-                'time_delay': 1,
-            }
-        ]
-    },
     "mongo_support_service_to_s3": {
         'source': {
             'source_type': 'mongo',
@@ -284,7 +239,7 @@ mapping = {
 }
 
 mapping = {
-    "order_actions_cmdb": {
+    "order_actions_cmdb_s3": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -308,7 +263,7 @@ mapping = {
             }
         ]
     },
-    "inventory_transactions_wms": {
+    "inventory_transactions_wms_s3": {
         'source': {
             'source_type': 'sql',
             'url': 'wms-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -431,7 +386,7 @@ mapping = {
 }'''
 
 
-mapping = {
+'''mapping = {
     "Rohan_audit_logs": {
         'source': {
             'source_type': 'mongo',
@@ -503,7 +458,7 @@ mapping = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
 }
-
+'''
 
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),
