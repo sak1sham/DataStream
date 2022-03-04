@@ -10,6 +10,7 @@ from db.main import DMS_importer
 from helper.logging import logger
 from helper.util import evaluate_cron
 from helper.exceptions import InvalidArguments, SourceNotFound
+from notifications.slack_notify import send_message
 
 import os
 from dotenv import load_dotenv
