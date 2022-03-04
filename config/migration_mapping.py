@@ -254,7 +254,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'order_actions',
-                'cron': '2022 3 4 * * 10 15 0',
+                'cron': '2022 3 4 * * 10 32 0',
                 'to_partition': True,
                 'bookmark_creation': 'created_at',
                 'bookmark': 'created_at',
@@ -278,7 +278,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_transactions',
-                'cron': '2022 3 4 * * 10 15 0',
+                'cron': '2022 3 4 * * 10 32 0',
                 'to_partition': True,
                 'bookmark_creation': 'created_at',
                 'bookmark': 'created_at',
