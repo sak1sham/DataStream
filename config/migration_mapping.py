@@ -237,7 +237,7 @@ with all_products as (
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
 }'''
-'''
+
 mapping = {
     "order_actions_cmdb_s3": {
         'source': {
@@ -254,7 +254,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'order_actions',
-                'cron': '2022 3 3 * * 16 53 0',
+                'cron': '2022 3 4 * * 10 15 0',
                 'to_partition': True,
                 'bookmark_creation': 'created_at',
                 'bookmark': 'created_at',
@@ -266,8 +266,8 @@ mapping = {
     "inventory_transactions_wms_s3": {
         'source': {
             'source_type': 'sql',
-            'url': 'wms-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'wms',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'wmsdb',
             'username': 'saksham_garg',
             'password': '3y5HMs^2qy%&Kma'
         },
@@ -278,7 +278,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_transactions',
-                'cron': '2022 3 3 * * 16 53 0',
+                'cron': '2022 3 4 * * 10 15 0',
                 'to_partition': True,
                 'bookmark_creation': 'created_at',
                 'bookmark': 'created_at',
@@ -289,7 +289,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}'''
+}
 
 '''mapping = {
     "habitual_users_cmdb_redshift": {
@@ -389,7 +389,7 @@ mapping = {
 }
 '''
 
-mapping = {
+'''mapping = {
     "Rohan_audit_logs": {
         'source': {
             'source_type': 'mongo',
@@ -464,7 +464,7 @@ mapping = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
 }
-
+'''
 
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),
