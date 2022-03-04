@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-'''mapping = {
+mapping = {
     "cmdb_tables_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -236,9 +236,10 @@ with all_products as (
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}'''
+    'notify': True
+}
 
-mapping = {
+'''mapping = {
     "order_actions_cmdb_s3": {
         'source': {
             'source_type': 'sql',
@@ -289,7 +290,7 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}
+}'''
 
 '''mapping = {
     "habitual_users_cmdb_redshift": {
@@ -470,4 +471,9 @@ encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),
     'db_name': os.getenv('DB_NAME'),
     'collection_name': os.getenv('COLLECTION_NAME')
+}
+
+slack_notif = {
+    'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
+    'channel': "C0357UJ2YCF"
 }

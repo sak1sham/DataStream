@@ -121,6 +121,17 @@ Api_specifications shall be in following format:
 ## timezone
 (Str): default = 'Asia/Kolkata'. Used for processing dates in given timezone, using last_run_cron_job, etc. For mongo as the source, this service saves dates in UTC timezone, and for sql as the source, this service saves dates without changing their timezone.
 
+## notify
+(Bool): default = False. If provided, slack_notif option is enabled, where we can provide details of the slack channels, and slack_token
+
+
+# slack_notif
+This is a dict type object with following details:
+1. slack_token: Unique slack token for this data_migration_service application
+2. channel: unique ID of the channel we want to post to
+
+Note: We need to add the bot created for slack API to the channel we want to post to, or provide the necessary permissions.
+
 # Notes
 
 ## 1. Writing Cron Expressions
