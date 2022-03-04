@@ -6,7 +6,6 @@ import sys
 from typing import Tuple, Dict, Any
 
 from config.migration_mapping import mapping
-from notifications.slack_notify import send_message
 from db.main import DMS_importer
 from helper.logging import logger
 from helper.util import evaluate_cron
