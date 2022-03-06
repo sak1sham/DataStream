@@ -390,7 +390,7 @@ mapping = {
 }
 '''
 
-'''mapping = {
+mapping = {
     "Rohan_audit_logs": {
         'source': {
             'source_type': 'mongo',
@@ -411,7 +411,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * 3 * * 23 38 0',
+                'cron': '* * * * * 23 38 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -427,7 +427,7 @@ mapping = {
                     'long': 'float'
                 },
                 'is_dump': True,
-                'cron': '* * 3 * * 23 38 0',
+                'cron': '* * * * * 23 38 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -451,7 +451,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'notifications',
-                'cron': '* * 3 * * 23 38 0',
+                'cron': '* * * * * 23 38 0',
                 'is_dump': True,
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
@@ -464,8 +464,8 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
+    'notify': True
 }
-'''
 
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),
