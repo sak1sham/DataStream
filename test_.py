@@ -38,4 +38,4 @@ def see_s3_data(location: str = None):
     print(df.columns.tolist())
     print(df.dtypes)
 
-del_support_service
+del_support_service()

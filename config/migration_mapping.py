@@ -148,7 +148,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 10 48 0',
+                'cron': '* * * * * 11 10 0',
                 'to_partition': True
             },
             {
@@ -156,7 +156,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 10 48 0',
+                'cron': '* * * * * 11 10 0',
                 'to_partition': True,
             },
             {
@@ -166,7 +166,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 10 48 0',
+                'cron': '* * * * * 11 10 0',
                 'to_partition': True
             },
             {
@@ -174,7 +174,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 10 48 0',
+                'cron': '* * * * * 11 10 0',
                 'to_partition': True
             },
             {
@@ -189,7 +189,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 10 51 0',
+                'cron': '* * * * * 11 15 0',
                 'to_partition': True,
             },
             {
@@ -208,7 +208,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 10 51 0',
+                'cron': '* * * * * 11 15 0',
                 'to_partition': True,
             },
             {
@@ -221,7 +221,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 10 51 0',
+                'cron': '* * * * * 11 15 0',
                 'to_partition': True,
             },
             {
@@ -229,7 +229,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 10 48 0',
+                'cron': '* * * * * 11 10 0',
                 'to_partition': True
             },
         ]
@@ -239,7 +239,8 @@ mapping = {
     'notify': True
 }
 
-'''mapping = {
+'''
+mapping = {
     "order_actions_cmdb_s3": {
         'source': {
             'source_type': 'sql',
@@ -290,9 +291,9 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}'''
+}
 
-'''mapping = {
+mapping = {
     "habitual_users_cmdb_redshift": {
         'source': {
             'source_type': 'sql',
@@ -320,9 +321,9 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}'''
+}
 
-'''mapping = {
+mapping = {
     "entire_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -349,9 +350,9 @@ mapping = {
     },
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-}'''
+}
 
-'''mapping = {
+mapping = {
     "cmdb_inventory_snapshot_wms_support_tickets_ratings": {
         'source': {
             'source_type': 'sql',
@@ -388,8 +389,7 @@ mapping = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
 }
-'''
-'''
+
 mapping = {
     "Rohan_audit_logs": {
         'source': {
