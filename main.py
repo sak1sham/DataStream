@@ -5,7 +5,7 @@ import pytz
 import sys
 from typing import Tuple, Dict, Any
 
-from config.migration_mapping import mapping
+from config.migration_mapping import mapping, settings
 from db.main import DMS_importer
 from helper.logging import logger
 from helper.util import evaluate_cron
@@ -24,7 +24,6 @@ group_key = {
     's3': 'tables'
 }
 tz__ = 'Asia/Kolkata'
-reserved_mapping_keys = ['fastapi_server', 'timezone', 'notify']
 
 @app.on_event("startup")
 def scheduled_migration():
@@ -72,18 +71,16 @@ def get_batch_size(s) -> Tuple[int]:
 if __name__ == "__main__":
     args = sys.argv[1:]
     is_fastapi = False
-    if('fastapi_server' in mapping.keys() and mapping['fastapi_server']):
+    if('fastapi_server' in settings.keys() and settings['fastapi_server']):
         is_fastapi = True
-    if('timezone' in mapping.keys() and mapping['timezone']):
-        tz__ = mapping['timezone']
+    if('timezone' in settings.keys() and settings['timezone']):
+        tz__ = settings['timezone']
     n = len(args)
     if(n > 0):
         ## If some command line arguments are provided, process only that data
         i = 0
         while(i < n):
             unique_id = args[i]
-            if(unique_id in reserved_mapping_keys):
-                raise InvalidArguments("Can\'t use fastapi_server, timezone as job id. It is a reserved keyword.")
             db = mapping[unique_id]
             s_type = db['source']['source_type']
             if(s_type not in group_key.keys()):
@@ -98,8 +95,6 @@ if __name__ == "__main__":
             i += 1
     else:
         for unique_id, db in mapping.items():
-            if(unique_id in reserved_mapping_keys):
-                continue
             s_type = db['source']['source_type']
             if(s_type not in group_key.keys()):
                 raise SourceNotFound("Un-identified Source Type " + str(db['source']['source_type']) + " found in migration-mapping.")
