@@ -467,6 +467,36 @@ mapping = {
     'notify': True
 }'''
 
+mapping = {
+    "impression_service": {
+        'source': {
+            'source_type': 's3',
+            'url': 's3://migration-service-temp/sql/cmdb/analytics.bd_daily_stats/',
+            'db_name': 'dms',
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'data-migration-server'
+        },
+        'tables': [
+            {
+                'table_name': 'impression_service',
+                'cron': 'self-managed',
+                'to_partition': True,
+                'partition_col': 'date',
+                'partition_col_format': 'datetime',
+                'bookmark': 'date',
+                'bookmark_creation': 'date',
+                'fields': {},
+                'is_dump': True,
+            }
+        ]
+    },
+    'fastapi_server': True,
+    'timezone': 'Asia/Kolkata',
+    'notify': True
+}
+
 encryption_store = {
     'url': os.getenv('ENCR_MONGO_URL'),
     'db_name': os.getenv('DB_NAME'),
@@ -475,5 +505,26 @@ encryption_store = {
 
 slack_notif = {
     'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-    'channel': "C0357UJ2YCF"
+    'channel': "C035WQHD291"
 }
+
+'''
+
+
+                'fields': {
+                    'source': 'str',
+                    'user_id': 'str',
+                    'asset_id': 'int',
+                    'asset_parent_id': 'str',
+                    'asset_parent_type': 'str',
+                    'entity_type': 'str',
+                    'price': 'int',
+                    'action': 'str',
+                    'app_type': 'str',
+                    'element_type': 'str',
+                    'vertical_rank': 'int',
+                    'horizontal_rank': 'int',
+                    'date': 'datetime',
+                    'metadata': 'str'
+                },
+'''

@@ -20,10 +20,11 @@ scheduler = BackgroundScheduler()
 group_key = {
     'sql': 'tables',
     'mongo': 'collections',
-    'api': 'apis'
+    'api': 'apis',
+    's3': 'tables'
 }
 tz__ = 'Asia/Kolkata'
-reserved_mapping_keys = ['fastapi_server', 'timezone']
+reserved_mapping_keys = ['fastapi_server', 'timezone', 'notify']
 
 @app.on_event("startup")
 def scheduled_migration():
