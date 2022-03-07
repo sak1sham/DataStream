@@ -118,6 +118,10 @@ class MongoMigrate:
             return None
         for document in all_documents:
             insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            if(insertion_time > self.curr_run_cron_job):
+                # If new documents are inserted after start of the migration, we don't migrate those documents
+                # This will prevent duplication of documents in next run
+                continue
             if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
                 document['migration_snapshot_date'] = self.curr_run_cron_job
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        

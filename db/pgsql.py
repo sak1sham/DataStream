@@ -66,7 +66,6 @@ class PGSQLMigrate:
 
     def process_table(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
         collection_encr = get_data_from_encr_db()
-        last_run_cron_job = self.last_run_cron_job
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
             df['migration_snapshot_date'] = self.curr_run_cron_job
         self.partition_for_parquet = []
@@ -118,16 +117,18 @@ class PGSQLMigrate:
             self.curr_mapping['primary_keys'] = [x.lower() for x in self.curr_mapping['primary_keys']]
             df['unique_migration_record_id'] = df[self.curr_mapping['primary_keys']].astype(str).sum(1)
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
-                df_consider = df[df[self.curr_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > last_run_cron_job]
+                df_consider = df[df[self.curr_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > self.last_run_cron_job]
+                df_consider = df[df[self.curr_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.curr_run_cron_job]
                 if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-                    df_insert = df_consider[df_consider[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > last_run_cron_job]
-                    df_update = df_consider[df_consider[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= last_run_cron_job]
+                    df_insert = df_consider[df_consider[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > self.last_run_cron_job]
+                    df_update = df_consider[df_consider[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.last_run_cron_job]
                 else:
                     df_insert, df_update = self.distribute_records(collection_encr, df_consider)
             else:
                 if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-                    df_insert = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > last_run_cron_job]
-                    df_consider = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= last_run_cron_job]
+                    df_consider = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.curr_run_cron_job]
+                    df_insert = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > self.last_run_cron_job]
+                    df_consider = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.last_run_cron_job]
                     _, df_update = self.distribute_records(collection_encr, df_consider)
                 else:
                     df_insert, df_update = self.distribute_records(collection_encr, df_consider)
