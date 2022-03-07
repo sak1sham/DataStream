@@ -211,12 +211,10 @@ class PGSQLMigrate:
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             sql_stmt = self.curr_mapping['fetch_data_query']
-
         if('username' not in self.db['source'].keys()):
             self.db['source']['username'] = ''
         if('password' not in self.db['source'].keys()):
             self.db['source']['password'] = ''
-
         try:
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
