@@ -33,9 +33,12 @@ def del_rohan_jobs():
     delete_metadata_from_mongo('cm_audit_logs_to_metabase_s3_DMS_product_audit_logs')
 
 def see_s3_data(location: str = None):
-    df = wr.s3.read_parquet(path=location, dataset=True, path_suffix='.parquet', ignore_empty=True)
+    df = wr.s3.read_parquet(path=location)
+    print(df.head())
     print(df.shape)
     print(df.columns.tolist())
     print(df.dtypes)
 
-del_support_service()
+delete_metadata_from_mongo('Rohan_notifications_cmdb_DMS_notifications')
+del_rohan_jobs()
+#see_s3_data('s3://app-impression-go/2022/March/3/9.parquet')

@@ -377,7 +377,7 @@ mapping = {
             }
         ]
     },
-}
+}'''
 
 mapping = {
     "Rohan_audit_logs": {
@@ -399,13 +399,14 @@ mapping = {
                     'lat': 'float',
                     'long': 'float'
                 },
-                'is_dump': True,
-                'cron': '* * * * * 23 38 0',
+                'cron': '2022 3 7 * * 22 45 0',
                 'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
+                'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
+                'bookmark': 'created_at',
+                'bookmark_creation': 'created_at',
                 'batch_size': 200,
-                'time_delay': 1,
+                'time_delay': 0.5,
             },
             {
                 'collection_name': 'product_audit_logs',
@@ -415,13 +416,14 @@ mapping = {
                     'lat': 'float',
                     'long': 'float'
                 },
-                'is_dump': True,
-                'cron': '* * * * * 23 38 0',
+                'cron': '2022 3 7 * * 22 45 0',
                 'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
+                'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
+                'bookmark': 'created_at',
+                'bookmark_creation': 'created_at',
                 'batch_size': 200,
-                'time_delay': 1,
+                'time_delay': 0.5,
             }
         ]
     },
@@ -440,45 +442,66 @@ mapping = {
         'tables': [
             {
                 'table_name': 'notifications',
-                'cron': '* * * * * 23 38 0',
-                'is_dump': True,
+                'cron': '2022 3 7 * * 22 45 0',
                 'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
+                'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
-                'expiry': {
-                    'days': 15
-                },
+                'bookmark': 'created_at',
+                'bookmark_creation': 'created_at'
             }
         ]
     },
-}'''
+}
 
-mapping = {
+'''mapping = {
     "impression_service": {
         'source': {
             'source_type': 's3',
-            'url': 's3://migration-service-temp/sql/cmdb/analytics.bd_daily_stats/',
+            'url': 's3://app-impression-go/',
             'db_name': 'dms',
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
                 'table_name': 'impression_service',
                 'cron': 'self-managed',
                 'to_partition': True,
-                'partition_col': 'date',
+                'partition_col': 'insertion_date',
                 'partition_col_format': 'datetime',
-                'bookmark': 'date',
-                'bookmark_creation': 'date',
-                'fields': {},
+                'bookmark': 'insertion_date',
+                'bookmark_creation': 'insertion_date',
+                'fields': {
+                    'screen_name': 'str',
+                    'user_id': 'str',
+                    'ct_profile_id': 'str',
+                    'asset_id': 'int',
+                    'asset_type': 'str',
+                    'asset_parent_id': 'str',
+                    'asset_parent_type': 'str',
+                    'price': 'int',
+                    'mrp': 'int',
+                    'app_type': 'str',
+                    'date': 'datetime',
+                    'entity_type': 'str',
+                    'vertical_rank': 'int',
+                    'horizontal_rank': 'int',
+                    'source': 'str',
+                    'is_product_oos': 'bool',
+                    'catalogue_name': 'str',
+                    'insertion_date': 'datetime',
+                    'cms_page_id': 'str',
+                    'linked_cms': 'str',
+                    'linked_cat': 'str',
+                    'linked_subcat': 'str',
+                },
                 'is_dump': True,
             }
         ]
     }
-}
+}'''
 
 settings = {
     'fastapi_server': True,
@@ -491,7 +514,7 @@ settings = {
     },
     'slack_notif': {
         'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C035WQHD291"
+        'channel': "C0357UJ2YCF"
     }
 }
 

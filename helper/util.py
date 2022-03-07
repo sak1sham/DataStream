@@ -59,6 +59,11 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
         x = x.strftime(std_datetime_format)
         x = pd.to_datetime(x, utc=True)
         return x
+    elif(isinstance(x, int) or isinstance(x, float)):
+        x = datetime.datetime.fromtimestamp(x, pytz.utc)
+        x = utc_to_local(utc_dt = x, tz_ = tz_)
+        x = x.strftime(std_datetime_format)
+        return pd.to_datetime(x, utc=True)
     else:
         try:
             x = pd.to_datetime(x, utc = True)
