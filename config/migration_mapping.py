@@ -399,7 +399,7 @@ mapping = {
                     'lat': 'float',
                     'long': 'float'
                 },
-                'cron': '2022 3 8 * * 0 1 0',
+                'cron': '2022 3 8 * * 0 6 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
@@ -416,7 +416,7 @@ mapping = {
                     'lat': 'float',
                     'long': 'float'
                 },
-                'cron': '2022 3 8 * * 0 1 0',
+                'cron': '2022 3 8 * * 0 6 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
@@ -442,7 +442,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'notifications',
-                'cron': '2022 3 8 * * 0 1 0',
+                'cron': '2022 3 8 * * 0 6 0',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',

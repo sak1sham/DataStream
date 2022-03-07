@@ -40,5 +40,7 @@ def see_s3_data(location: str = None):
     print(df.dtypes)
 
 delete_metadata_from_mongo('Rohan_notifications_cmdb_DMS_notifications')
-del_rohan_jobs()
+delete_metadata_from_mongo('Rohan_audit_logs_DMS_audit_logs')
+delete_metadata_from_mongo('Rohan_audit_logs_DMS_product_audit_logs')
+
 #see_s3_data('s3://app-impression-go/2022/March/3/9.parquet')
