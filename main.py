@@ -51,7 +51,7 @@ def create_new_job(db, list_specs, uid, is_fastapi):
         migration_service_of_job(db, list_specs, tz__)
     elif(is_fastapi):
         year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(list_specs['cron'])
-        scheduler.add_job(migration_service_of_job, 'cron', args=[db, list_specs, tz__], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone(tz__))
+        scheduler.add_job(migration_service_of_job, 'cron', args=[db, list_specs, tz__], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone(tz__), misfire_grace_time=None)
     else:
         logger.warn("Jobs can be scheduled only if fastapi_server is enabled. Skipping " + str(uid) + ".")
 
