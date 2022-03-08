@@ -36,7 +36,7 @@ class MongoTester(unittest.TestCase):
     url = ''
     db = ''
     col = ''
-    test_N = 1
+    test_N = 100
     col_map = {}
 
     def get_job_last_datetime(self):
@@ -67,7 +67,6 @@ class MongoTester(unittest.TestCase):
             for key in record.keys():
                 athena_key = key.lower()
                 if(key == '_id'):
-                    print(record['_id'])
                     assert str(record[key]) == athena_record[athena_key]
                 elif(key in self.col_map['fields'].keys()):
                     val = self.col_map['fields'][key]
@@ -79,7 +78,6 @@ class MongoTester(unittest.TestCase):
                         record[key] = str(record[key])
                         assert (record[key].lower() in ['true', '1', 't', 'y', 'yes'] and athena_record[athena_key]) or (not athena_record[key])
                     elif(val == 'datetime'):
-                        print(key)
                         assert abs((convert_to_datetime(record[key])-convert_to_datetime(athena_record[athena_key])).total_seconds()) <= 60
                     else:
                         assert convert_to_str(record[key]) == athena_record[athena_key]
