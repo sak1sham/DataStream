@@ -70,7 +70,8 @@ If source is SQL, we need to provide a field ```tables```, which is a list of ta
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the column (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 3),
-    'is_dump': False (Optional, Default=False, Refer Notes 4)
+    'is_dump': False (Optional, Default=False, Refer Notes 4),
+    'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True)
 }
 ```
 
@@ -94,31 +95,22 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
 }
 ```
 
-If source is API, we need to provide a field ```apis```, which is a list of api_specifications. 
-Api_specifications shall be in following format:
-```
-{
-    'api_name': '',
-    'fields': {
-        'field_1': 'int' (Refer Notes 3),
-        'field_2': 'complex', 
-        ...
-    } (Optional),
-    'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
-    'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
-    'to_partition': True or False (Default),
-    'partition_col': False or '' name of the field (str or list of str),
-    'partition_col_format': '' (Optional, Refer Notes 4),
-    'is_dump': False,
-    'expiry': {'days': 30, 'hours': 5} (dict[str, int], Optional, used only when is_dump = True)
-}
-```
-
 ## fastapi_server
 (Bool): default = False. If user sets 'fastapi_server' to True, a uvicorn server is started.
 
 ## timezone
 (Str): default = 'Asia/Kolkata'. Used for processing dates in given timezone, using last_run_cron_job, etc. For mongo as the source, this service saves dates in UTC timezone, and for sql as the source, this service saves dates without changing their timezone.
+
+## notify
+(Bool): default = False. If provided, slack_notif option is enabled, where we can provide details of the slack channels, and slack_token
+
+
+# slack_notif
+This is a dict type object with following details:
+1. slack_token: Unique slack token for this data_migration_service application
+2. channel: unique ID of the channel we want to post to
+
+Note: We need to add the bot created for slack API to the channel we want to post to, or provide the necessary permissions.
 
 # Notes
 
@@ -131,9 +123,8 @@ For example: '* * * * * 7-19 */1 0' represents every minute between 7AM to 7PM.
 Only specify if the field belongs to one of the following category:
 1. 'bool'
 2. 'float'
-3. 'complex'
-4. 'int'
-5. 'datetime'
+3. 'int'
+4. 'datetime'
 
 Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string. By default, datetime is converted to strings in MongoDB processing.
 

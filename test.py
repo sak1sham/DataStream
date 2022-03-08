@@ -1,19 +1,15 @@
-import awswrangler as wr
+from pymongo import MongoClient
+import certifi
+import datetime
+import pytz
 
-import pandas as pd
+client = MongoClient('mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', tlsCAFile=certifi.where())
+database_ = client['support-service']
+coll = database_['support_tickets']
 
-from dotenv import load_dotenv
-load_dotenv() 
+start = pytz.utc.localize(datetime.datetime(2022, 3, 4))
+end = pytz.utc.localize(datetime.datetime(2022, 3, 5))
 
-# initialize list of lists
-data = [['tom', 10], ['nick', 15], ['juli', 14]]
- 
-# Create the pandas DataFrame
-df = pd.DataFrame(data, columns = ['Name', 'Age'])
-file_ = 's3://migration-service-temp/temp/abc.snappy.parquet'
-
-wr.s3.to_parquet(
-    df = df,
-    path = file_,
-    compression = 'snappy',
-)
+curs = coll.find({'created_at': {'$gte': start, '$lt': end}})
+ls = list(curs)
+print(len(ls))

@@ -31,7 +31,7 @@ class RedshiftSaver:
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
-            self.table_list.extend(processed_data['name'])
+            self.table_list.extend(processed_data['name']) 
         self.name_ = processed_data['name']
         file_name = self.s3_location + self.name_ + "/"
         self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")

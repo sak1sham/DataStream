@@ -2,7 +2,7 @@ import pandas as pd
 import psycopg2
 import pymongo
 
-from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, utc_to_local
+from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, utc_to_local, get_athena_dtypes
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
 from helper.logging import logger
@@ -37,10 +37,9 @@ class PGSQLMigrate:
         logger.err(error)
 
     def preprocess(self) -> None:
-        self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
-        self.curr_run_cron_job = utc_to_local(datetime.datetime.utcnow(), self.tz_info)
+        self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
+        self.curr_run_cron_job = convert_to_datetime(utc_to_local(datetime.datetime.utcnow(), self.tz_info), self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
-
 
     def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({})) -> Tuple[dftype]:
         df = df.sort_index(axis = 1)
@@ -67,7 +66,6 @@ class PGSQLMigrate:
 
     def process_table(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
         collection_encr = get_data_from_encr_db()
-        last_run_cron_job = self.last_run_cron_job
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
             df['migration_snapshot_date'] = self.curr_run_cron_job
         self.partition_for_parquet = []
@@ -86,12 +84,11 @@ class PGSQLMigrate:
                     col_form = self.curr_mapping['partition_col_format'][i]
                     parq_col = "parquet_format_" + col
                     if(col == 'migration_snapshot_date'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                         temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
                         df[parq_col + "_year"] = temp.dt.year
                         df[parq_col + "_month"] = temp.dt.month
                         df[parq_col + "_day"] = temp.dt.day
-                        df[parq_col + "_hour"] = temp.dt.hour
                     elif(col_form == 'str'):
                         self.partition_for_parquet.extend([parq_col])
                         df[parq_col] = df[col].astype(str)
@@ -99,12 +96,11 @@ class PGSQLMigrate:
                         self.partition_for_parquet.extend([parq_col])
                         df[parq_col] = df[col].astype(int)
                     elif(col_form == 'datetime'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day", parq_col + "_hour"])
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                         temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
                         df[parq_col + "_year"] = temp.dt.year
                         df[parq_col + "_month"] = temp.dt.month
                         df[parq_col + "_day"] = temp.dt.day
-                        df[parq_col + "_hour"] = temp.dt.hour
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime.") 
             else:
@@ -121,16 +117,18 @@ class PGSQLMigrate:
             self.curr_mapping['primary_keys'] = [x.lower() for x in self.curr_mapping['primary_keys']]
             df['unique_migration_record_id'] = df[self.curr_mapping['primary_keys']].astype(str).sum(1)
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
-                df_consider = df[df[self.curr_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > last_run_cron_job]
+                df_consider = df[df[self.curr_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > self.last_run_cron_job]
+                df_consider = df[df[self.curr_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.curr_run_cron_job]
                 if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-                    df_insert = df_consider[df_consider[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > last_run_cron_job]
-                    df_update = df_consider[df_consider[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= last_run_cron_job]
+                    df_insert = df_consider[df_consider[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > self.last_run_cron_job]
+                    df_update = df_consider[df_consider[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.last_run_cron_job]
                 else:
                     df_insert, df_update = self.distribute_records(collection_encr, df_consider)
             else:
                 if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-                    df_insert = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > last_run_cron_job]
-                    df_consider = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= last_run_cron_job]
+                    df_consider = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.curr_run_cron_job]
+                    df_insert = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > self.last_run_cron_job]
+                    df_consider = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.last_run_cron_job]
                     _, df_update = self.distribute_records(collection_encr, df_consider)
                 else:
                     df_insert, df_update = self.distribute_records(collection_encr, df_consider)
@@ -139,13 +137,17 @@ class PGSQLMigrate:
             df_update = pd.DataFrame({})
         df_insert = convert_to_dtype(df_insert, col_dtypes)
         df_update = convert_to_dtype(df_update, col_dtypes)
-        return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update}
+        dtypes = get_athena_dtypes(col_dtypes)
+        return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update, 'dtypes': dtypes}
 
     def save_data(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = None) -> None:
         if(not processed_data):
             return
         else:
-            self.saver.save(processed_data = processed_data, primary_keys = ['unique_migration_record_id'], c_partition = c_partition)
+            primary_keys = []
+            if('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump']):
+                primary_keys = ['unique_migration_record_id']
+            self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
     
     def get_list_tables(self) -> List[str]:
         sql_stmt = '''
@@ -209,12 +211,10 @@ class PGSQLMigrate:
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             sql_stmt = self.curr_mapping['fetch_data_query']
-
         if('username' not in self.db['source'].keys()):
             self.db['source']['username'] = ''
         if('password' not in self.db['source'].keys()):
             self.db['source']['password'] = ''
-
         try:
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
