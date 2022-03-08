@@ -461,7 +461,7 @@ mapping = {
     },
 }'''
 
-'''mapping = {
+mapping = {
     "impression_service": {
         'source': {
             'source_type': 's3',
@@ -475,7 +475,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'impression_service',
-                'cron': 'self-managed',
+                'cron': '* * * * * */1 0 0',
                 'to_partition': True,
                 'partition_col': 'insertion_date',
                 'partition_col_format': 'datetime',
@@ -505,11 +505,10 @@ mapping = {
                     'linked_cat': 'str',
                     'linked_subcat': 'str',
                 },
-                'is_dump': True,
             }
         ]
     }
-}'''
+}
 
 settings = {
     'fastapi_server': True,
@@ -525,23 +524,3 @@ settings = {
         'channel': "C0357UJ2YCF"
     }
 }
-
-'''
-
-                'fields': {
-                    'source': 'str',
-                    'user_id': 'str',
-                    'asset_id': 'int',
-                    'asset_parent_id': 'str',
-                    'asset_parent_type': 'str',
-                    'entity_type': 'str',
-                    'price': 'int',
-                    'action': 'str',
-                    'app_type': 'str',
-                    'element_type': 'str',
-                    'vertical_rank': 'int',
-                    'horizontal_rank': 'int',
-                    'date': 'datetime',
-                    'metadata': 'str'
-                },
-'''
