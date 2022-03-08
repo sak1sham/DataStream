@@ -13,9 +13,8 @@ datetype = NewType("datetype", datetime.datetime)
 from dotenv import load_dotenv
 load_dotenv()
 
-from accuracy_mapping import mapping, settings
+from testing_mapping import mapping
 from test_util import *
-encryption_store = settings['encryption_store']
 
 def convert_to_str(x) -> str:
     if(isinstance(x, int) or isinstance(x, float) or isinstance(x, str) or isinstance(x, bool)):
@@ -30,7 +29,6 @@ def convert_to_str(x) -> str:
     else:
         return str(x)
 
-
 class MongoTester(unittest.TestCase):
     id_ = ''
     url = ''
@@ -39,19 +37,11 @@ class MongoTester(unittest.TestCase):
     test_N = 100
     col_map = {}
 
-    def get_job_last_datetime(self):
-        client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
-        db_encr = client_encr[encryption_store['db_name']]
-        collection = db_encr[encryption_store['collection_name']]
-        curs = collection.find({'last_run_cron_job_for_id': self.id_})
-        curs = list(curs)
-        return curs[0]['timing']
-    
     def confidence(self, N: int = 10):
         percent = float(95.0 + 0.5 * log(N, 10))
         return percent/100.0
 
-    def a_test_count(self):
+    def test_count(self):
         client_encr = MongoClient(self.url, tlsCAFile=certifi.where())
         db_encr = client_encr[self.db]
         collection = db_encr[self.col]
@@ -97,8 +87,6 @@ class MongoTester(unittest.TestCase):
             df = wr.athena.read_sql_query(sql = query, database = "mongo" + "_" + self.db.replace('.', '_').replace('-', '_'))
             athena_record = df[0:1].to_dict(orient='records')
             assert self.check_match(record, athena_record[0])
-
-
 
 if __name__ == "__main__":
     id = ''
