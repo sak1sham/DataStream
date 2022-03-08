@@ -205,6 +205,14 @@ mapping = {
                     'nr_escalated': 'bool',
                     'fr_escalated': 'bool',
                     '__v': 'int',
+                    'agent_responded_at': 'datetime',
+                    'cancelled_at':'datetime',
+                    'closed_at':'datetime',
+                    'due_by':'datetime',
+                    'first_responded_at':'datetime',
+                    'fr_due_by':'datetime',
+                    'resolved_at':'datetime',
+                    'status_updated_at':'datetime',
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
@@ -221,7 +229,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 22 15 0',
+                'cron': 'self-managed',
                 'to_partition': True,
             },
             {
@@ -379,7 +387,7 @@ mapping = {
     },
 }'''
 
-mapping = {
+'''mapping = {
     "Rohan_audit_logs": {
         'source': {
             'source_type': 'mongo',
@@ -451,7 +459,7 @@ mapping = {
             }
         ]
     },
-}
+}'''
 
 '''mapping = {
     "impression_service": {

@@ -29,8 +29,9 @@ def del_support_service():
     delete_metadata_from_mongo('mongo_support_service_to_s3_DMS_webhook_error_logs')
 
 def del_rohan_jobs():
-    delete_metadata_from_mongo('cm_audit_logs_to_metabase_s3_DMS_audit_logs')
-    delete_metadata_from_mongo('cm_audit_logs_to_metabase_s3_DMS_product_audit_logs')
+    delete_metadata_from_mongo('Rohan_notifications_cmdb_DMS_notifications')
+    delete_metadata_from_mongo('Rohan_audit_logs_DMS_audit_logs')
+    delete_metadata_from_mongo('Rohan_audit_logs_DMS_product_audit_logs')
 
 def see_s3_data(location: str = None):
     df = wr.s3.read_parquet(path=location)
@@ -39,8 +40,6 @@ def see_s3_data(location: str = None):
     print(df.columns.tolist())
     print(df.dtypes)
 
-delete_metadata_from_mongo('Rohan_notifications_cmdb_DMS_notifications')
-delete_metadata_from_mongo('Rohan_audit_logs_DMS_audit_logs')
-delete_metadata_from_mongo('Rohan_audit_logs_DMS_product_audit_logs')
+del_support_service()
 
 #see_s3_data('s3://app-impression-go/2022/March/3/9.parquet')

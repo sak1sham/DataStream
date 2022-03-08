@@ -1,8 +1,6 @@
 import json
 import datetime
 import pytz
-from dateutil import parser
-import dateutil
 from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
 
@@ -12,7 +10,6 @@ datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
 
 std_datetime_format = "%Y/%m/%dT%H:%M:%S"
-
 
 def convert_list_to_string(l: List[Any]) -> str:
     '''
@@ -55,14 +52,10 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
         x = convert_to_utc(dt = x)
-        x = utc_to_local(utc_dt = x, tz_ = tz_)
-        x = x.strftime(std_datetime_format)
         x = pd.to_datetime(x, utc=True)
         return x
     elif(isinstance(x, int) or isinstance(x, float)):
         x = datetime.datetime.fromtimestamp(x, pytz.utc)
-        x = utc_to_local(utc_dt = x, tz_ = tz_)
-        x = x.strftime(std_datetime_format)
         return pd.to_datetime(x, utc=True)
     else:
         try:
