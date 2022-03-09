@@ -4,7 +4,7 @@ import pytz
 from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
 
-from helper.logging import logger
+# from helper.logger import logger
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
@@ -52,7 +52,7 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
         x = convert_to_utc(dt = x)
-        x = pd.to_datetime(x, utc=True)
+        # x = pd.to_datetime(x, utc=True)
         return x
     elif(isinstance(x, int) or isinstance(x, float)):
         x = datetime.datetime.fromtimestamp(x, pytz.utc)
@@ -135,7 +135,7 @@ def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] =
             try:
                 docu[key] = str(docu[key])
             except Exception as e:
-                logger.warn("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
+                print("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
                 docu[key] = None
     
     for key, _ in schema.items():
