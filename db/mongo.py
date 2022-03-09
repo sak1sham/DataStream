@@ -4,6 +4,7 @@ from helper.exceptions import *
 from helper.logging import logger
 from dst.main import DMS_exporter
 
+from bson.objectid import ObjectId
 from pymongo import MongoClient
 import certifi
 import pandas as pd
@@ -11,7 +12,7 @@ import datetime
 import json
 import hashlib
 import pytz
-from typing import Dict, Any
+from typing import List, Dict, Any
 import time
 
 class MongoMigrate:
@@ -48,6 +49,38 @@ class MongoMigrate:
             self.err(e)
             self.db_collection = None
             raise ConnectionError("Unable to connect to source.")
+
+
+    def fetch_data(self, start: int = 0, end: int = 0, query: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        if(query):
+            return list(self.db_collection.find(query)[start:end])
+        else:
+            return list(self.db_collection.find()[start:end])
+
+    def add_partitions(self, document: Dict[str, Any], insertion_time) -> Dict[str, Any]:
+        for i in range(len(self.curr_mapping['partition_col'])):
+            col = self.curr_mapping['partition_col'][i]
+            col_form = self.curr_mapping['partition_col_format'][i]
+            parq_col = "parquet_format_" + col
+            if(col == '_id'):
+                document[parq_col + "_year"] = insertion_time.year
+                document[parq_col + "_month"] = insertion_time.month
+                document[parq_col + "_day"] = insertion_time.day
+            elif(col_form == 'str'):
+                document[parq_col] = str(document[col])
+            elif(col_form == 'int'):
+                document[parq_col] = int(document[col])
+            elif(col_form == 'float'):
+                document[parq_col] = float(document[col])
+            elif(col_form == 'datetime'):
+                document[col] = convert_to_datetime(document[col], self.tz_info)
+                document[parq_col + "_year"] = document[col].year
+                document[parq_col + "_month"] = document[col].month
+                document[parq_col + "_day"] = document[col].day
+            else:
+                raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+        return document
+
 
     def preprocess(self) -> None:
         if('fields' not in self.curr_mapping.keys()):
@@ -102,12 +135,13 @@ class MongoMigrate:
                 else:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")            
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
-        
+
+
     def process_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
         docu_insert = []
         docu_update = []
         collection_encr = get_data_from_encr_db()
-        all_documents = list(self.db_collection.find()[start:end])
+        all_documents = self.fetch_data(start = start, end = end)
         if(not all_documents or len(all_documents) == 0):
             return None
         for document in all_documents:
@@ -119,27 +153,7 @@ class MongoMigrate:
             if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
                 document['migration_snapshot_date'] = self.curr_run_cron_job
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
-                for i in range(len(self.curr_mapping['partition_col'])):
-                    col = self.curr_mapping['partition_col'][i]
-                    col_form = self.curr_mapping['partition_col_format'][i]
-                    parq_col = "parquet_format_" + col
-                    if(col == '_id'):
-                        document[parq_col + "_year"] = insertion_time.year
-                        document[parq_col + "_month"] = insertion_time.month
-                        document[parq_col + "_day"] = insertion_time.day
-                    elif(col_form == 'str'):
-                        document[parq_col] = str(document[col])
-                    elif(col_form == 'int'):
-                        document[parq_col] = int(document[col])
-                    elif(col_form == 'float'):
-                        document[parq_col] = float(document[col])
-                    elif(col_form == 'datetime'):
-                        document[col] = convert_to_datetime(document[col], self.tz_info)
-                        document[parq_col + "_year"] = document[col].year
-                        document[parq_col + "_month"] = document[col].month
-                        document[parq_col + "_day"] = document[col].day
-                    else:
-                        raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")                    
+                document = self.add_partitions(document=document, insertion_time=insertion_time)
             updation = False
             if('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump']):
                 if(insertion_time < self.last_run_cron_job):
@@ -187,6 +201,139 @@ class MongoMigrate:
         dtypes = get_athena_dtypes(self.curr_mapping['fields'])
         return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': ret_df_update, 'dtypes': dtypes}
 
+
+    def dumping_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
+        ## When we are dumping data, snapshots of the datastore are captured at regular intervals inside destination
+        ## We insert the snapshots, and no updation is performed
+        ## All the records are inserted, there is no need for bookmarks
+        ## By default, we add a column 'migration_snapshot_date' to capture the starting time of migration
+        docu_insert = []
+        migration_start_id = ObjectId.from_datetime(self.curr_run_cron_job)
+        query = {"_id": {"$lt": migration_start_id}}
+        all_documents = self.fetch_data(start=start, end=end, query=query)
+        if(not all_documents or len(all_documents) == 0):
+            return None
+        for document in all_documents:
+            insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            document['migration_snapshot_date'] = self.curr_run_cron_job
+            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
+                document = self.add_partitions(document=document, insertion_time=insertion_time)        
+            document = validate_or_convert(document, self.curr_mapping['fields'], self.tz_info)
+            docu_insert.append(document)
+        ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.curr_mapping['fields'])
+        dtypes = get_athena_dtypes(self.curr_mapping['fields'])
+        return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
+
+
+    def adding_new_data(self, start: int = 0, end: int = 0, mode: str = 'logging') -> Dict[str, Any]:
+        ## Only insertions are captured from source and sent to destination.
+        ## It's assumed that no updation is performed
+        ## bookmark_creation is required, which in case of mongo is '_id'
+        ## If bookmark_updation is not provided, and the mode is syncing, then hashes are stored
+        docu_insert = []
+        collection_encr = get_data_from_encr_db()
+        migration_start_id = ObjectId.from_datetime(self.curr_run_cron_job)
+        migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
+        query = {
+            "_id": {
+                "$gte": migration_prev_id, 
+                "$lt": migration_start_id
+            }
+        }
+        all_documents = self.fetch_data(start=start, end=end, query=query)
+        if(not all_documents or len(all_documents) == 0):
+            return None
+        for document in all_documents:
+            insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            document['migration_snapshot_date'] = self.curr_run_cron_job
+            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
+                document = self.add_partitions(document=document, insertion_time=insertion_time)
+            if(mode == 'syncing' and ('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark'])):
+                ## if updation bookmark is not present, we need to store hashes to check for updates later
+                document['_id'] = str(document['_id'])
+                encr = {
+                    'collection': self.curr_mapping['unique_id'],
+                    'map_id': document['_id'],
+                    'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
+                }
+                collection_encr.insert_one(encr)
+            document = validate_or_convert(document, self.curr_mapping['fields'], self.tz_info)
+            docu_insert.append(document)
+        ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.curr_mapping['fields'])
+        dtypes = get_athena_dtypes(self.curr_mapping['fields'])
+        return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
+
+
+    def updating_data(self, start: int = 0, end: int = 0, improper_bookmarks: bool = False) -> Dict[str, Any]:
+        ## When we are updating data, no need to capture new records, only old records are to be processed
+        ## If bookmark for updation is not provided, we can ignore it, and filter it further through encryption
+        ## Both bookmarks are otherwise required 
+        docu_update = []
+        collection_encr = get_data_from_encr_db()
+        migration_start_id = ObjectId.from_datetime(self.curr_run_cron_job)
+        migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
+        all_documents = []
+        if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and not improper_bookmarks):
+            query = {
+                "$and":[
+                    {
+                        self.curr_mapping['bookmark']: {
+                            "$gte": migration_prev_id,
+                            "$lt": migration_start_id
+                        }
+                    },
+                    {   "_id": {
+                            "$lt": migration_prev_id,
+                        }
+                    }
+                ]
+            }
+            all_documents = self.fetch_data(start=start, end=end, query=query)
+        else:
+            query = {
+                "_id": {
+                    "$lt": migration_prev_id,
+                }
+            }
+            all_documents = self.fetch_data(start=start, end=end, query=query)
+        if(not all_documents or len(all_documents) == 0):
+            return None
+        for document in all_documents:
+            insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
+                document = self.add_partitions(document=document, insertion_time=insertion_time)
+
+            if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and improper_bookmarks):
+                if(self.curr_mapping['bookmark'] not in document.keys()):
+                    document[self.curr_mapping['bookmark']] = None
+                docu_bookmark_date = convert_to_datetime(document[self.curr_mapping['bookmark']], self.tz_info)
+                ## if docu_bookmark_date is None, that means the document was never updated
+                if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date < self.last_run_cron_job):
+                    continue
+            elif('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark']):
+                document['_id'] = str(document['_id'])
+                encr = {
+                    'collection': self.curr_mapping['unique_id'],
+                    'map_id': document['_id'],
+                    'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
+                }
+                previous_records = collection_encr.find_one({'collection': self.curr_mapping['unique_id'], 'map_id': document['_id']})
+                if(previous_records):
+                    if(previous_records['document_sha'] == encr['document_sha']):
+                        continue
+                    else:
+                        collection_encr.delete_one({'collection': self.curr_mapping['unique_id'], 'map_id': document['_id']})
+                        collection_encr.insert_one(encr)
+                else:
+                    collection_encr.insert_one(encr)
+            
+            document = validate_or_convert(document, self.curr_mapping['fields'], self.tz_info)
+            docu_update.append(document)
+        ret_df_update = typecast_df_to_schema(pd.DataFrame(docu_update), self.curr_mapping['fields'])
+        dtypes = get_athena_dtypes(self.curr_mapping['fields'])
+        return {'name': self.curr_mapping['collection_name'], 'df_insert': pd.DataFrame({}), 'df_update': ret_df_update, 'dtypes': dtypes}
+
+
     def save_data(self, processed_collection: Dict[str, Any] = None) -> None:
         if(not processed_collection):
             return
@@ -196,18 +343,41 @@ class MongoMigrate:
                 primary_keys = ['_id']
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
 
+
     def process(self) -> None:
         self.get_data()
         self.inform("Data fetched.")
         self.preprocess()
         self.inform("Collection pre-processed.")
         start = 0
-        while(True):    
+        already_done_with_insertion = False
+        while(True):
             end = start + self.batch_size
-            processed_collection = self.process_data(start=start, end=end)
+            processed_collection = {}
+            if(self.curr_mapping['mode'] == 'dumping'):
+                ## In dumping, we maintain multiple copies of the database (a copy is generated at every migration)
+                ## We maintain the versions of the entire database/collection
+                processed_collection = self.dumping_data(start=start, end=end)
+            elif(self.curr_mapping['mode'] == 'logging'):
+                ## When the source collection contains records which are only inserted, and we don't need to check for updations, chose this mode
+                processed_collection = self.adding_new_data(start=start, end=end, mode='logging')
+            elif(self.curr_mapping['mode'] == 'syncing'):
+                ## When we need to sync the changes from source, and updations need to be mapped to destination accordingly
+                ## In case something is deleted at source, it's not deleted at destination
+                if(not already_done_with_insertion):
+                    processed_collection = self.adding_new_data(start=start, end=end, mode='syncing')
+                else:
+                    processed_collection = self.updating_data(start=start, end=end, improper_bookmarks=self.curr_mapping['improper_bookmarks'])
+            else:
+                raise IncorrectMapping("migration mode can either be \'dumping\', \'logging\' or \'syncing\'")
+
             if(not processed_collection):
-                self.inform("Processed all records from collection.")
-                break
+                if(self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion):
+                    self.inform("Inserted all records from collection, looking forward to updations.")
+                    start = 0
+                else:
+                    self.inform("Processing complete.")
+                    break
             self.save_data(processed_collection=processed_collection)
             time.sleep(self.time_delay)
             start += self.batch_size

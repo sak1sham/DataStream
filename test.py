@@ -7,8 +7,8 @@ client = MongoClient('mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3m
 database_ = client['support-service']
 coll = database_['support_tickets']
 
-start = pytz.utc.localize(datetime.datetime(2022, 3, 4))
-end = pytz.utc.localize(datetime.datetime(2022, 3, 5))
+start = pytz.utc.localize(datetime.datetime(2022, 3, 8))
+end = pytz.utc.localize(datetime.datetime(2022, 3, 9))
 
 curs = coll.find({'created_at': {'$gte': start, '$lt': end}})
 ls = list(curs)

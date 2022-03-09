@@ -18,3 +18,6 @@ class SourceNotFound(Exception):
 
 class MissingData(Exception):
     pass
+
+class IncorrectMapping(Exception):
+    pass
