@@ -526,8 +526,16 @@ mapping = {
         },
         'tables': [
             {
-                'table_name': 'public.admin_roles',
-                'cron': 'self-managed',
+                'table_name': 'dispatch_or_received_shipments',
+                'cron': '2022 3 9 * * 19 10 0',
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
+                'is_dump': True,
+            },
+            {
+                'table_name': 'packing_scans',
+                'cron': '2022 3 9 * * 19 10 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
