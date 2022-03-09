@@ -140,7 +140,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod',
+            's3_bucket_name': 'data-migration-server',
         },
         'collections': [
             {
@@ -148,7 +148,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '2021 * * * * 22 10 0',
                 'to_partition': True
             },
             {
@@ -156,8 +156,9 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': 'self-managed',
                 'to_partition': True,
+                'mode': 'syncing'
             },
             {
                 'collection_name': 'support_items',
@@ -166,7 +167,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '2021 * * * * 22 10 0',
                 'to_partition': True
             },
             {
@@ -174,7 +175,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '2021 * * * * 22 10 0',
                 'to_partition': True
             },
             {
@@ -189,7 +190,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 15 0',
+                'cron': '2021 * * * * 22 15 0',
                 'to_partition': True,
             },
             {
@@ -216,7 +217,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 15 0',
+                'cron': '2021 * * * * 22 15 0',
                 'to_partition': True,
             },
             {
@@ -229,7 +230,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 22 20 0',
+                'cron': '2021 * * * * 22 20 0',
                 'to_partition': True,
             },
             {
@@ -237,7 +238,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '2021 * * * * 22 10 0',
                 'to_partition': True
             },
         ]
@@ -521,6 +522,6 @@ settings = {
     },
     'slack_notif': {
         'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C0357UJ2YCF"
+        'channel': "C035WQHD291"
     }
 }

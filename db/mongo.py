@@ -306,12 +306,15 @@ class MongoMigrate:
                 if(not already_done_with_insertion):
                     processed_collection = self.adding_new_data(start=start, end=end, mode='syncing')
                 else:
+                    if('improper_bookmarks' not in self.curr_mapping.keys()):
+                        self.curr_mapping['improper_bookmarks'] = True
                     processed_collection = self.updating_data(start=start, end=end, improper_bookmarks=self.curr_mapping['improper_bookmarks'])
             else:
                 raise IncorrectMapping("migration mode can either be \'dumping\', \'logging\' or \'syncing\'")
 
             if(not processed_collection):
                 if(self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion):
+                    already_done_with_insertion = True
                     self.inform("Inserted all records from collection, looking forward to updations.")
                     start = 0
                 else:
