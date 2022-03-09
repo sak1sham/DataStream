@@ -62,7 +62,7 @@ class MongoMigrate:
             col = self.curr_mapping['partition_col'][i]
             col_form = self.curr_mapping['partition_col_format'][i]
             parq_col = "parquet_format_" + col
-            if(col == '_id'):
+            if(col == '_id' and col_form == 'datetime'):
                 document[parq_col + "_year"] = insertion_time.year
                 document[parq_col + "_month"] = insertion_time.month
                 document[parq_col + "_day"] = insertion_time.day
@@ -93,15 +93,19 @@ class MongoMigrate:
             if('partition_col' not in self.curr_mapping.keys() or not self.curr_mapping['partition_col']):
                 self.warn("Partition_col not specified. Making partition using _id.")
                 self.curr_mapping['partition_col'] = ['_id']
-                self.curr_mapping['partition_col_format'] = ['datetime']
+                self.curr_mapping['partition_col_format'] = ['str']
             if(isinstance(self.curr_mapping['partition_col'], str)):
                 self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+            if('_id' not in self.curr_mapping['partition_col']):
+                self.curr_mapping['partition_col'].append('_id')
+            
             if('partition_col_format' not in self.curr_mapping.keys()):
                 self.curr_mapping['partition_col_format'] = ['str']
             if(isinstance(self.curr_mapping['partition_col_format'], str)):
                 self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
             while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
                 self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
+            
             for i in range(len(self.curr_mapping['partition_col'])):
                 col = self.curr_mapping['partition_col'][i]
                 col_form = self.curr_mapping['partition_col_format'][i]
@@ -113,7 +117,7 @@ class MongoMigrate:
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
-                elif(col == '_id'):
+                elif(col == '_id' and col_form == 'datetime'):
                     self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                     self.curr_mapping['fields'][parq_col + "_year"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
