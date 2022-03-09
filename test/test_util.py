@@ -9,6 +9,19 @@ dftype = NewType("dftype", pd.DataFrame)
 
 std_datetime_format = "%Y/%m/%dT%H:%M:%S"
 
+def convert_to_str(x) -> str:
+    if(isinstance(x, int) or isinstance(x, float) or isinstance(x, str) or isinstance(x, bool)):
+        return str(x)
+    elif(isinstance(x, list)):
+        return convert_list_to_string(x)
+    elif(isinstance(x, dict)):
+        return convert_json_to_string(x)
+    elif(isinstance(x, datetime.datetime)):
+        x = convert_to_datetime(x)
+        return x.strftime("%Y/%m/%dT%H:%M:%S")
+    else:
+        return str(x)
+
 def convert_list_to_string(l: List[Any]) -> str:
     '''
         Recursively convert lists and nested lists to strings
