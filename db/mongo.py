@@ -387,3 +387,4 @@ class MongoMigrate:
             self.inform("Expired data removed.")
         self.saver.close()
         self.inform("Hope to see you again :')\n")
+ 
