@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-mapping = {
+'''mapping = {
     "cmdb_tables_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -243,7 +243,7 @@ mapping = {
         ]
     },
 }
-
+'''
 '''
 mapping = {
     "order_actions_cmdb_s3": {
@@ -510,6 +510,33 @@ mapping = {
     }
 }
 '''
+
+mapping = {
+    "learning_sqltos3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'learning-migrationservice'
+        },
+        'tables': [
+            {
+                'table_name': 'analytics.bd_daily_stats',
+                'cron': 'self-managed',
+                'to_partition': True,
+                'partition_col': 'migration_snapshot_date',
+                'partition_col_format': 'datetime',
+                'is_dump': True,
+            }
+        ]
+    },
+}
+
 settings = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
@@ -521,6 +548,6 @@ settings = {
     },
     'slack_notif': {
         'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C0357UJ2YCF"
+        'channel': "C035WQHD291"
     }
 }
