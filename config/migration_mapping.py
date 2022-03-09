@@ -526,7 +526,7 @@ mapping = {
         },
         'tables': [
             {
-                'table_name': 'analytics.bd_daily_stats',
+                'table_name': 'public.admin_roles',
                 'cron': 'self-managed',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
