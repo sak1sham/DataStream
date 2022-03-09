@@ -135,7 +135,7 @@ def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] =
             try:
                 docu[key] = str(docu[key])
             except Exception as e:
-                print("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
+                logger.warn("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType.")
                 docu[key] = None
     
     for key, _ in schema.items():
