@@ -40,6 +40,6 @@ def see_s3_data(location: str = None):
     print(df.columns.tolist())
     print(df.dtypes)
 
-del_support_service()
+delete_metadata_from_mongo('impression_service_DMS_impression_service')
 
-#see_s3_data('s3://app-impression-go/2022/March/3/9.parquet')
+#see_s3_data('s3://app-impression-go/2022/March/8/1.parquet')

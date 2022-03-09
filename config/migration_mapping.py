@@ -107,7 +107,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'inventory_snapshot_wms_query',
-                'cron': '2019 * * * * */1 0 0',
+                'cron': '* * * * * */1 0 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -148,7 +148,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 25 0',
+                'cron': '* * * * * 22 10 0',
                 'to_partition': True
             },
             {
@@ -156,7 +156,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 25 0',
+                'cron': '* * * * * 22 10 0',
                 'to_partition': True,
             },
             {
@@ -166,7 +166,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 25 0',
+                'cron': '* * * * * 22 10 0',
                 'to_partition': True
             },
             {
@@ -174,7 +174,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 25 0',
+                'cron': '* * * * * 22 10 0',
                 'to_partition': True
             },
             {
@@ -189,7 +189,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 14 25 0',
+                'cron': '* * * * * 22 15 0',
                 'to_partition': True,
             },
             {
@@ -216,7 +216,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 14 25 0',
+                'cron': '* * * * * 22 15 0',
                 'to_partition': True,
             },
             {
@@ -229,7 +229,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 14 25 0',
+                'cron': '* * * * * 22 20 0',
                 'to_partition': True,
             },
             {
@@ -237,7 +237,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 25 0',
+                'cron': '* * * * * 22 10 0',
                 'to_partition': True
             },
         ]
@@ -475,7 +475,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'impression_service',
-                'cron': 'self-managed',
+                'cron': '* * * * * */1 0 0',
                 'to_partition': True,
                 'partition_col': 'insertion_date',
                 'partition_col_format': 'datetime',
@@ -505,12 +505,11 @@ mapping = {
                     'linked_cat': 'str',
                     'linked_subcat': 'str',
                 },
-                'is_dump': True,
             }
         ]
     }
-}'''
-
+}
+'''
 settings = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
@@ -525,23 +524,3 @@ settings = {
         'channel': "C0357UJ2YCF"
     }
 }
-
-'''
-
-                'fields': {
-                    'source': 'str',
-                    'user_id': 'str',
-                    'asset_id': 'int',
-                    'asset_parent_id': 'str',
-                    'asset_parent_type': 'str',
-                    'entity_type': 'str',
-                    'price': 'int',
-                    'action': 'str',
-                    'app_type': 'str',
-                    'element_type': 'str',
-                    'vertical_rank': 'int',
-                    'horizontal_rank': 'int',
-                    'date': 'datetime',
-                    'metadata': 'str'
-                },
-'''
