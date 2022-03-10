@@ -219,6 +219,8 @@ mapping = {
                 'archive': False,
                 'cron': 'self-managed',
                 'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
                 'mode': 'syncing',
                 'improper_bookmarks': True
             },
