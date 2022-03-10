@@ -512,7 +512,7 @@ mapping = {
 '''
 
 mapping = {
-    "learning_sqltos3": {
+    "freshdesk_agents_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -522,22 +522,14 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'learning-migrationservice'
+            's3_bucket_name': 'database-migration-service-prod  '
         },
         'tables': [
             {
-                'table_name': 'dispatch_or_received_shipments',
-                'cron': '2022 3 9 * * 19 10 0',
+                'table_name': 'freshdesk_agents',
+                'cron': 'self-managed',
                 'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-            },
-            {
-                'table_name': 'packing_scans',
-                'cron': '2022 3 9 * * 19 10 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
+                'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
                 'is_dump': True,
             }
@@ -556,6 +548,6 @@ settings = {
     },
     'slack_notif': {
         'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C035WQHD291"
+        'channel': "C0357UJ2YCF"
     }
 }
