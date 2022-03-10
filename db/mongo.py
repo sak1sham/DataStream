@@ -104,7 +104,7 @@ class MongoMigrate:
             if(isinstance(self.curr_mapping['partition_col_format'], str)):
                 self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
             while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
-                self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
+                self.curr_mapping['partition_col_format'].append('str')
             
             for i in range(len(self.curr_mapping['partition_col'])):
                 col = self.curr_mapping['partition_col'][i]
