@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-'''mapping = {
+mapping = {
     "cmdb_tables_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -246,7 +246,7 @@ with all_products as (
         ]
     },
 }
-'''
+
 '''
 mapping = {
     "order_actions_cmdb_s3": {
@@ -513,7 +513,7 @@ mapping = {
     }
 }
 '''
-
+'''
 mapping = {
     "learning_sqltos3": {
         'source': {
@@ -547,6 +547,7 @@ mapping = {
         ]
     },
 }
+'''
 
 settings = {
     'fastapi_server': True,
