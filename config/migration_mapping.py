@@ -156,7 +156,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '2021 * * * * 22 10 0',
                 'to_partition': True,
                 'mode': 'syncing'
             },
@@ -217,8 +217,10 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '2021 * * * * 22 15 0',
+                'cron': 'self-managed',
                 'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_tickets_rating',
