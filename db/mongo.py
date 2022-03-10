@@ -40,7 +40,7 @@ class MongoMigrate:
     def err(self, error: Any = None) -> None:
         logger.err(error)
 
-    def get_data(self) -> None:
+    def get_connectivity(self) -> None:
         try:
             client = MongoClient(self.db['source']['url'], tlsCAFile=certifi.where())
             database_ = client[self.db['source']['db_name']]
@@ -284,7 +284,7 @@ class MongoMigrate:
 
 
     def process(self) -> None:
-        self.get_data()
+        self.get_connectivity()
         self.inform("Data fetched.")
         self.preprocess()
         self.inform("Collection pre-processed.")
