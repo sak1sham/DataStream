@@ -235,18 +235,19 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 df[col] = df[col].astype(str)
     return df
     
-def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> Tuple[dftype, bool]:
+def df_update_records(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> Tuple[dftype, bool]:
     '''
         While upserting the data, we will be having only one record in df_u, as we are upserting record by record in s3
     '''
-    pkey = df_u.iloc[0][primary_key]
-    modify = pkey in df[primary_key].values
-    if(modify):
-        final_df = df.merge(df_u, on = primary_key, how = 'outer', suffixes=('', '_dms'))
+    intersection = pd.merge(df, df_u, how='inner', on=primary_key)
+    if(intersection.shape[0]):
+        common = df_u[df_u[primary_key].isin(intersection[primary_key])]
+        uncommon = df_u[~df_u[primary_key].isin(intersection[primary_key])]
+        final_df = df.merge(common, on = primary_key, how = 'outer', suffixes=('', '_dms'))
         final_df.drop(list(final_df.filter(regex=r'.*_dms$').columns), axis=1, inplace=True)
-        return final_df, True
+        return final_df, True, uncommon
     else:
-        return df, False
+        return df, False, df_u
 
 def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
     athena_types = {}

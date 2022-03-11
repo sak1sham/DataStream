@@ -93,11 +93,9 @@ class MongoMigrate:
             if('partition_col' not in self.curr_mapping.keys() or not self.curr_mapping['partition_col']):
                 self.warn("Partition_col not specified. Making partition using _id.")
                 self.curr_mapping['partition_col'] = ['_id']
-                self.curr_mapping['partition_col_format'] = ['str']
+                self.curr_mapping['partition_col_format'] = ['datetime']
             if(isinstance(self.curr_mapping['partition_col'], str)):
                 self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
-            if('_id' not in self.curr_mapping['partition_col']):
-                self.curr_mapping['partition_col'].append('_id')
             
             if('partition_col_format' not in self.curr_mapping.keys()):
                 self.curr_mapping['partition_col_format'] = ['str']
@@ -290,9 +288,10 @@ class MongoMigrate:
         self.inform("Collection pre-processed.")
         start = 0
         already_done_with_insertion = False
+        updated_in_destination = True
+        processed_collection = {}
         while(True):
             end = start + self.batch_size
-            processed_collection = {}
             if(self.curr_mapping['mode'] == 'dumping'):
                 ## In dumping, we maintain multiple copies of the database (a copy is generated at every migration)
                 ## We maintain the versions of the entire database/collection
@@ -308,7 +307,11 @@ class MongoMigrate:
                 else:
                     if('improper_bookmarks' not in self.curr_mapping.keys()):
                         self.curr_mapping['improper_bookmarks'] = True
-                    processed_collection = self.updating_data(start=start, end=end, improper_bookmarks=self.curr_mapping['improper_bookmarks'])
+                    processed_collection_u = self.updating_data(start=start, end=end, improper_bookmarks=self.curr_mapping['improper_bookmarks'])
+                    if(not updated_in_destination):
+                        processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
+                    else:
+                        processed_collection = processed_collection_u
             else:
                 raise IncorrectMapping("migration mode can either be \'dumping\', \'logging\' or \'syncing\'")
 
@@ -320,9 +323,20 @@ class MongoMigrate:
                 else:
                     self.inform("Processing complete.")
                     break
-            self.save_data(processed_collection=processed_collection)
+            if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'logging' or (self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion)):
+                self.save_data(processed_collection=processed_collection)
+            elif(processed_collection['df_update'].shape[0] >= self.batch_size):
+                self.save_data(processed_collection=processed_collection)
+                updated_in_destination = True
+            else:
+                updated_in_destination = False
+                ## Still not saved the updates, will update together a large number of records...will save time
             time.sleep(self.time_delay)
             start += self.batch_size
+
+        if(self.curr_mapping['mode'] == 'syncing' and already_done_with_insertion and not updated_in_destination and processed_collection['df_update'].shape[0] > 0):
+            self.save_data(processed_collection=processed_collection)
+        
         self.inform("Migration Complete.")
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
