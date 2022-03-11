@@ -243,8 +243,8 @@ def df_update_records(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame
     if(intersection.shape[0]):
         common = df_u[df_u[primary_key].isin(intersection[primary_key])]
         uncommon = df_u[~df_u[primary_key].isin(intersection[primary_key])]
-        final_df = df.merge(common, on = primary_key, how = 'outer', suffixes=('', '_dms'))
-        final_df.drop(list(final_df.filter(regex=r'.*_dms$').columns), axis=1, inplace=True)
+        final_df = pd.concat([df, common]).drop_duplicates(subset=[primary_key], keep='last')
+        final_df.reset_index(drop=True, inplace=True)
         return final_df, True, uncommon
     else:
         return df, False, df_u

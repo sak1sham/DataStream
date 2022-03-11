@@ -140,7 +140,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server',
+            's3_bucket_name': 'data-migration-service-dev',
         },
         'collections': [
             {
@@ -148,17 +148,20 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '2021 * * * * 22 10 0',
-                'to_partition': True
+                'cron': '* * * * * 14 55 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_form_items',
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '2021 * * * * 22 10 0',
+                'cron': '* * * * * 14 55 0',
                 'to_partition': True,
-                'mode': 'syncing'
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_items',
@@ -167,16 +170,20 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '2021 * * * * 22 10 0',
-                'to_partition': True
+                'cron': '* * * * * 14 55 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_list',
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '2021 * * * * 22 10 0',
-                'to_partition': True
+                'cron': '* * * * * 14 55 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_ticket_conversations',
@@ -190,8 +197,10 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '2021 * * * * 22 15 0',
+                'cron': '* * * * * 14 55 0',
                 'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_tickets',
@@ -217,10 +226,8 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 14 55 0',
                 'to_partition': True,
-                'partition_col': 'created_at',
-                'partition_col_format': 'datetime',
                 'mode': 'syncing',
                 'improper_bookmarks': True
             },
@@ -234,7 +241,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '2021 * * * * 22 20 0',
+                'cron': '* * * * * 14 55 0',
                 'to_partition': True,
             },
             {
@@ -242,8 +249,10 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '2021 * * * * 22 10 0',
-                'to_partition': True
+                'cron': '* * * * * 14 55 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
         ]
     },

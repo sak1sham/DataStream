@@ -40,11 +40,12 @@ class MongoMigrate:
     def err(self, error: Any = None) -> None:
         logger.err(error)
 
-    def get_connectivity(self) -> None:
+    def get_connectivity(self) -> int:
         try:
             client = MongoClient(self.db['source']['url'], tlsCAFile=certifi.where())
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
+            return self.db_collection.count_documents({})
         except Exception as e:
             self.err(e)
             self.db_collection = None
@@ -56,30 +57,6 @@ class MongoMigrate:
             return list(self.db_collection.find(query)[start:end])
         else:
             return list(self.db_collection.find()[start:end])
-
-    def add_partitions(self, document: Dict[str, Any], insertion_time) -> Dict[str, Any]:
-        for i in range(len(self.curr_mapping['partition_col'])):
-            col = self.curr_mapping['partition_col'][i]
-            col_form = self.curr_mapping['partition_col_format'][i]
-            parq_col = "parquet_format_" + col
-            if(col == '_id' and col_form == 'datetime'):
-                document[parq_col + "_year"] = insertion_time.year
-                document[parq_col + "_month"] = insertion_time.month
-                document[parq_col + "_day"] = insertion_time.day
-            elif(col_form == 'str'):
-                document[parq_col] = str(document[col])
-            elif(col_form == 'int'):
-                document[parq_col] = int(document[col])
-            elif(col_form == 'float'):
-                document[parq_col] = float(document[col])
-            elif(col_form == 'datetime'):
-                document[col] = convert_to_datetime(document[col], self.tz_info)
-                document[parq_col + "_year"] = document[col].year
-                document[parq_col + "_month"] = document[col].month
-                document[parq_col + "_day"] = document[col].day
-            else:
-                raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
-        return document
 
 
     def preprocess(self) -> None:
@@ -135,8 +112,37 @@ class MongoMigrate:
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
                 else:
-                    raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")            
+                    raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+        
+        if(self.curr_mapping['mode'] == 'dumping'):
+            self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
+
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
+
+
+    def add_partitions(self, document: Dict[str, Any], insertion_time) -> Dict[str, Any]:
+        for i in range(len(self.curr_mapping['partition_col'])):
+            col = self.curr_mapping['partition_col'][i]
+            col_form = self.curr_mapping['partition_col_format'][i]
+            parq_col = "parquet_format_" + col
+            if(col == '_id'):
+                document[parq_col + "_year"] = insertion_time.year
+                document[parq_col + "_month"] = insertion_time.month
+                document[parq_col + "_day"] = insertion_time.day
+            elif(col_form == 'str'):
+                document[parq_col] = str(document[col])
+            elif(col_form == 'int'):
+                document[parq_col] = int(document[col])
+            elif(col_form == 'float'):
+                document[parq_col] = float(document[col])
+            elif(col_form == 'datetime'):
+                document[col] = convert_to_datetime(document[col], self.tz_info)
+                document[parq_col + "_year"] = document[col].year
+                document[parq_col + "_month"] = document[col].month
+                document[parq_col + "_day"] = document[col].day
+            else:
+                raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+        return document
 
 
     def dumping_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
@@ -282,7 +288,7 @@ class MongoMigrate:
 
 
     def process(self) -> None:
-        self.get_connectivity()
+        max_end = self.get_connectivity()
         self.inform("Data fetched.")
         self.preprocess()
         self.inform("Collection pre-processed.")
@@ -290,55 +296,60 @@ class MongoMigrate:
         already_done_with_insertion = False
         updated_in_destination = True
         processed_collection = {}
+        processed_collection_u = {}
+        end = 0
+
         while(True):
             end = start + self.batch_size
             if(self.curr_mapping['mode'] == 'dumping'):
-                ## In dumping, we maintain multiple copies of the database (a copy is generated at every migration)
-                ## We maintain the versions of the entire database/collection
                 processed_collection = self.dumping_data(start=start, end=end)
             elif(self.curr_mapping['mode'] == 'logging'):
-                ## When the source collection contains records which are only inserted, and we don't need to check for updations, chose this mode
                 processed_collection = self.adding_new_data(start=start, end=end, mode='logging')
             elif(self.curr_mapping['mode'] == 'syncing'):
-                ## When we need to sync the changes from source, and updations need to be mapped to destination accordingly
-                ## In case something is deleted at source, it's not deleted at destination
-                ## First all insertions are done
-                ## Then all updations are done
                 if(not already_done_with_insertion):
                     processed_collection = self.adding_new_data(start=start, end=end, mode='syncing')
                 else:
                     if('improper_bookmarks' not in self.curr_mapping.keys()):
                         self.curr_mapping['improper_bookmarks'] = True
+                    processed_collection_u = {}
                     processed_collection_u = self.updating_data(start=start, end=end, improper_bookmarks=self.curr_mapping['improper_bookmarks'])
-                    if(not updated_in_destination):
-                        processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
-                    else:
-                        processed_collection = processed_collection_u
+                    if(processed_collection_u):
+                        if(not updated_in_destination):
+                            processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
+                        else:
+                            self.inform("Found " + str(processed_collection_u['df_update'].shape[0]) + " updations upto now.")
+                        self.inform("Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
             else:
                 raise IncorrectMapping("migration mode can either be \'dumping\', \'logging\' or \'syncing\'")
-
             if(not processed_collection):
                 if(self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion):
                     already_done_with_insertion = True
                     self.inform("Inserted all records from collection, looking forward to updations.")
                     start = 0
+                    end = 0
+                    processed_collection = {}
+                    continue
                 else:
                     self.inform("Processing complete.")
                     break
             if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'logging' or (self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion)):
                 self.save_data(processed_collection=processed_collection)
+                processed_collection = {}
             elif(processed_collection['df_update'].shape[0] >= self.batch_size):
                 self.save_data(processed_collection=processed_collection)
                 updated_in_destination = True
+                processed_collection = {}
+            elif((not self.curr_mapping['improper_bookmarks'] and not processed_collection_u) or (self.curr_mapping['improper_bookmarks'] and end >= max_end)):
+                self.save_data(processed_collection=processed_collection)
+                updated_in_destination = True
+                break
             else:
                 updated_in_destination = False
                 ## Still not saved the updates, will update together a large number of records...will save time
+
             time.sleep(self.time_delay)
             start += self.batch_size
 
-        if(self.curr_mapping['mode'] == 'syncing' and already_done_with_insertion and not updated_in_destination and processed_collection['df_update'].shape[0] > 0):
-            self.save_data(processed_collection=processed_collection)
-        
         self.inform("Migration Complete.")
         if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)

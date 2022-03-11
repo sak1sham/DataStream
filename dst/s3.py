@@ -16,7 +16,7 @@ class s3Saver:
         self.unique_id = unique_id
         self.name_ = ""
         self.table_list = []
-        self.database = db_source["source_type"] + "_" + db_source["db_name"]
+        self.database = db_source["source_type"] + "_dev_" + db_source["db_name"]
         self.database = self.database.replace(".", "_")
         self.database = self.database.replace("-", "_")
         self.description = "Data migrated from " + self.database
@@ -59,30 +59,31 @@ class s3Saver:
 
         n_updations = processed_data['df_update'].shape[0]
         self.inform("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
-        print(processed_data['df_update'].groupby(self.partition_cols).size())
-        dfs_u = [x for _, x in processed_data['df_update'].groupby(self.partition_cols)]
-        ## Now all the records which are of same partition are grouped together, and will be updated in the same run
-        for df_u in dfs_u:
-            file_name_u = self.s3_location + processed_data['name'] + "/"
-            for x in self.partition_cols:
-                file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[0][x]) + "/"
-            ## Now, all records within df_u are found within this same location
-            prev_files = wr.s3.list_objects(file_name_u)
-            self.inform("Found all files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations))
-            for file_ in prev_files:
-                df_to_be_updated = wr.s3.read_parquet(
-                    path = [file_],
-                )
-                df_to_be_updated, modified, df_u = df_update_records(df=df_to_be_updated, df_u=df_u, primary_key=primary_keys[0])
-                if(modified):
-                    wr.s3.to_parquet(
-                        df = df_to_be_updated,
-                        path = file_,
-                        compression = 'snappy',
+        if(n_updations > 0):
+            print(processed_data['df_update'].groupby(self.partition_cols).size())
+            dfs_u = [x for _, x in processed_data['df_update'].groupby(self.partition_cols)]
+            ## Now all the records which are of same partition are grouped together, and will be updated in the same run
+            for df_u in dfs_u:
+                file_name_u = self.s3_location + processed_data['name'] + "/"
+                for x in self.partition_cols:
+                    file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[0][x]) + "/"
+                ## Now, all records within df_u are found within this same location
+                prev_files = wr.s3.list_objects(file_name_u)
+                self.inform("Found all files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations))
+                for file_ in prev_files:
+                    df_to_be_updated = wr.s3.read_parquet(
+                        path = [file_],
                     )
-                if(df_u.shape[0] == 0):
-                    ## This one is complete now. Go and handle the next set of records to be updated
-                    break
+                    df_to_be_updated, modified, df_u = df_update_records(df=df_to_be_updated, df_u=df_u, primary_key=primary_keys[0])
+                    if(modified):
+                        wr.s3.to_parquet(
+                            df = df_to_be_updated,
+                            path = file_,
+                            compression = 'snappy',
+                        )
+                    if(df_u.shape[0] == 0):
+                        ## This one is complete now. Go and handle the next set of records to be updated
+                        break
         self.inform(str(n_updations) + " updations done.")
 
 
