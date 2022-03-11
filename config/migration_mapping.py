@@ -491,7 +491,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'impression_service',
-                'cron': '* * * * * 15 40 0',
+                'cron': '* * * * * 15 54 0',
                 'to_partition': True,
                 'partition_col': 'insertion_date',
                 'partition_col_format': 'datetime',

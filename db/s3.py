@@ -156,6 +156,7 @@ class S3Migrate:
     def migrate_data(self) -> None:
         self.inform("Migrating table " + self.curr_mapping['table_name'] + ".")
         dfs = [pd.DataFrame({})]
+        n = 0
         try:
             if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
                 dfs = wr.s3.read_parquet(path=self.db['source']['url'], path_suffix='.parquet', ignore_empty=True, chunked=self.batch_size, dataset=True, last_modified_end=self.last_modified_end)
@@ -167,10 +168,14 @@ class S3Migrate:
             self.err(e)
             raise ConnectionError("Unable to connect to source.")
         else:
+            N = sum(1 for _ in dfs)
+            self.inform("Found " + str(N) + "chunks.")
             try:
                 for df in dfs:
+                    self.inform("Migrating chunk " + str(n+1) + "/" + str(N))
                     processed_data = self.process_table(df = df, table_name = self.curr_mapping['table_name'], col_dtypes = self.curr_mapping['fields'])
                     self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                    n += 1
             except Exception as e:
                 self.err(e)
                 raise ProcessingError("Caught some exception while processing records.")
