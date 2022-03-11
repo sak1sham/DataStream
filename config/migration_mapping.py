@@ -148,7 +148,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 58 0',
+                'cron': '* * * * * 15 00 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -158,7 +158,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 58 0',
+                'cron': '* * * * * 15 00 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -170,7 +170,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 58 0',
+                'cron': '* * * * * 15 00 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -180,7 +180,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 58 0',
+                'cron': '* * * * * 15 00 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -197,7 +197,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 14 58 0',
+                'cron': '* * * * * 15 00 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -226,7 +226,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 14 58 0',
+                'cron': '* * * * * 15 00 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -241,15 +241,17 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 14 58 0',
+                'cron': '* * * * * 15 00 0',
                 'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'webhook_error_logs',
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 58 0',
+                'cron': '* * * * * 15 00 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
