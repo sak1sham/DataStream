@@ -155,24 +155,26 @@ class S3Migrate:
 
     def migrate_data(self) -> None:
         self.inform("Migrating table " + self.curr_mapping['table_name'] + ".")
-        dfs = [pd.DataFrame({})]
+        list_files = []
         n = 0
+        N = 0
         try:
             if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
-                dfs = wr.s3.read_parquet(path=self.db['source']['url'], path_suffix='.parquet', ignore_empty=True, chunked=self.batch_size, dataset=True, last_modified_end=self.last_modified_end)
+                list_files = wr.s3.list_objects(path=self.db['source']['url'], suffix='.parquet', ignore_empty=True, last_modified_end=self.last_modified_end)
             else:
-                dfs = wr.s3.read_parquet(path=self.db['source']['url'], path_suffix='.parquet', ignore_empty=True, chunked=self.batch_size, dataset=True, last_modified_begin=self.last_modified_begin, last_modified_end=self.last_modified_end)
+                list_files = wr.s3.list_objects(path=self.db['source']['url'], suffix='.parquet', ignore_empty=True, last_modified_begin=self.last_modified_begin, last_modified_end=self.last_modified_end)
         except wr.exceptions.NoFilesFound:
             self.inform("No new/relevant files found at source which DMS can migrate.")
         except Exception as e:
             self.err(e)
             raise ConnectionError("Unable to connect to source.")
         else:
-            N = sum(1 for _ in dfs)
-            self.inform("Found " + str(N) + "chunks.")
+            N = len(list_files)
+            self.inform("Found " + str(N) + "files.")
             try:
-                for df in dfs:
-                    self.inform("Migrating chunk " + str(n+1) + "/" + str(N))
+                for file in list_files:
+                    self.inform("Migrating file " + str(n+1) + "/" + str(N))
+                    df = wr.s3.read_parquet(path=[file])
                     processed_data = self.process_table(df = df, table_name = self.curr_mapping['table_name'], col_dtypes = self.curr_mapping['fields'])
                     self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                     n += 1
