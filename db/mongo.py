@@ -302,6 +302,8 @@ class MongoMigrate:
             elif(self.curr_mapping['mode'] == 'syncing'):
                 ## When we need to sync the changes from source, and updations need to be mapped to destination accordingly
                 ## In case something is deleted at source, it's not deleted at destination
+                ## First all insertions are done
+                ## Then all updations are done
                 if(not already_done_with_insertion):
                     processed_collection = self.adding_new_data(start=start, end=end, mode='syncing')
                 else:
