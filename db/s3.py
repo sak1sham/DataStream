@@ -142,6 +142,7 @@ class S3Migrate:
         dtypes = get_athena_dtypes(col_dtypes)
         return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update, 'dtypes': dtypes}
 
+
     def save_data(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = None) -> None:
         if(not processed_data):
             return
@@ -150,7 +151,8 @@ class S3Migrate:
             if('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump']):
                 primary_keys = ['unique_migration_record_id']
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
-    
+
+
     def migrate_data(self) -> None:
         self.inform("Migrating table " + self.curr_mapping['table_name'] + ".")
         dfs = [pd.DataFrame({})]
@@ -172,7 +174,8 @@ class S3Migrate:
             except Exception as e:
                 self.err(e)
                 raise ProcessingError("Caught some exception while processing records.")
-        
+
+
     def process(self) -> None:
         self.preprocess()
         self.inform("Mapping pre-processed.")

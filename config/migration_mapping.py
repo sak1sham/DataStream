@@ -90,7 +90,7 @@ with all_products as (
   from all_products ap left join inventory i on i.warehouse_name = ap.warehouse_name and i.sku_id = ap.sku_id
 
 '''
-
+'''
 mapping = {
     "cmdb_tables_to_s3": {
         'source': {
@@ -258,7 +258,7 @@ mapping = {
             },
         ]
     },
-}
+}'''
 
 '''
 mapping = {
@@ -477,7 +477,7 @@ mapping = {
     },
 }'''
 
-'''mapping = {
+mapping = {
     "impression_service": {
         'source': {
             'source_type': 's3',
@@ -491,7 +491,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'impression_service',
-                'cron': '* * * * * */1 0 0',
+                'cron': '* * * * * 15 40 0',
                 'to_partition': True,
                 'partition_col': 'insertion_date',
                 'partition_col_format': 'datetime',
@@ -507,6 +507,7 @@ mapping = {
                     'asset_parent_type': 'str',
                     'price': 'int',
                     'mrp': 'int',
+                    'action': 'str',
                     'app_type': 'str',
                     'date': 'datetime',
                     'entity_type': 'str',
@@ -525,7 +526,7 @@ mapping = {
         ]
     }
 }
-'''
+
 '''
 mapping = {
     "learning_sqltos3": {
