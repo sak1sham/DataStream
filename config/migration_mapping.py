@@ -140,7 +140,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'data-migration-service-dev',
+            's3_bucket_name': 'database-migration-service-prod',
         },
         'collections': [
             {
@@ -148,7 +148,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 02 0',
+                'cron': '* * * * * 15 05 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -158,7 +158,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 02 0',
+                'cron': '* * * * * 15 05 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -170,7 +170,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 02 0',
+                'cron': '* * * * * 15 05 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -180,7 +180,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 02 0',
+                'cron': '* * * * * 15 05 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -197,7 +197,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 15 02 0',
+                'cron': '* * * * * 15 05 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -226,7 +226,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 15 02 0',
+                'cron': '* * * * * 15 05 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -241,7 +241,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 15 02 0',
+                'cron': '* * * * * 15 05 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -251,7 +251,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 02 0',
+                'cron': '* * * * * 15 05 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
