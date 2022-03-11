@@ -184,7 +184,12 @@ class PGSQLMigrate:
 
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
         if('fetch_data_query' in self.curr_mapping.keys() and isinstance(self.curr_mapping['fetch_data_query'], str) and len(self.curr_mapping['fetch_data_query']) > 0):
-            return {}
+            ret_dtype = {}
+            if('fields' in self.curr_mapping.keys()):
+                ret_dtype = self.curr_mapping['fields']
+            if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
+                ret_dtype['migration_snapshot_date'] = 'datetime'
+            return ret_dtype
         tn = curr_table_name.split('.')
         schema_name = 'public'
         table_name = ''
@@ -201,6 +206,8 @@ class PGSQLMigrate:
             rows = curs.fetchall()
             for key, val in rows:
                 col_dtypes[key] = val
+        if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
+            col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
 
     def migrate_data(self, table_name: str = None) -> None:

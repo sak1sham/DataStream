@@ -90,7 +90,7 @@ with all_products as (
   from all_products ap left join inventory i on i.warehouse_name = ap.warehouse_name and i.sku_id = ap.sku_id
 
 '''
-'''
+
 mapping = {
     "cmdb_tables_to_s3": {
         'source': {
@@ -112,11 +112,21 @@ mapping = {
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
                 'is_dump': True,
-                'fetch_data_query': query_1
+                'fetch_data_query': query_1,
+                'fields': {
+                    'bulk_quantity': 'int',
+                    'sellable_quantity': 'int',
+                    'mrp_change_quantity': 'int',
+                    'variant_change_quantity': 'int',
+                    'offer_change_quantity': 'int',
+                    'blocked_quantity': 'int',
+                    'cost_price': 'float',
+                    'inventory_value': 'float',
+                }
             },
             {
                 'table_name': 'localities_live',
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * 12 10 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -124,7 +134,7 @@ mapping = {
             },
             {
                 'table_name': 'cmocx_cl_in_vicinity',
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * 12 10 0',
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
@@ -148,7 +158,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 05 0',
+                'cron': '* * * * * 1 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -158,7 +168,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 05 0',
+                'cron': '* * * * * 1 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -170,7 +180,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 05 0',
+                'cron': '* * * * * 1 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -180,7 +190,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 05 0',
+                'cron': '* * * * * 1 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -197,7 +207,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 15 05 0',
+                'cron': '* * * * * 1 15 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -226,7 +236,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 15 05 0',
+                'cron': '* * * * * 1 15 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -241,7 +251,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 15 05 0',
+                'cron': '* * * * * 1 15 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -251,14 +261,14 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 15 05 0',
+                'cron': '* * * * * 1 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
             },
         ]
     },
-}'''
+}
 
 '''
 mapping = {
@@ -477,7 +487,7 @@ mapping = {
     },
 }'''
 
-mapping = {
+'''mapping = {
     "impression_service": {
         'source': {
             'source_type': 's3',
@@ -525,7 +535,7 @@ mapping = {
             }
         ]
     }
-}
+}'''
 
 '''
 mapping = {
