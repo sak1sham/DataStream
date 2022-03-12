@@ -51,18 +51,14 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
     if(x is None or x == pd.Timestamp(None) or x is pd.NaT):
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
-        x = convert_to_utc(dt = x)
-        x = pd.to_datetime(x, utc=True)
-        return x
+        return convert_to_utc(dt = x)
     elif(isinstance(x, int) or isinstance(x, float)):
-        x = datetime.datetime.fromtimestamp(x, pytz.utc)
-        return pd.to_datetime(x, utc=True)
+        return datetime.datetime.fromtimestamp(x, pytz.utc)
     else:
         try:
-            x = pd.to_datetime(x, utc = True)
-            return x
+            return pd.to_datetime(x, utc = True)
         except Exception as e:
-            logger.warn("Unable to convert " + x + " to any datetime format. Returning None")
+            logger.warn("Unable to convert " + str(x) + " of type " + str(type(x)) + " to any datetime format. Returning None")
             return pd.Timestamp(None)
 
 def convert_json_to_string(x: Dict[str, Any]) -> str:
