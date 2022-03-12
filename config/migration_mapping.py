@@ -237,7 +237,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 18 45 0',
+                'cron': '* * * * * 19 22 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
