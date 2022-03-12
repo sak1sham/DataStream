@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-'''
+
 mapping = {
     "cmdb_tables_to_s3": {
         'source': {
@@ -159,7 +159,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 9 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -169,7 +169,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 9 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -181,7 +181,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 9 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -191,7 +191,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 9 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -208,7 +208,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 1 15 0',
+                'cron': '* * * * * 9 15 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -237,7 +237,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 1 15 0',
+                'cron': '* * * * * 9 15 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -252,7 +252,7 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 1 15 0',
+                'cron': '* * * * * 9 15 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -262,7 +262,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 9 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -270,7 +270,6 @@ mapping = {
         ]
     },
 }
-'''
 
 '''
 mapping = {
@@ -540,7 +539,7 @@ mapping = {
 }'''
 
 
-mapping = {
+'''mapping = {
     "dispatch_or_received_shipments_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -566,7 +565,7 @@ mapping = {
             },
         ]
     },
-}
+}'''
 
 
 settings = {
