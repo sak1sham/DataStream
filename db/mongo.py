@@ -317,7 +317,7 @@ class MongoMigrate:
                         if(not updated_in_destination):
                             processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
                         else:
-                            self.inform("Found " + str(processed_collection_u['df_update'].shape[0]) + " updations upto now.")
+                            processed_collection['df_update'] = processed_collection_u['df_update']
                         self.inform("Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
             else:
                 raise IncorrectMapping("migration mode can either be \'dumping\', \'logging\' or \'syncing\'")
