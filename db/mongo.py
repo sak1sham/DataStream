@@ -281,6 +281,12 @@ class MongoMigrate:
         if(not processed_collection):
             return
         else:
+            if('name' not in processed_collection.keys()):
+                processed_collection['name'] = self.curr_mapping['collection_name']
+            if('df_insert' not in processed_collection.keys()):
+                processed_collection['df_insert'] = pd.DataFrame({})
+            if('df_update' not in processed_collection.keys()):
+                processed_collection['df_update'] = pd.DataFrame({})
             primary_keys = []
             if('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump']):
                 primary_keys = ['_id']
@@ -332,20 +338,21 @@ class MongoMigrate:
                 else:
                     self.inform("Processing complete.")
                     break
-            if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'logging' or (self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion)):
-                self.save_data(processed_collection=processed_collection)
-                processed_collection = {}
-            elif(processed_collection['df_update'].shape[0] >= self.batch_size):
-                self.save_data(processed_collection=processed_collection)
-                updated_in_destination = True
-                processed_collection = {}
-            elif((not self.curr_mapping['improper_bookmarks'] and not processed_collection_u) or (self.curr_mapping['improper_bookmarks'] and end >= max_end)):
-                self.save_data(processed_collection=processed_collection)
-                updated_in_destination = True
-                break
             else:
-                updated_in_destination = False
-                ## Still not saved the updates, will update together a large number of records...will save time
+                if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'logging' or (self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion)):
+                    self.save_data(processed_collection=processed_collection)
+                    processed_collection = {}
+                elif(processed_collection['df_update'].shape[0] >= self.batch_size):
+                    self.save_data(processed_collection=processed_collection)
+                    updated_in_destination = True
+                    processed_collection = {}
+                elif((not self.curr_mapping['improper_bookmarks'] and not processed_collection_u) or (self.curr_mapping['improper_bookmarks'] and end >= max_end)):
+                    self.save_data(processed_collection=processed_collection)
+                    updated_in_destination = True
+                    break
+                else:
+                    updated_in_destination = False
+                    ## Still not saved the updates, will update together a large number of records...will save time
 
             time.sleep(self.time_delay)
             start += self.batch_size

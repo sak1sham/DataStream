@@ -169,7 +169,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 18 40 0',
+                'cron': '* * * * * 19 20 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -181,7 +181,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 18 40 0',
+                'cron': '* * * * * 18 50 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -191,7 +191,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 18 40 0',
+                'cron': '* * * * * 18 50 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -208,7 +208,7 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 18 45 0',
+                'cron': '* * * * * 18 50 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
