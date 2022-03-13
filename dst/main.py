@@ -1,5 +1,6 @@
 from dst.redshift import RedshiftSaver
 from dst.s3 import s3Saver
+from dst.console import ConsoleSaver
 from helper.exceptions import *
 from typing import List, Dict, Any
 
@@ -9,6 +10,8 @@ class DMS_exporter:
         self.source_type = db['source']['source_type']
         if(self.type == 's3'):
             self.saver = s3Saver(db_source = db['source'], db_destination = db['destination'], c_partition = partition, unique_id = uid)
+        elif(self.type == "console"):
+                self.saver = ConsoleSaver()
         elif(self.type == 'redshift'):
             if(self.source_type == 'api'):
                 self.saver = RedshiftSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid, is_small_data = True)

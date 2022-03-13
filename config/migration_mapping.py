@@ -92,6 +92,26 @@ with all_products as (
 '''
 
 mapping = {
+    "debug": {
+         'source': {
+            'source_type': 'mongo',
+            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+            'db_name': 'support-service'
+        },
+        'destination': {
+            'destination_type': 'console'
+        },
+        'collections': [
+            {
+                'collection_name': 'leader_kyc',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': 'self-managed',
+                'to_partition': True
+            },
+        ]
+    },
     "cmdb_tables_to_s3": {
         'source': {
             'source_type': 'sql',
