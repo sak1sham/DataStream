@@ -91,6 +91,314 @@ with all_products as (
 
 '''
 
+# mapping = {
+#     "debug": {
+#          'source': {
+#             'source_type': 'mongo',
+#             'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+#             'db_name': 'support-service'
+#         },
+#         'destination': {
+#             'destination_type': 'console'
+#         },
+#         'collections': [
+#             {
+#                 'collection_name': 'leader_kyc',
+#                 'fields': {},
+#                 'bookmark': False,
+#                 'archive': False,
+#                 'cron': 'self-managed',
+#                 'to_partition': True
+#             },
+#         ]
+#     },
+#     "cmdb_tables_to_s3": {
+#         'source': {
+#             'source_type': 'sql',
+#             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+#             'db_name': 'cmdb',
+#             'username': 'saksham_garg',
+#             'password': '3y5HMs^2qy%&Kma'
+#         },
+#         'destination': {
+#             'destination_type': 's3',
+#             's3_bucket_name': 'database-migration-service-prod'
+#         },
+#         'tables': [
+#             {
+#                 'table_name': 'inventory_snapshot_wms_query',
+#                 'cron': '* * * * * */1 0 0',
+#                 'to_partition': True,
+#                 'partition_col': 'migration_snapshot_date',
+#                 'partition_col_format': 'datetime',
+#                 'is_dump': True,
+#                 'fetch_data_query': query_1
+#             },
+#             {
+#                 'table_name': 'localities_live',
+#                 'cron': '* * * * * 22 10 0',
+#                 'to_partition': True,
+#                 'partition_col': 'migration_snapshot_date',
+#                 'partition_col_format': 'datetime',
+#                 'is_dump': True,
+#             },
+#             {
+#                 'table_name': 'cmocx_cl_in_vicinity',
+#                 'cron': '* * * * * 22 10 0',
+#                 'to_partition': True,
+#                 'partition_col': 'migration_snapshot_date',
+#                 'partition_col_format': 'datetime',
+#                 'is_dump': True,
+#             }
+#         ]
+#     },
+#     "mongo_support_service_to_s3": {
+#         'source': {
+#             'source_type': 'mongo',
+#             'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+#             'db_name': 'support-service'
+#         },
+#         'destination': {
+#             'destination_type': 's3',
+#             's3_bucket_name': 'database-migration-service-prod',
+#         },
+#         'collections': [
+#             {
+#                 'collection_name': 'leader_kyc',
+#                 'fields': {},
+#                 'bookmark': False,
+#                 'archive': False,
+#                 'cron': '* * * * * 22 10 0',
+#                 'to_partition': True
+#             },
+#             {
+#                 'collection_name': 'support_form_items',
+#                 'fields': {},
+#                 'bookmark': False,
+#                 'archive': False,
+#                 'cron': '* * * * * 22 10 0',
+#                 'to_partition': True,
+#             },
+#             {
+#                 'collection_name': 'support_items',
+#                 'fields': {
+#                     'priority': 'int',
+#                 },
+#                 'bookmark': False,
+#                 'archive': False,
+#                 'cron': '* * * * * 22 10 0',
+#                 'to_partition': True
+#             },
+#             {
+#                 'collection_name': 'support_list',
+#                 'fields': {},
+#                 'bookmark': False,
+#                 'archive': False,
+#                 'cron': '* * * * * 22 10 0',
+#                 'to_partition': True
+#             },
+#             {
+#                 'collection_name': 'support_ticket_conversations',
+#                 'fields': {
+#                     'incoming': 'bool',
+#                     'private': 'bool',
+#                     'freshdesk_user_id': 'int',
+#                     '__v': 'int',
+#                     'created_at': 'datetime',
+#                     'updated_at': 'datetime'
+#                 },
+#                 'bookmark': 'updated_at',
+#                 'archive': False,
+#                 'cron': '* * * * * 22 15 0',
+#                 'to_partition': True,
+#             },
+#             {
+#                 'collection_name': 'support_tickets',
+#                 'fields': {
+#                     'created_at': 'datetime',
+#                     'spam': 'bool',
+#                     'priority': 'int',
+#                     'source': 'int',
+#                     'status': 'int',
+#                     'is_escalated': 'bool',
+#                     'updated_at': 'datetime',
+#                     'nr_escalated': 'bool',
+#                     'fr_escalated': 'bool',
+#                     '__v': 'int',
+#                 },
+#                 'bookmark': 'updated_at',
+#                 'archive': False,
+#                 'cron': '* * * * * 22 15 0',
+#                 'to_partition': True,
+#             },
+#             {
+#                 'collection_name': 'support_tickets_rating',
+#                 'fields': {
+#                     'rating': 'int',
+#                     '__v': 'int',
+#                     'updatedAt': 'datetime',
+#                     'createdAt': 'datetime',
+#                 },
+#                 'bookmark': 'updatedAt',
+#                 'archive': False,
+#                 'cron': '* * * * * 22 15 0',
+#                 'to_partition': True,
+#             },
+#             {
+#                 'collection_name': 'webhook_error_logs',
+#                 'fields': {},
+#                 'bookmark': False,
+#                 'archive': False,
+#                 'cron': '* * * * * 22 10 0',
+#                 'to_partition': True
+#             },
+#         ]
+#     },
+# }
+
+# '''
+# mapping = {
+#     "order_actions_cmdb_s3": {
+#         'source': {
+#             'source_type': 'sql',
+#             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+#             'db_name': 'cmdb',
+#             'username': 'saksham_garg',
+#             'password': '3y5HMs^2qy%&Kma'
+#         },
+#         'destination': {
+#             'destination_type': 's3',
+#             's3_bucket_name': 'database-migration-service-prod'
+#         },
+#         'tables': [
+#             {
+#                 'table_name': 'order_actions',
+#                 'cron': '2022 3 4 * * 10 32 0',
+#                 'to_partition': True,
+#                 'bookmark_creation': 'created_at',
+#                 'bookmark': 'created_at',
+#                 'partition_col': 'created_at',
+#                 'partition_col_format': 'datetime',
+#             }
+#         ]
+#     },
+#     "inventory_transactions_wms_s3": {
+#         'source': {
+#             'source_type': 'sql',
+#             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+#             'db_name': 'wmsdb',
+#             'username': 'saksham_garg',
+#             'password': '3y5HMs^2qy%&Kma'
+#         },
+#         'destination': {
+#             'destination_type': 's3',
+#             's3_bucket_name': 'database-migration-service-prod'
+#         },
+#         'tables': [
+#             {
+#                 'table_name': 'inventory_transactions',
+#                 'cron': '2022 3 4 * * 10 32 0',
+#                 'to_partition': True,
+#                 'bookmark_creation': 'created_at',
+#                 'bookmark': 'created_at',
+#                 'partition_col': 'created_at',
+#                 'partition_col_format': 'datetime',
+#             }
+#         ]
+#     },
+# }
+
+# mapping = {
+#     "habitual_users_cmdb_redshift": {
+#         'source': {
+#             'source_type': 'sql',
+#             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+#             'db_name': 'cmdb',
+#             'username': 'saksham_garg',
+#             'password': '3y5HMs^2qy%&Kma'
+#         },
+#         'destination': {
+#             'destination_type': 'redshift',
+#             'host': 'redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+#             'database': 'dev',
+#             'user': 'admin-redshift',
+#             'password': 'CitymallDevAdmin123',
+#             'schema': 'migration_service',
+#             's3_bucket_name': 'database-migration-service-prod',
+#         },
+#         'tables': [
+#             {
+#                 'table_name': 'analytics.habitual_users',
+#                 'cron': 'self-managed',
+#                 'is_dump': True,
+#             }
+#         ]
+#     },
+# }
+
+# mapping = {
+#     "entire_cmdb_to_s3": {
+#         'source': {
+#             'source_type': 'sql',
+#             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+#             'db_name': 'cmdb',
+#             'username': 'saksham_garg',
+#             'password': '3y5HMs^2qy%&Kma'
+#         },
+#         'destination': {
+#             'destination_type': 's3',
+#             's3_bucket_name': 'migration-service-temp'
+#         },
+#         'tables': [
+#             {
+#                 'table_name': '*',
+#                 'exclude_tables': ['public.inventory_snapshot_record', 'public.inventory_snapshot_wms', 'public.bd_leader_mapping_change_logs', 'public.events_staging_queue', 'public.stream_follows', 'public.user_segment_tags', 'public.notifications', 'public.order_actions', 'public.order_items', 'public.orders', 'public.team_leaders', 'public.products', 'public.product_master', 'public.regions', 'public.removed_from_cart_logs', 'public.refund_payout_links', 'public.refresh_ticket_details'],
+#                 'cron': 'self-managed',
+#                 'to_partition': True,
+#                 'partition_col': 'migration_snapshot_date',
+#                 'partition_col_format': 'datetime',
+#                 'is_dump': True,
+#             }
+#         ]
+#     },
+# }
+
+# mapping = {
+#     "cmdb_inventory_snapshot_wms_support_tickets_ratings": {
+#         'source': {
+#             'source_type': 'sql',
+#             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+#             'db_name': 'cmdb',
+#             'username': 'saksham_garg',
+#             'password': '3y5HMs^2qy%&Kma'
+#         },
+#         'destination': {
+#             'destination_type': 's3',
+#             's3_bucket_name': 'database-migration-service-prod'
+#         },
+#         'tables': [
+#             {
+#                 'table_name': 'inventory_snapshot_wms',
+#                 'cron': '2022 3 3 * * 23 20 0',
+#                 'to_partition': True,
+#                 'partition_col': 'created_at',
+#                 'partition_col_format': 'datetime',
+#                 'bookmark_creation': 'created_at',
+#                 'bookmark': 'created_at'
+#             },
+#             {
+#                 'table_name': 'support_tickets_rating',
+#                 'cron': '2022 3 3 * * 23 20 0',
+#                 'to_partition': True,
+#                 'partition_col': 'created_at',
+#                 'partition_col_format': 'datetime',
+#                 'bookmark_creation': 'created_at',
+#                 'bookmark': 'updated_at',
+#             }
+#         ]
+#     },
+# }'''
+
 mapping = {
     "debug": {
          'source': {
@@ -112,294 +420,6 @@ mapping = {
             },
         ]
     },
-    "cmdb_tables_to_s3": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod'
-        },
-        'tables': [
-            {
-                'table_name': 'inventory_snapshot_wms_query',
-                'cron': '* * * * * */1 0 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-                'fetch_data_query': query_1
-            },
-            {
-                'table_name': 'localities_live',
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-            },
-            {
-                'table_name': 'cmocx_cl_in_vicinity',
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-            }
-        ]
-    },
-    "mongo_support_service_to_s3": {
-        'source': {
-            'source_type': 'mongo',
-            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-            'db_name': 'support-service'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod',
-        },
-        'collections': [
-            {
-                'collection_name': 'leader_kyc',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True
-            },
-            {
-                'collection_name': 'support_form_items',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True,
-            },
-            {
-                'collection_name': 'support_items',
-                'fields': {
-                    'priority': 'int',
-                },
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True
-            },
-            {
-                'collection_name': 'support_list',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True
-            },
-            {
-                'collection_name': 'support_ticket_conversations',
-                'fields': {
-                    'incoming': 'bool',
-                    'private': 'bool',
-                    'freshdesk_user_id': 'int',
-                    '__v': 'int',
-                    'created_at': 'datetime',
-                    'updated_at': 'datetime'
-                },
-                'bookmark': 'updated_at',
-                'archive': False,
-                'cron': '* * * * * 22 15 0',
-                'to_partition': True,
-            },
-            {
-                'collection_name': 'support_tickets',
-                'fields': {
-                    'created_at': 'datetime',
-                    'spam': 'bool',
-                    'priority': 'int',
-                    'source': 'int',
-                    'status': 'int',
-                    'is_escalated': 'bool',
-                    'updated_at': 'datetime',
-                    'nr_escalated': 'bool',
-                    'fr_escalated': 'bool',
-                    '__v': 'int',
-                },
-                'bookmark': 'updated_at',
-                'archive': False,
-                'cron': '* * * * * 22 15 0',
-                'to_partition': True,
-            },
-            {
-                'collection_name': 'support_tickets_rating',
-                'fields': {
-                    'rating': 'int',
-                    '__v': 'int',
-                    'updatedAt': 'datetime',
-                    'createdAt': 'datetime',
-                },
-                'bookmark': 'updatedAt',
-                'archive': False,
-                'cron': '* * * * * 22 15 0',
-                'to_partition': True,
-            },
-            {
-                'collection_name': 'webhook_error_logs',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True
-            },
-        ]
-    },
-}
-
-'''
-mapping = {
-    "order_actions_cmdb_s3": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod'
-        },
-        'tables': [
-            {
-                'table_name': 'order_actions',
-                'cron': '2022 3 4 * * 10 32 0',
-                'to_partition': True,
-                'bookmark_creation': 'created_at',
-                'bookmark': 'created_at',
-                'partition_col': 'created_at',
-                'partition_col_format': 'datetime',
-            }
-        ]
-    },
-    "inventory_transactions_wms_s3": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'wmsdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod'
-        },
-        'tables': [
-            {
-                'table_name': 'inventory_transactions',
-                'cron': '2022 3 4 * * 10 32 0',
-                'to_partition': True,
-                'bookmark_creation': 'created_at',
-                'bookmark': 'created_at',
-                'partition_col': 'created_at',
-                'partition_col_format': 'datetime',
-            }
-        ]
-    },
-}
-
-mapping = {
-    "habitual_users_cmdb_redshift": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
-        },
-        'destination': {
-            'destination_type': 'redshift',
-            'host': 'redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
-            'database': 'dev',
-            'user': 'admin-redshift',
-            'password': 'CitymallDevAdmin123',
-            'schema': 'migration_service',
-            's3_bucket_name': 'database-migration-service-prod',
-        },
-        'tables': [
-            {
-                'table_name': 'analytics.habitual_users',
-                'cron': 'self-managed',
-                'is_dump': True,
-            }
-        ]
-    },
-}
-
-mapping = {
-    "entire_cmdb_to_s3": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
-        },
-        'tables': [
-            {
-                'table_name': '*',
-                'exclude_tables': ['public.inventory_snapshot_record', 'public.inventory_snapshot_wms', 'public.bd_leader_mapping_change_logs', 'public.events_staging_queue', 'public.stream_follows', 'public.user_segment_tags', 'public.notifications', 'public.order_actions', 'public.order_items', 'public.orders', 'public.team_leaders', 'public.products', 'public.product_master', 'public.regions', 'public.removed_from_cart_logs', 'public.refund_payout_links', 'public.refresh_ticket_details'],
-                'cron': 'self-managed',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-            }
-        ]
-    },
-}
-
-mapping = {
-    "cmdb_inventory_snapshot_wms_support_tickets_ratings": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod'
-        },
-        'tables': [
-            {
-                'table_name': 'inventory_snapshot_wms',
-                'cron': '2022 3 3 * * 23 20 0',
-                'to_partition': True,
-                'partition_col': 'created_at',
-                'partition_col_format': 'datetime',
-                'bookmark_creation': 'created_at',
-                'bookmark': 'created_at'
-            },
-            {
-                'table_name': 'support_tickets_rating',
-                'cron': '2022 3 3 * * 23 20 0',
-                'to_partition': True,
-                'partition_col': 'created_at',
-                'partition_col_format': 'datetime',
-                'bookmark_creation': 'created_at',
-                'bookmark': 'updated_at',
-            }
-        ]
-    },
-}'''
-
-mapping = {
     "Rohan_audit_logs": {
         'source': {
             'source_type': 'mongo',
