@@ -95,26 +95,6 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
 }
 ```
 
-If source is API, we need to provide a field ```apis```, which is a list of api_specifications. 
-Api_specifications shall be in following format:
-```
-{
-    'api_name': '',
-    'fields': {
-        'field_1': 'int' (Refer Notes 3),
-        'field_2': 'complex', 
-        ...
-    } (Optional),
-    'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
-    'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
-    'to_partition': True or False (Default),
-    'partition_col': False or '' name of the field (str or list of str),
-    'partition_col_format': '' (Optional, Refer Notes 4),
-    'is_dump': False,
-    'expiry': {'days': 30, 'hours': 5} (dict[str, int], Optional, used only when is_dump = True)
-}
-```
-
 ## fastapi_server
 (Bool): default = False. If user sets 'fastapi_server' to True, a uvicorn server is started.
 

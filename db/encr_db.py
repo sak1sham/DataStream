@@ -1,4 +1,4 @@
-from config.migration_mapping import encryption_store
+from config.migration_mapping import settings
 from pymongo import MongoClient
 import certifi
 
@@ -7,6 +7,8 @@ logging.getLogger().setLevel(logging.INFO)
 
 import pytz
 import datetime
+
+encryption_store = settings['encryption_store']
 
 class ConnectionError(Exception):
     pass

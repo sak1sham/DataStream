@@ -56,7 +56,6 @@ class MongoMigrate:
         self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
         self.curr_run_cron_job = convert_to_datetime(datetime.datetime.utcnow(), self.tz_info)
         self.partition_for_parquet = []
-
         if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
             if('partition_col' not in self.curr_mapping.keys() or not self.curr_mapping['partition_col']):
                 self.warn("Partition_col not specified. Making partition using _id.")
@@ -64,15 +63,12 @@ class MongoMigrate:
                 self.curr_mapping['partition_col_format'] = ['datetime']
             if(isinstance(self.curr_mapping['partition_col'], str)):
                 self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
-            
             if('partition_col_format' not in self.curr_mapping.keys()):
                 self.curr_mapping['partition_col_format'] = ['str']
             if(isinstance(self.curr_mapping['partition_col_format'], str)):
                 self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
-            
             while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
                 self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
-        
             for i in range(len(self.curr_mapping['partition_col'])):
                 col = self.curr_mapping['partition_col'][i]
                 col_form = self.curr_mapping['partition_col_format'][i]
@@ -105,19 +101,21 @@ class MongoMigrate:
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
                 else:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")            
-
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
         
     def process_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
         docu_insert = []
         docu_update = []
-
         collection_encr = get_data_from_encr_db()
         all_documents = list(self.db_collection.find()[start:end])
         if(not all_documents or len(all_documents) == 0):
             return None
         for document in all_documents:
             insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            if(insertion_time > self.curr_run_cron_job):
+                # If new documents are inserted after start of the migration, we don't migrate those documents
+                # This will prevent duplication of documents in next run
+                continue
             if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
                 document['migration_snapshot_date'] = self.curr_run_cron_job
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        

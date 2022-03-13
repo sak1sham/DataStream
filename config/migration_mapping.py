@@ -254,12 +254,10 @@ mapping = {
             },
         ]
     },
-    'fastapi_server': False,
-    'timezone': 'Asia/Kolkata',
-    'notify': False
 }
 
-'''mapping = {
+'''
+mapping = {
     "order_actions_cmdb_s3": {
         'source': {
             'source_type': 'sql',
@@ -308,11 +306,9 @@ mapping = {
             }
         ]
     },
-    'fastapi_server': True,
-    'timezone': 'Asia/Kolkata',
-}'''
+}
 
-'''mapping = {
+mapping = {
     "habitual_users_cmdb_redshift": {
         'source': {
             'source_type': 'sql',
@@ -338,11 +334,9 @@ mapping = {
             }
         ]
     },
-    'fastapi_server': True,
-    'timezone': 'Asia/Kolkata',
-}'''
+}
 
-'''mapping = {
+mapping = {
     "entire_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -367,11 +361,9 @@ mapping = {
             }
         ]
     },
-    'fastapi_server': True,
-    'timezone': 'Asia/Kolkata',
-}'''
+}
 
-'''mapping = {
+mapping = {
     "cmdb_inventory_snapshot_wms_support_tickets_ratings": {
         'source': {
             'source_type': 'sql',
@@ -405,12 +397,9 @@ mapping = {
             }
         ]
     },
-    'fastapi_server': True,
-    'timezone': 'Asia/Kolkata',
-}
-'''
+}'''
 
-'''mapping = {
+mapping = {
     "Rohan_audit_logs": {
         'source': {
             'source_type': 'mongo',
@@ -430,13 +419,14 @@ mapping = {
                     'lat': 'float',
                     'long': 'float'
                 },
-                'is_dump': True,
-                'cron': '* * 3 * * 23 38 0',
+                'cron': '2022 3 8 * * 0 6 0',
                 'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
+                'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
+                'bookmark': 'created_at',
+                'bookmark_creation': 'created_at',
                 'batch_size': 200,
-                'time_delay': 1,
+                'time_delay': 0.5,
             },
             {
                 'collection_name': 'product_audit_logs',
@@ -446,13 +436,14 @@ mapping = {
                     'lat': 'float',
                     'long': 'float'
                 },
-                'is_dump': True,
-                'cron': '* * 3 * * 23 38 0',
+                'cron': '2022 3 8 * * 0 6 0',
                 'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
+                'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
+                'bookmark': 'created_at',
+                'bookmark_creation': 'created_at',
                 'batch_size': 200,
-                'time_delay': 1,
+                'time_delay': 0.5,
             }
         ]
     },
@@ -471,29 +462,98 @@ mapping = {
         'tables': [
             {
                 'table_name': 'notifications',
-                'cron': '* * 3 * * 23 38 0',
-                'is_dump': True,
+                'cron': '2022 3 8 * * 0 6 0',
                 'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
+                'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
-                'expiry': {
-                    'days': 15
-                },
+                'bookmark': 'created_at',
+                'bookmark_creation': 'created_at'
             }
         ]
     },
+}
+
+'''mapping = {
+    "impression_service": {
+        'source': {
+            'source_type': 's3',
+            'url': 's3://app-impression-go/',
+            'db_name': 'dms',
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'database-migration-service-prod'
+        },
+        'tables': [
+            {
+                'table_name': 'impression_service',
+                'cron': 'self-managed',
+                'to_partition': True,
+                'partition_col': 'insertion_date',
+                'partition_col_format': 'datetime',
+                'bookmark': 'insertion_date',
+                'bookmark_creation': 'insertion_date',
+                'fields': {
+                    'screen_name': 'str',
+                    'user_id': 'str',
+                    'ct_profile_id': 'str',
+                    'asset_id': 'int',
+                    'asset_type': 'str',
+                    'asset_parent_id': 'str',
+                    'asset_parent_type': 'str',
+                    'price': 'int',
+                    'mrp': 'int',
+                    'app_type': 'str',
+                    'date': 'datetime',
+                    'entity_type': 'str',
+                    'vertical_rank': 'int',
+                    'horizontal_rank': 'int',
+                    'source': 'str',
+                    'is_product_oos': 'bool',
+                    'catalogue_name': 'str',
+                    'insertion_date': 'datetime',
+                    'cms_page_id': 'str',
+                    'linked_cms': 'str',
+                    'linked_cat': 'str',
+                    'linked_subcat': 'str',
+                },
+                'is_dump': True,
+            }
+        ]
+    }
+}'''
+
+settings = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
+    'notify': True,
+    'encryption_store': {
+        'url': os.getenv('ENCR_MONGO_URL'),
+        'db_name': os.getenv('DB_NAME'),
+        'collection_name': os.getenv('COLLECTION_NAME')
+    },
+    'slack_notif': {
+        'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
+        'channel': "C0357UJ2YCF"
+    }
 }
+
 '''
 
-encryption_store = {
-    'url': os.getenv('ENCR_MONGO_URL'),
-    'db_name': os.getenv('DB_NAME'),
-    'collection_name': os.getenv('COLLECTION_NAME')
-}
-
-slack_notif = {
-    'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-    'channel': "C0357UJ2YCF"
-}
+                'fields': {
+                    'source': 'str',
+                    'user_id': 'str',
+                    'asset_id': 'int',
+                    'asset_parent_id': 'str',
+                    'asset_parent_type': 'str',
+                    'entity_type': 'str',
+                    'price': 'int',
+                    'action': 'str',
+                    'app_type': 'str',
+                    'element_type': 'str',
+                    'vertical_rank': 'int',
+                    'horizontal_rank': 'int',
+                    'date': 'datetime',
+                    'metadata': 'str'
+                },
+'''
