@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   web_01:
-    image: manishiitg/dms
+    # image: manishiitg/dms
     build: .
     ports:
       - "8010:8010"
