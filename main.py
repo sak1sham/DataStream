@@ -15,6 +15,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+print(os.environ)
+
 app = FastAPI(title="Migration service")
 scheduler = BackgroundScheduler()
 group_key = {
