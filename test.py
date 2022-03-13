@@ -40,7 +40,7 @@ router = APIRouter()
 async def root():
     return {"message": "pong"}
 
-@router.get("/api/dms/test")
+@router.get("/api/dms/test/")
 async def root():
     return {"message": "testback"}
 
