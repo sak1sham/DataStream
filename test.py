@@ -40,6 +40,9 @@ router = APIRouter()
 async def root():
     return {"message": "pong"}
 
+@router.get("/api/dms/test")
+async def root():
+    return {"message": "testback"}
 
 async def logging_dependency(request: Request):
     logger.debug(f"{request.method} {request.url}")
