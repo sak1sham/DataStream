@@ -1,3 +1,5 @@
+from time import sleep
+from typing import Tuple
 from pymongo import MongoClient
 import certifi
 import datetime
@@ -13,3 +15,7 @@ end = pytz.utc.localize(datetime.datetime(2022, 3, 5))
 curs = coll.find({'created_at': {'$gte': start, '$lt': end}})
 ls = list(curs)
 print(len(ls))
+
+while True:
+    print(1)
+    sleep(1000)
