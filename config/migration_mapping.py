@@ -554,39 +554,8 @@ mapping = {
         },
         'tables': [
             {
-                'table_name': 'dispatch_or_received_shipments',
-                'cron': '* * * * * 20 20 0',
-                'to_partition': True,
-                'bookmark': 'scanned_at',
-                'bookmark_creation': 'scanned_at',
-                'partition_col': 'scanned_at',
-                'partition_col_format': 'datetime',
-
-            },
-        ]
-    },
-}'''
-
-'''
-mapping = {
-    "test_modes_pgsql": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'data-migration-server'
-        },
-        'tables': [
-            {
-                'table_name': 'notifications',
+                'table_name': 'freshdesk_agents',
                 'cron': 'self-managed',
-                'bookmark_creation': 'created_at',
-                'bookmark': 'created_at',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
