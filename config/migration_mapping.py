@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-
+'''
 mapping = {
     "cmdb_tables_to_s3": {
         'source': {
@@ -269,7 +269,7 @@ mapping = {
             },
         ]
     },
-}
+}'''
 
 '''
 mapping = {
@@ -568,6 +568,35 @@ mapping = {
 }'''
 
 
+mapping = {
+    "test_modes_pgsql": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'data-migration-server'
+        },
+        'tables': [
+            {
+                'table_name': 'notifications',
+                'cron': 'self-managed',
+                'bookmark_creation': 'created_at',
+                'bookmark': 'created_at',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'mode': 'syncing',
+            }
+        ]
+    },
+}
+
+
 settings = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
@@ -579,6 +608,6 @@ settings = {
     },
     'slack_notif': {
         'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C0357UJ2YCF"
+        'channel': "C035WQHD291"
     }
 }

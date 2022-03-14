@@ -41,8 +41,10 @@ class PGSQLMigrate:
 
  
     def preprocess(self) -> None:
-        self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
-        self.curr_run_cron_job = convert_to_datetime(utc_to_local(datetime.datetime.utcnow(), self.tz_info), self.tz_info)
+        #self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
+        self.last_run_cron_job = datetime.datetime(2022, 3, 14, 8, 50, 0, 0, self.tz_info)
+        #self.curr_run_cron_job = convert_to_datetime(utc_to_local(datetime.datetime.utcnow(), self.tz_info), self.tz_info)
+        self.curr_run_cron_job = datetime.datetime(2022, 3, 14, 8, 51, 0, 0, self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
 
@@ -347,10 +349,14 @@ class PGSQLMigrate:
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
+        curr = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+        last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
         if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-            curr = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
-            last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
-            sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) > CAST(\'" + last + "\' as timestamp) AND Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + curr + "\' as timestamp)"
+            if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
+                sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) > CAST(\'" + last + "\' as timestamp) AND Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + curr + "\' as timestamp)"
+            else:
+                sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " > \'" + last + "\'::timestamp AND " + self.curr_mapping['bookmark_creation'] + " <= \'" + curr + "\'::timestamp"
+        print(sql_stmt)
         self.process_sql_query(table_name, sql_stmt, mode='logging')
 
 
@@ -363,7 +369,10 @@ class PGSQLMigrate:
         curr = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
         last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
         if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-            sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) > CAST(\'" + last + "\' as timestamp) AND Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + curr + "\' as timestamp)"
+            if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
+                sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) > CAST(\'" + last + "\' as timestamp) AND Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + curr + "\' as timestamp)"
+            else:
+                sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " > \'" + last + "\'::timestamp AND " + self.curr_mapping['bookmark_creation'] + " <= \'" + curr + "\'::timestamp"
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 1)
         
         ## NOW INSERTION IS COMPLETE, LET'S FOCUS ON UPDATING OLD DATA
@@ -371,12 +380,21 @@ class PGSQLMigrate:
         curr = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
         last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
         if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-            sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + last + "\' as timestamp)"
+            if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
+                sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + last + "\' as timestamp)"
+            else:
+                sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " <= \'" + last + "\'::timestamp"
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
-                sql_stmt += " AND Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)"
+                if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
+                    sql_stmt += " AND Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)"
+                else:
+                    sql_stmt += " AND " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp"
         else:
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
-                sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)"
+                if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
+                    sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)"
+                else:
+                    sql_stmt += " WHERE " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp"
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
 
 

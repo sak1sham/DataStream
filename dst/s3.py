@@ -16,9 +16,7 @@ class s3Saver:
         self.unique_id = unique_id
         self.name_ = ""
         self.table_list = []
-        self.database = db_source["source_type"] + "_" + db_source["db_name"]
-        self.database = self.database.replace(".", "_")
-        self.database = self.database.replace("-", "_")
+        self.database = (db_source["source_type"] + "_" + db_source["db_name"]).replace(".", "_").replace("-", "_")
         self.description = "Data migrated from " + self.database
 
 

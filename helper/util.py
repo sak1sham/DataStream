@@ -210,25 +210,25 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 dtype = schema[col].lower()
                 if(dtype == 'jsonb' or dtype == 'json'):
                     df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
                     df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
                 elif(dtype == 'boolean' or dtype == 'bool'):
-                    df[col] = df[col].astype(bool)
+                    df[col] = df[col].astype(bool, copy=False, errors='ignore')
                 elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype.startswith('serial') or dtype.startswith('int')):
-                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int, copy=False, errors='ignore')
                 elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
-                    df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
+                    df[col] = pd.to_numeric(df[col], errors='coerce').astype(float, copy=False, errors='ignore')
                 elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
                 elif('range' in dtype):
-                    df[col] = df[col].apply(convert_range_to_str).astype(str)
+                    df[col] = df[col].apply(convert_range_to_str).astype(str, copy=False, errors='ignore')
                 elif('interval' in dtype):
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
                 else:
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
             else:
-                df[col] = df[col].astype(str)
+                df[col] = df[col].astype(str, copy=False, errors='ignore')
     if(df.shape[0]):
         df = df.reindex(sorted(df.columns), axis=1)
     return df
