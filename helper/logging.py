@@ -3,6 +3,7 @@ from typing import Any
 
 class Log_manager:
     def __init__(self) -> None:
+        # logger.add(sys.stdout, colorize=True, format="<green>{time:HH:mm:ss}</green> | {level} | <level>{message}</level>")
         logging.basicConfig(
             format = '%(asctime)s %(levelname)-8s %(message)s',
             level = logging.INFO,

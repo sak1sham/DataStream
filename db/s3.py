@@ -142,6 +142,7 @@ class S3Migrate:
         dtypes = get_athena_dtypes(col_dtypes)
         return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update, 'dtypes': dtypes}
 
+
     def save_data(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = None) -> None:
         if(not processed_data):
             return
@@ -150,29 +151,38 @@ class S3Migrate:
             if('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump']):
                 primary_keys = ['unique_migration_record_id']
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
-    
+
+
     def migrate_data(self) -> None:
         self.inform("Migrating table " + self.curr_mapping['table_name'] + ".")
-        dfs = [pd.DataFrame({})]
+        list_files = []
+        n = 0
+        N = 0
         try:
             if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
-                dfs = wr.s3.read_parquet(path=self.db['source']['url'], path_suffix='.parquet', ignore_empty=True, chunked=self.batch_size, dataset=True, last_modified_end=self.last_modified_end)
+                list_files = wr.s3.list_objects(path=self.db['source']['url'], suffix='.parquet', ignore_empty=True, last_modified_end=self.last_modified_end)
             else:
-                dfs = wr.s3.read_parquet(path=self.db['source']['url'], path_suffix='.parquet', ignore_empty=True, chunked=self.batch_size, dataset=True, last_modified_begin=self.last_modified_begin, last_modified_end=self.last_modified_end)
+                list_files = wr.s3.list_objects(path=self.db['source']['url'], suffix='.parquet', ignore_empty=True, last_modified_begin=self.last_modified_begin, last_modified_end=self.last_modified_end)
         except wr.exceptions.NoFilesFound:
             self.inform("No new/relevant files found at source which DMS can migrate.")
         except Exception as e:
             self.err(e)
             raise ConnectionError("Unable to connect to source.")
         else:
+            N = len(list_files)
+            self.inform("Found " + str(N) + "files.")
             try:
-                for df in dfs:
+                for file in list_files:
+                    self.inform("Migrating file " + str(n+1) + "/" + str(N))
+                    df = wr.s3.read_parquet(path=[file])
                     processed_data = self.process_table(df = df, table_name = self.curr_mapping['table_name'], col_dtypes = self.curr_mapping['fields'])
                     self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                    n += 1
             except Exception as e:
                 self.err(e)
                 raise ProcessingError("Caught some exception while processing records.")
-        
+
+
     def process(self) -> None:
         self.preprocess()
         self.inform("Mapping pre-processed.")
