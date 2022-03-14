@@ -41,10 +41,10 @@ class PGSQLMigrate:
 
  
     def preprocess(self) -> None:
-        #self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
-        self.last_run_cron_job = datetime.datetime(2022, 3, 14, 8, 50, 0, 0, self.tz_info)
-        #self.curr_run_cron_job = convert_to_datetime(utc_to_local(datetime.datetime.utcnow(), self.tz_info), self.tz_info)
-        self.curr_run_cron_job = datetime.datetime(2022, 3, 14, 8, 51, 0, 0, self.tz_info)
+        self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
+        #self.last_run_cron_job = datetime.datetime(2022, 3, 14, 8, 50, 0, 0, self.tz_info)
+        self.curr_run_cron_job = convert_to_datetime(utc_to_local(datetime.datetime.utcnow(), self.tz_info), self.tz_info)
+        #self.curr_run_cron_job = datetime.datetime(2022, 3, 14, 8, 51, 0, 0, self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
 
@@ -356,7 +356,7 @@ class PGSQLMigrate:
                 sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) > CAST(\'" + last + "\' as timestamp) AND Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + curr + "\' as timestamp)"
             else:
                 sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " > \'" + last + "\'::timestamp AND " + self.curr_mapping['bookmark_creation'] + " <= \'" + curr + "\'::timestamp"
-        print(sql_stmt)
+        self.inform(str(sql_stmt))
         self.process_sql_query(table_name, sql_stmt, mode='logging')
 
 

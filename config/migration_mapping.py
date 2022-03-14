@@ -539,8 +539,8 @@ mapping = {
 }'''
 
 
-'''mapping = {
-    "dispatch_or_received_shipments_cmdb_to_s3": {
+mapping = {
+    "dms_drsid": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -555,19 +555,29 @@ mapping = {
         'tables': [
             {
                 'table_name': 'dispatch_or_received_shipments',
-                'cron': '* * * * * 20 20 0',
+                'cron': '* * * * * 20 0 0',
                 'to_partition': True,
                 'bookmark': 'scanned_at',
                 'bookmark_creation': 'scanned_at',
                 'partition_col': 'scanned_at',
                 'partition_col_format': 'datetime',
-
+                'mode': 'logging'
+            },
+            {
+                'table_name': 'invoices_data',
+                'cron': '* * * * * 20 0 0',
+                'to_partition': True,
+                'bookmark': 'created_at',
+                'bookmark_creation': 'created_at',
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'mode': 'logging'
             },
         ]
     },
-}'''
+}
 
-
+'''
 mapping = {
     "test_modes_pgsql": {
         'source': {
@@ -595,7 +605,7 @@ mapping = {
         ]
     },
 }
-
+'''
 
 settings = {
     'fastapi_server': True,
