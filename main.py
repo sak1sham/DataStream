@@ -10,12 +10,14 @@ from db.main import DMS_importer
 from helper.logging import logger
 from helper.util import evaluate_cron
 from helper.exceptions import InvalidArguments, SourceNotFound
+from routes.routes import router
 
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI(title="Migration service")
+app.include_router(router=router)
 scheduler = BackgroundScheduler()
 group_key = {
     'sql': 'tables',
