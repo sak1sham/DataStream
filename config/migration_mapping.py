@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-'''
+
 mapping = {
     "cmdb_tables_to_s3": {
         'source': {
@@ -269,7 +269,7 @@ mapping = {
             },
         ]
     },
-}'''
+}
 
 '''
 mapping = {
@@ -539,8 +539,8 @@ mapping = {
 }'''
 
 
-mapping = {
-    "dms_drsid": {
+'''mapping = {
+    "dispatch_or_received_shipments_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -555,27 +555,17 @@ mapping = {
         'tables': [
             {
                 'table_name': 'dispatch_or_received_shipments',
-                'cron': '* * * * * 20 0 0',
+                'cron': '* * * * * 20 20 0',
                 'to_partition': True,
                 'bookmark': 'scanned_at',
                 'bookmark_creation': 'scanned_at',
                 'partition_col': 'scanned_at',
                 'partition_col_format': 'datetime',
-                'mode': 'logging'
-            },
-            {
-                'table_name': 'invoices_data',
-                'cron': '* * * * * 20 0 0',
-                'to_partition': True,
-                'bookmark': 'created_at',
-                'bookmark_creation': 'created_at',
-                'partition_col': 'created_at',
-                'partition_col_format': 'datetime',
-                'mode': 'logging'
+
             },
         ]
     },
-}
+}'''
 
 '''
 mapping = {
@@ -607,6 +597,34 @@ mapping = {
 }
 '''
 
+'''
+mapping = {
+    "test_modes_pgsql": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'localhost',
+            'db_name': 'postgres',
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'data-migration-server'
+        },
+        'tables': [
+            {
+                'table_name': 'phonebook',
+                'cron': 'self-managed',
+                'bookmark': 'updated_at',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'mode': 'syncing',
+                'primary_keys': 'firstname'
+            }
+        ]
+    },
+}
+
+'''
 settings = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
@@ -618,6 +636,6 @@ settings = {
     },
     'slack_notif': {
         'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C035WQHD291"
+        'channel': "C0357UJ2YCF"
     }
 }

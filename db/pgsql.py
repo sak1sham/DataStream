@@ -42,9 +42,7 @@ class PGSQLMigrate:
  
     def preprocess(self) -> None:
         self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
-        #self.last_run_cron_job = datetime.datetime(2022, 3, 14, 8, 50, 0, 0, self.tz_info)
         self.curr_run_cron_job = convert_to_datetime(utc_to_local(datetime.datetime.utcnow(), self.tz_info), self.tz_info)
-        #self.curr_run_cron_job = datetime.datetime(2022, 3, 14, 8, 51, 0, 0, self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
 
@@ -187,7 +185,7 @@ class PGSQLMigrate:
         ## Convert to required data types and return
         df = convert_to_dtype(df, col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
-        return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
+        return {'name': table_name, 'df_insert': pd.DataFrame({}), 'df_update': df, 'dtypes': dtypes}
 
 
 
@@ -196,7 +194,7 @@ class PGSQLMigrate:
             return
         else:
             if('name' not in processed_data.keys()):
-                processed_data['name'] = self.curr_mapping['collection_name']
+                processed_data['name'] = self.curr_mapping['table_name']
             if('df_insert' not in processed_data.keys()):
                 processed_data['df_insert'] = pd.DataFrame({})
             if('df_update' not in processed_data.keys()):
@@ -356,7 +354,6 @@ class PGSQLMigrate:
                 sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) > CAST(\'" + last + "\' as timestamp) AND Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + curr + "\' as timestamp)"
             else:
                 sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " > \'" + last + "\'::timestamp AND " + self.curr_mapping['bookmark_creation'] + " <= \'" + curr + "\'::timestamp"
-        self.inform(str(sql_stmt))
         self.process_sql_query(table_name, sql_stmt, mode='logging')
 
 

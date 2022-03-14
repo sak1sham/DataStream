@@ -66,6 +66,7 @@ class s3Saver:
                 for x in self.partition_cols:
                     file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[0][x]) + "/"
                 ## Now, all records within df_u are found within this same location
+                df_u.drop(self.partition_cols, axis=1, inplace=True)
                 prev_files = wr.s3.list_objects(file_name_u)
                 self.inform("Found all files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations))
                 for file_ in prev_files:
