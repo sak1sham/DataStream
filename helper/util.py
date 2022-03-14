@@ -229,6 +229,8 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                     df[col] = df[col].astype(str)
             else:
                 df[col] = df[col].astype(str)
+    if(df.shape[0]):
+        df = df.reindex(sorted(df.columns), axis=1)
     return df
     
 def df_update_records(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> Tuple[dftype, bool]:
