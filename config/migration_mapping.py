@@ -93,7 +93,7 @@ with all_products as (
 
 
 mapping = {
-    "cmdb_tables_to_s3": {
+    "dms_iswq_ll_cciv": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -112,7 +112,7 @@ mapping = {
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
-                'is_dump': True,
+                'mode': 'dumping',
                 'fetch_data_query': query_1,
                 'fields': {
                     'bulk_quantity': 'int',
@@ -131,7 +131,7 @@ mapping = {
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
-                'is_dump': True,
+                'mode': 'dumping',
             },
             {
                 'table_name': 'cmocx_cl_in_vicinity',
@@ -139,11 +139,11 @@ mapping = {
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
-                'is_dump': True,
+                'mode': 'dumping',
             }
         ]
     },
-    "mongo_support_service_to_s3": {
+    "mongo_s3_support": {
         'source': {
             'source_type': 'mongo',
             'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
