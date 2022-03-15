@@ -5,7 +5,7 @@ import awswrangler as wr
 from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, convert_to_utc, utc_to_local, get_athena_dtypes
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
-from helper.logging import logger
+from helper.logger import logger
 from dst.main import DMS_exporter
 
 import datetime

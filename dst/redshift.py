@@ -1,7 +1,7 @@
 import awswrangler as wr
 import redshift_connector
 
-from helper.logging import logger
+from helper.logger import logger
 
 from typing import List, Dict, Any
 import datetime

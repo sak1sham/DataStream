@@ -4,7 +4,7 @@ import pytz
 from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
 
-from helper.logging import logger
+from helper.logger import logger
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
