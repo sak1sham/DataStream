@@ -4,11 +4,7 @@ import pytz
 from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
 
-<<<<<<< HEAD
-# from helper.logger import logger
-=======
 from helper.logger import logger
->>>>>>> origin/s3
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
