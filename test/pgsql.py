@@ -1,19 +1,13 @@
-from logging import exception
-from math import log
-from numpy import dtype
 import psycopg2
 import awswrangler as wr
 import unittest
 import sys
-import math
-import random
 import datetime
 from typing import NewType
 import pytz
-
-from pyparsing import col
+from pymongo import MongoClient
+import certifi
 datetype = NewType("datetype", datetime.datetime)
-
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -25,38 +19,49 @@ class SqlTester(unittest.TestCase):
     url = ''
     db = ''
     table = ''
-    test_N = 2
+    test_N = 1000
     table_map = {}
     primary_keys = []
     tz_info = pytz.timezone("Asia/Kolkata")
     
+    def get_last_run_cron_job(self):
+        client_encr = MongoClient('mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', tlsCAFile=certifi.where())
+        db_encr = client_encr['migration_update_check']
+        collection_encr = db_encr['migration_update_check']
+        curs = collection_encr.find({'last_run_cron_job_for_id': self.id_})
+        curs = list(curs)
+        return curs[0]['timing']
 
     def test_count(self):
-        sql_stmt = "SELECT COUNT(*) as count FROM " + self.table
-        if('username' not in self.db['source'].keys()):
-            self.db['source']['username'] = ''
-        if('password' not in self.db['source'].keys()):
-            self.db['source']['password'] = ''
-        conn = psycopg2.connect(
-            host = self.db['source']['url'],
-            database = self.db['source']['db_name'],
-            user = self.db['source']['username'],
-            password = self.db['source']['password']
-        )
-        with conn.cursor('test-cursor-name') as curs:
-            curs.execute(sql_stmt)
-            ret = curs.fetchall()
-            N = ret[0][0]
-        
-        if(N > 0):
-            athena_table = str(self.table).replace('.', '_').replace('-', '_')
-            query = 'SELECT COUNT(*) as count FROM ' + athena_table + ';'
-            database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
-            df = wr.athena.read_sql_query(sql = query, database = database)
-            athena_count = int(df.iloc[0]['count'])
-            assert athena_count >= int(confidence(N) * N)
-            assert athena_count <= N
-        print("Count Test completed")
+        if(self.table_map['mode'] != 'dumping'):
+            sql_stmt = "SELECT COUNT(*) as count FROM " + self.table
+            if('username' not in self.db['source'].keys()):
+                self.db['source']['username'] = ''
+            if('password' not in self.db['source'].keys()):
+                self.db['source']['password'] = ''
+            conn = psycopg2.connect(
+                host = self.db['source']['url'],
+                database = self.db['source']['db_name'],
+                user = self.db['source']['username'],
+                password = self.db['source']['password']
+            )
+            with conn.cursor('test-cursor-name') as curs:
+                curs.execute(sql_stmt)
+                ret = curs.fetchall()
+                N = ret[0][0]
+            
+            if(N > 0):
+                athena_table = str(self.table).replace('.', '_').replace('-', '_')
+                query = 'SELECT COUNT(*) as count FROM ' + athena_table + ';'
+                database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
+                df = wr.athena.read_sql_query(sql = query, database = database)
+                athena_count = int(df.iloc[0]['count'])
+                print(athena_count, N)
+                print(confidence(N))
+                print(confidence(N) * N)
+                assert athena_count >= int(confidence(N) * N)
+                assert athena_count <= N
+            print("Count Test completed")
         
     # https://stackoverflow.com/questions/580639/how-to-randomly-select-rows-in-sql
     # Select RANDOM RECORDS from PgSQL
@@ -129,45 +134,59 @@ class SqlTester(unittest.TestCase):
                     df[parq_col] = df[col].astype(int)
         return df
 
+
     def test_pgsql(self):
-        conn = psycopg2.connect(
-            host = self.db['source']['url'],
-            database = self.db['source']['db_name'],
-            user = self.db['source']['username'],
-            password = self.db['source']['password']
-        )
-        column_dtypes = self.get_column_dtypes(conn=conn, curr_table_name=self.table)
-        sql_stmt = "SELECT * FROM {0} ORDER BY RANDOM() LIMIT {1}".format(self.table, self.test_N)
-        data_df = pd.DataFrame({})
-        with conn.cursor('test-cursor-name', scrollable=True) as curs:
-            curs.execute(sql_stmt)
-            _ = curs.fetchone()
-            columns = [desc[0] for desc in curs.description]
-            curs.scroll(-1)
-            ret = curs.fetchall()    
-            if ret:
-                data_df = pd.DataFrame(ret, columns = columns)
-        ## Adding a primary key "unique_migration_record_id" for every record
-        self.add_partitions(data_df)
-        if len(self.primary_keys) == 0:
-            self.primary_keys = data_df.columns.values.tolist()
-        if(isinstance(self.primary_keys, str)):
-            self.primary_keys = [self.primary_keys]
-        self.primary_keys = [x.lower() for x in self.primary_keys]
-        data_df['unique_migration_record_id'] = data_df[self.primary_keys].astype(str).sum(1)
-        column_dtypes['unique_migration_record_id'] = 'str'
-        convert_to_dtype(data_df, column_dtypes)
-        data_df = data_df.to_dict(orient='records')
-        athena_table = str(self.table).replace('.', '_').replace('-', '_')
-        for row in data_df:
-            query = 'SELECT * FROM ' + athena_table + ' WHERE unique_migration_record_id = \'' + str(row['unique_migration_record_id']) + '\';'
-            # query = 'SELECT * FROM ' + athena_table + ' WHERE id = ' + str(row['id']) + ';'
-            database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
-            df = wr.athena.read_sql_query(sql = query, database = database)
-            athena_record = df[0:1].to_dict(orient='records')
-            assert self.check_match(row, athena_record[0], column_dtypes)
-            print("Record Tested")
-        print("PGSQL Test Completed")
+        if(self.table_map['mode'] != 'dumping'):
+            conn = psycopg2.connect(
+                host = self.db['source']['url'],
+                database = self.db['source']['db_name'],
+                user = self.db['source']['username'],
+                password = self.db['source']['password']
+            )
+            column_dtypes = self.get_column_dtypes(conn=conn, curr_table_name=self.table)
+            sql_stmt = "SELECT * FROM {0} ORDER BY RANDOM() LIMIT {1}".format(self.table, self.test_N)
+            data_df = pd.DataFrame({})
+            with conn.cursor('test-cursor-name', scrollable=True) as curs:
+                curs.execute(sql_stmt)
+                _ = curs.fetchone()
+                columns = [desc[0] for desc in curs.description]
+                curs.scroll(-1)
+                ret = curs.fetchall()    
+                if ret:
+                    data_df = pd.DataFrame(ret, columns = columns)
+            ## Adding a primary key "unique_migration_record_id" for every record
+            self.add_partitions(data_df)
+            if len(self.primary_keys) == 0:
+                self.primary_keys = data_df.columns.values.tolist()
+            if(isinstance(self.primary_keys, str)):
+                self.primary_keys = [self.primary_keys]
+            self.primary_keys = [x.lower() for x in self.primary_keys]
+            data_df['unique_migration_record_id'] = data_df[self.primary_keys].astype(str).sum(1)
+            column_dtypes['unique_migration_record_id'] = 'str'
+            convert_to_dtype(data_df, column_dtypes)
+            athena_table = str(self.table).replace('.', '_').replace('-', '_')
+            prev_time = pytz.utc.localize(self.get_last_run_cron_job())
+            if(data_df.shape[0]):
+                str_id = ""
+                if('bookmark' in self.table_map.keys() and self.table_map['bookmark']):
+                    data_df = data_df[data_df[self.table_map['bookmark']].apply(lambda x: convert_to_datetime(x=x)) <=  prev_time]
+                if('bookmark_creation' in self.table_map.keys() and self.table_map['bookmark_creation']):
+                    data_df = data_df[data_df[self.table_map['bookmark_creation']].apply(lambda x: convert_to_datetime(x=x)) <=  prev_time]
+
+                for _, row in data_df.iterrows():
+                    str_id += "\'" + str(row['unique_migration_record_id']) + "\',"
+                query = 'SELECT * FROM ' + athena_table + ' WHERE unique_migration_record_id in (' + str(str_id[:-1]) + ');'
+                database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
+                df = wr.athena.read_sql_query(sql = query, database = database)
+                for _, row in data_df.iterrows():
+                    # query = 'SELECT * FROM ' + athena_table + ' WHERE unique_migration_record_id = \'' + str(row['unique_migration_record_id']) + '\';'
+                    # database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
+                    # df = wr.athena.read_sql_query(sql = query, database = database)
+                    # athena_record = df[0:1].to_dict(orient='records')
+                    athena_record = df.loc[df['unique_migration_record_id'] == row['unique_migration_record_id']].to_dict(orient='records')
+                    assert self.check_match(row, athena_record[0], column_dtypes)
+                    print("Record Tested")
+            print("PGSQL Test Completed")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,3 @@
-from math import log
 from pymongo import MongoClient
 import certifi
 import awswrangler as wr
@@ -32,15 +31,29 @@ class MongoTester(unittest.TestCase):
     url = ''
     db = ''
     col = ''
-    test_N = 100
+    test_N = 1000
     col_map = {}
-    
+    tz_info = pytz.timezone('Asia/Kolkata')
+    N_mongo = -1
 
+    def get_last_run_cron_job(self):
+        client_encr = MongoClient('mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', tlsCAFile=certifi.where())
+        db_encr = client_encr['migration_update_check']
+        collection_encr = db_encr['migration_update_check']
+        curs = collection_encr.find({'last_run_cron_job_for_id': self.id_})
+        curs = list(curs)
+        return curs[0]['timing']
+
+    def count_docs(self):
+        if(self.N_mongo == -1):
+            client = MongoClient(self.url, tlsCAFile=certifi.where())
+            db = client[self.db]
+            collection = db[self.col]
+            self.N_mongo = collection.count_documents({})
+        return self.N_mongo
+    
     def test_count(self):
-        client_encr = MongoClient(self.url, tlsCAFile=certifi.where())
-        db_encr = client_encr[self.db]
-        collection = db_encr[self.col]
-        N = collection.count_documents({})
+        N = self.count_docs()
         if(N > 0):
             query = 'SELECT COUNT(*) as count FROM ' + self.col + ';'
             df = wr.athena.read_sql_query(sql = query, database = "mongo" + "_" + self.db.replace('.', '_').replace('-', '_'))
@@ -49,39 +62,57 @@ class MongoTester(unittest.TestCase):
             assert athena_count <= N
 
     def check_match(self, record, athena_record) -> bool:
-            for key in record.keys():
-                athena_key = key.lower()
-                if(key == '_id'):
-                    assert str(record[key]) == athena_record[athena_key]
-                elif(key in self.col_map['fields'].keys()):
-                    val = self.col_map['fields'][key]
-                    if(val == 'int'):
-                        assert int(float(record[key])) == athena_record[athena_key] or athena_record[athena_key] == 0
-                    elif(val == 'float'):
-                        assert float(record[key]) == athena_record[key] or athena_record[athena_key] is None
-                    elif(val == 'bool'):
-                        record[key] = str(record[key])
-                        assert (record[key].lower() in ['true', '1', 't', 'y', 'yes'] and athena_record[athena_key]) or (not athena_record[key])
-                    elif(val == 'datetime'):
-                        assert abs((convert_to_datetime(record[key])-convert_to_datetime(athena_record[athena_key])).total_seconds()) <= 60
-                    else:
-                        assert convert_to_str(record[key]) == athena_record[athena_key]
+        for key in record.keys():
+            athena_key = key.lower()
+            if(key == '_id'):
+                assert str(record[key]) == athena_record[athena_key]
+            elif(key in self.col_map['fields'].keys()):
+                val = self.col_map['fields'][key]
+                if(val == 'int'):
+                    assert int(float(record[key])) == athena_record[athena_key] or athena_record[athena_key] == 0
+                elif(val == 'float'):
+                    assert float(record[key]) == athena_record[key] or athena_record[athena_key] is None
+                elif(val == 'bool'):
+                    record[key] = str(record[key])
+                    assert (record[key].lower() in ['true', '1', 't', 'y', 'yes'] and athena_record[athena_key]) or (not athena_record[key])
+                elif(val == 'datetime'):
+                    date1 = convert_to_datetime(record[key])
+                    date2 = convert_to_datetime(athena_record[athena_key])
+                    assert (date1 is pd.NaT and date2 is pd.NaT) or (abs((date1-date2).total_seconds()) == 0)
                 else:
                     assert convert_to_str(record[key]) == athena_record[athena_key]
-            return True
+            else:
+                assert convert_to_str(record[key]) == athena_record[athena_key]
+        return True
 
     def test_mongo(self):
-        client_encr = MongoClient(self.url, tlsCAFile=certifi.where())
-        db_encr = client_encr[self.db]
-        collection = db_encr[self.col]
-        N = collection.count_documents({})
+        client = MongoClient(self.url, tlsCAFile=certifi.where())
+        db = client[self.db]
+        collection = db[self.col]
+        
+        N = self.count_docs()
         curs = collection.find({}).limit(self.test_N).skip(math.floor(random.random()*N))
         curs = list(curs)
-        for record in curs:
-            query = 'SELECT * FROM ' + self.col + ' WHERE _id = \'' + str(record['_id']) + '\';'
+        # curs = List[Dict[str, Any]]
+        prev_time = pytz.utc.localize(self.get_last_run_cron_job())
+        
+        str_id = ""
+        for records in curs:
+            str_id += "\'" + str(records['_id']) + "\',"
+        
+        if(len(curs)):
+            query = 'SELECT * FROM ' + self.col + ' WHERE _id in (' + str_id[:-1] + ');'
             df = wr.athena.read_sql_query(sql = query, database = "mongo" + "_" + self.db.replace('.', '_').replace('-', '_'))
-            athena_record = df[0:1].to_dict(orient='records')
-            assert self.check_match(record, athena_record[0])
+
+            for record in curs:
+                insertion_time = utc_to_local(record['_id'].generation_time, self.tz_info)
+                if(('bookmark' in self.col_map.keys() and self.col_map['bookmark'] and convert_to_datetime(record[self.col_map['bookmark']]) > prev_time) or (insertion_time > prev_time)):
+                    print("Record inserted/updated later, can\'t compare.")
+                    continue
+                print(record['_id'])
+                athena_record = df.loc[df['_id'] == str(record['_id'])].to_dict(orient='records')
+                assert self.check_match(record, athena_record[0])
+
 
 if __name__ == "__main__":
     id = ''

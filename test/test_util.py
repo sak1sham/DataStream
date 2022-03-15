@@ -11,8 +11,8 @@ dftype = NewType("dftype", pd.DataFrame)
 std_datetime_format = "%Y/%m/%dT%H:%M:%S"
 
 def confidence(N: int = 10):
-        percent = float(95.0 + 0.5 * log(N, 10))
-        return percent/100.0
+    percent = float(95.0 + 0.25 * log(N, 10))
+    return percent/100.0
 
 def convert_list_to_string(l: List[Any]) -> str:
     '''

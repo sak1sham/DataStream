@@ -4,15 +4,11 @@ load_dotenv()
 
 '''
 mapping = {
-    "mongo_support_service_to_s3": {
+    "mongo_s3_support": {
         'source': {
             'source_type': 'mongo',
             'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
             'db_name': 'support-service'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod',
         },
         'collections': [
             {
@@ -91,11 +87,15 @@ mapping = {
                 'to_partition': True,
                 'partition_col': 'scanned_at',
                 'partition_col_format': 'datetime',
+                'bookmark': 'scanned_at',
+                'bookmark_creation': 'scanned_at',
                 'mode': 'logging',
             }
         ]
     },
 }
+#'''
+
 
 settings = {
     'encryption_store': {
