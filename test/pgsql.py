@@ -29,9 +29,7 @@ class SqlTester(unittest.TestCase):
     table_map = {}
     primary_keys = []
     tz_info = pytz.timezone("Asia/Kolkata")
-    # def confidence(self, N: int = 10):
-    #     percent = float(95.0 + 0.5 * log(N, 10))
-    #     return percent/100.0
+    
 
     def test_count(self):
         sql_stmt = "SELECT COUNT(*) as count FROM " + self.table
