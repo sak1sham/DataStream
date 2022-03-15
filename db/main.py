@@ -3,7 +3,7 @@ from db.pgsql import PGSQLMigrate
 from db.s3 import S3Migrate
 
 from typing import Dict, Any
-from helper.logging import logger
+from helper.logger import logger
 import traceback
 from notifications.slack_notify import send_message
 from config.migration_mapping import settings

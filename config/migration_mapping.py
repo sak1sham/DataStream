@@ -91,8 +91,9 @@ with all_products as (
 
 '''
 
+
 mapping = {
-    "cmdb_tables_to_s3": {
+    "dms_iswq_ll_cciv": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -111,8 +112,18 @@ mapping = {
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
-                'is_dump': True,
-                'fetch_data_query': query_1
+                'mode': 'dumping',
+                'fetch_data_query': query_1,
+                'fields': {
+                    'bulk_quantity': 'int',
+                    'sellable_quantity': 'int',
+                    'mrp_change_quantity': 'int',
+                    'variant_change_quantity': 'int',
+                    'offer_change_quantity': 'int',
+                    'blocked_quantity': 'int',
+                    'cost_price': 'float',
+                    'inventory_value': 'float',
+                }
             },
             {
                 'table_name': 'localities_live',
@@ -120,7 +131,7 @@ mapping = {
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
-                'is_dump': True,
+                'mode': 'dumping',
             },
             {
                 'table_name': 'cmocx_cl_in_vicinity',
@@ -128,11 +139,11 @@ mapping = {
                 'to_partition': True,
                 'partition_col': 'migration_snapshot_date',
                 'partition_col_format': 'datetime',
-                'is_dump': True,
+                'mode': 'dumping',
             }
         ]
     },
-    "mongo_support_service_to_s3": {
+    "mongo_s3_support": {
         'source': {
             'source_type': 'mongo',
             'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
@@ -148,16 +159,20 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True
+                'cron': '* * * * * 1 10 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_form_items',
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
+                'cron': '* * * * * 1 10 0',
                 'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_items',
@@ -166,16 +181,20 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True
+                'cron': '* * * * * 1 10 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_list',
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True
+                'cron': '* * * * * 1 10 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_ticket_conversations',
@@ -189,8 +208,10 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 15 0',
+                'cron': '* * * * * 1 15 0',
                 'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_tickets',
@@ -216,8 +237,10 @@ mapping = {
                 },
                 'bookmark': 'updated_at',
                 'archive': False,
-                'cron': '* * * * * 22 15 0',
+                'cron': '* * * * * 1 15 0',
                 'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_tickets_rating',
@@ -229,16 +252,20 @@ mapping = {
                 },
                 'bookmark': 'updatedAt',
                 'archive': False,
-                'cron': '* * * * * 22 20 0',
+                'cron': '* * * * * 1 15 0',
                 'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'webhook_error_logs',
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 22 10 0',
-                'to_partition': True
+                'cron': '* * * * * 1 10 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
         ]
     },
@@ -475,7 +502,7 @@ mapping = {
         'tables': [
             {
                 'table_name': 'impression_service',
-                'cron': '* * * * * */1 0 0',
+                'cron': '* * * * * 16 10 0',
                 'to_partition': True,
                 'partition_col': 'insertion_date',
                 'partition_col_format': 'datetime',
@@ -491,6 +518,7 @@ mapping = {
                     'asset_parent_type': 'str',
                     'price': 'int',
                     'mrp': 'int',
+                    'action': 'str',
                     'app_type': 'str',
                     'date': 'datetime',
                     'entity_type': 'str',
@@ -508,7 +536,63 @@ mapping = {
             }
         ]
     }
+}'''
+
+
+'''mapping = {
+    "dispatch_or_received_shipments_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'database-migration-service-prod'
+        },
+        'tables': [
+            {
+                'table_name': 'freshdesk_agents',
+                'cron': 'self-managed',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'mode': 'syncing',
+            }
+        ]
+    },
 }
+'''
+
+'''
+mapping = {
+    "test_modes_pgsql": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'localhost',
+            'db_name': 'postgres',
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'data-migration-server'
+        },
+        'tables': [
+            {
+                'table_name': 'phonebook',
+                'cron': 'self-managed',
+                'bookmark': 'updated_at',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'mode': 'syncing',
+                'primary_keys': 'firstname'
+            }
+        ]
+    },
+}
+
 '''
 settings = {
     'fastapi_server': True,

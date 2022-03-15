@@ -1,4 +1,5 @@
 import json
+from math import log
 import datetime
 import pytz
 from typing import List, Dict, Any, NewType, Tuple
@@ -9,18 +10,9 @@ dftype = NewType("dftype", pd.DataFrame)
 
 std_datetime_format = "%Y/%m/%dT%H:%M:%S"
 
-def convert_to_str(x) -> str:
-    if(isinstance(x, int) or isinstance(x, float) or isinstance(x, str) or isinstance(x, bool)):
-        return str(x)
-    elif(isinstance(x, list)):
-        return convert_list_to_string(x)
-    elif(isinstance(x, dict)):
-        return convert_json_to_string(x)
-    elif(isinstance(x, datetime.datetime)):
-        x = convert_to_datetime(x)
-        return x.strftime("%Y/%m/%dT%H:%M:%S")
-    else:
-        return str(x)
+def confidence(N: int = 10):
+        percent = float(95.0 + 0.5 * log(N, 10))
+        return percent/100.0
 
 def convert_list_to_string(l: List[Any]) -> str:
     '''
@@ -62,22 +54,15 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
     if(x is None or x == pd.Timestamp(None) or x is pd.NaT):
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
-        x = convert_to_utc(dt = x)
-        x = utc_to_local(utc_dt = x, tz_ = tz_)
-        x = x.strftime(std_datetime_format)
-        x = pd.to_datetime(x, utc=True)
-        return x
+        return convert_to_utc(dt = x)
     elif(isinstance(x, int) or isinstance(x, float)):
-        x = datetime.datetime.fromtimestamp(x, pytz.utc)
-        x = utc_to_local(utc_dt = x, tz_ = tz_)
-        x = x.strftime(std_datetime_format)
-        return pd.to_datetime(x, utc=True)
+        return datetime.datetime.fromtimestamp(x, pytz.utc)
     else:
         try:
-            x = pd.to_datetime(x, utc = True)
-            return x
+            return pd.to_datetime(x, utc = True)
         except Exception as e:
             return pd.Timestamp(None)
+
 
 def convert_json_to_string(x: Dict[str, Any]) -> str:
     '''
@@ -225,25 +210,27 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 dtype = schema[col].lower()
                 if(dtype == 'jsonb' or dtype == 'json'):
                     df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
                     df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
                 elif(dtype == 'boolean' or dtype == 'bool'):
-                    df[col] = df[col].astype(bool)
+                    df[col] = df[col].astype(bool, copy=False, errors='ignore')
                 elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype.startswith('serial') or dtype.startswith('int')):
-                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int, copy=False, errors='ignore')
                 elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
-                    df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
+                    df[col] = pd.to_numeric(df[col], errors='coerce').astype(float, copy=False, errors='ignore')
                 elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
                 elif('range' in dtype):
-                    df[col] = df[col].apply(convert_range_to_str).astype(str)
+                    df[col] = df[col].apply(convert_range_to_str).astype(str, copy=False, errors='ignore')
                 elif('interval' in dtype):
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
                 else:
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
             else:
-                df[col] = df[col].astype(str)
+                df[col] = df[col].astype(str, copy=False, errors='ignore')
+    if(df.shape[0]):
+        df = df.reindex(sorted(df.columns), axis=1)
     return df
     
 def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> Tuple[dftype, bool]:

@@ -16,18 +16,16 @@ load_dotenv()
 from testing_mapping import mapping
 from test_util import *
 
-# def convert_to_str(x) -> str:
-#     if(isinstance(x, int) or isinstance(x, float) or isinstance(x, str) or isinstance(x, bool)):
-#         return str(x)
-#     elif(isinstance(x, list)):
-#         return convert_list_to_string(x)
-#     elif(isinstance(x, dict)):
-#         return convert_json_to_string(x)
-#     elif(isinstance(x, datetime.datetime)):
-#         x = convert_to_datetime(x)
-#         return x.strftime("%Y/%m/%dT%H:%M:%S")
-#     else:
-#         return str(x)
+def convert_to_str(x) -> str:
+    if(isinstance(x, list)):
+        return convert_list_to_string(x)
+    elif(isinstance(x, dict)):
+        return convert_json_to_string(x)
+    elif(isinstance(x, datetime.datetime)):
+        x = convert_to_datetime(x)
+        return x.strftime("%Y/%m/%dT%H:%M:%S")
+    else:
+        return str(x)
 
 class MongoTester(unittest.TestCase):
     id_ = ''
@@ -37,9 +35,9 @@ class MongoTester(unittest.TestCase):
     test_N = 100
     col_map = {}
 
-    def confidence(self, N: int = 10):
-        percent = float(95.0 + 0.5 * log(N, 10))
-        return percent/100.0
+    # def confidence(self, N: int = 10):
+    #     percent = float(95.0 + 0.5 * log(N, 10))
+    #     return percent/100.0
 
     def test_count(self):
         client_encr = MongoClient(self.url, tlsCAFile=certifi.where())
@@ -50,7 +48,7 @@ class MongoTester(unittest.TestCase):
             query = 'SELECT COUNT(*) as count FROM ' + self.col + ';'
             df = wr.athena.read_sql_query(sql = query, database = "mongo" + "_" + self.db.replace('.', '_').replace('-', '_'))
             athena_count = int(df.iloc[0]['count'])
-            assert athena_count >= int(self.confidence(N) * N)
+            assert athena_count >= int(confidence(N) * N)
             assert athena_count <= N
 
     def check_match(self, record, athena_record) -> bool:

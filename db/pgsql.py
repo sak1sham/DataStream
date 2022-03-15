@@ -5,7 +5,7 @@ import pymongo
 from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, utc_to_local, get_athena_dtypes
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
-from helper.logging import logger
+from helper.logger import logger
 from dst.main import DMS_exporter
 
 import datetime
@@ -27,21 +27,32 @@ class PGSQLMigrate:
         self.tz_info = pytz.timezone(tz_str)
         self.last_run_cron_job = pd.Timestamp(None)
     
+
     def inform(self, message: str = None) -> None:
         logger.inform(self.curr_mapping['unique_id'] + ": " + message)
-    
+
+
     def warn(self, message: str = None) -> None:
         logger.warn(self.curr_mapping['unique_id'] + ": " + message)
+
 
     def err(self, error: Any = None) -> None:
         logger.err(error)
 
+ 
     def preprocess(self) -> None:
         self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
         self.curr_run_cron_job = convert_to_datetime(utc_to_local(datetime.datetime.utcnow(), self.tz_info), self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
-    def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({})) -> Tuple[dftype]:
+
+    def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({}), mode: str = "both") -> Tuple[dftype]:
+        '''
+            mode = 'insert' or 'update' or 'both'
+            'insert' does't check for records which are previously present, and returns records which are new
+            'update' doesn't check for new records, only for updations in previously inserted records
+            'both' checks for both updations and insertions
+        '''
         df = df.sort_index(axis = 1)
         df_insert = pd.DataFrame({})
         df_update = pd.DataFrame({})
@@ -53,102 +64,148 @@ class PGSQLMigrate:
             }
             previous_records = collection_encr.find_one({'table': self.curr_mapping['unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
             if(previous_records):
-                if(previous_records['record_sha'] == encr['record_sha']):
+                if(mode == 'insert'):
+                    ## No need for those records which are updated
                     continue
                 else:
-                    df_update = df_update.append(df.loc[i, :])
-                    collection_encr.delete_one({'table': self.curr_mapping['unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
-                    collection_encr.insert_one(encr)
+                    if(previous_records['record_sha'] == encr['record_sha']):
+                        continue
+                    else:
+                        df_update = df_update.append(df.loc[i, :])
+                        collection_encr.delete_one({'table': self.curr_mapping['unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
+                        collection_encr.insert_one(encr)
             else:
-                df_insert = df_insert.append(df.loc[i, :])
-                collection_encr.insert_one(encr)
+                if(mode == 'update'):
+                    ## No need for those records which are inserted
+                    continue
+                else:
+                    df_insert = df_insert.append(df.loc[i, :])
+                    collection_encr.insert_one(encr)
         return df_insert, df_update
 
-    def process_table(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
-        collection_encr = get_data_from_encr_db()
-        if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump']):
-            df['migration_snapshot_date'] = self.curr_run_cron_job
+
+
+    def add_partitions(self, df: dftype = pd.DataFrame({})) -> dftype:
+        self.partition_for_parquet = []
+        if('partition_col' in self.curr_mapping.keys()):
+            if(isinstance(self.curr_mapping['partition_col'], str)):
+                self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+            if('partition_col_format' not in self.curr_mapping.keys()):
+                self.curr_mapping['partition_col_format'] = ['str']
+            if(isinstance(self.curr_mapping['partition_col_format'], str)):
+                self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
+            while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
+                self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
+            for i in range(len(self.curr_mapping['partition_col'])):
+                col = self.curr_mapping['partition_col'][i].lower()
+                col_form = self.curr_mapping['partition_col_format'][i]
+                parq_col = "parquet_format_" + col
+                if(col == 'migration_snapshot_date' or col_form == 'datetime'):
+                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
+                    df[parq_col + "_year"] = temp.dt.year
+                    df[parq_col + "_month"] = temp.dt.month
+                    df[parq_col + "_day"] = temp.dt.day
+                elif(col_form == 'str'):
+                    self.partition_for_parquet.extend([parq_col])
+                    df[parq_col] = df[col].astype(str)
+                elif(col_form == 'int'):
+                    self.partition_for_parquet.extend([parq_col])
+                    df[parq_col] = df[col].astype(int)
+                else:
+                    raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, str or datetime.") 
+        else:
+            self.warn("Unable to find partition_col. Continuing without partitioning.")
+        return df
+
+
+
+    def dumping_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
+        df['migration_snapshot_date'] = self.curr_run_cron_job
         self.partition_for_parquet = []
         if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            if('partition_col' in self.curr_mapping.keys()):
-                if(isinstance(self.curr_mapping['partition_col'], str)):
-                    self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
-                if('partition_col_format' not in self.curr_mapping.keys()):
-                    self.curr_mapping['partition_col_format'] = ['str']
-                if(isinstance(self.curr_mapping['partition_col_format'], str)):
-                    self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
-                while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
-                    self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
-                for i in range(len(self.curr_mapping['partition_col'])):
-                    col = self.curr_mapping['partition_col'][i].lower()
-                    col_form = self.curr_mapping['partition_col_format'][i]
-                    parq_col = "parquet_format_" + col
-                    if(col == 'migration_snapshot_date'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                        temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
-                        df[parq_col + "_year"] = temp.dt.year
-                        df[parq_col + "_month"] = temp.dt.month
-                        df[parq_col + "_day"] = temp.dt.day
-                    elif(col_form == 'str'):
-                        self.partition_for_parquet.extend([parq_col])
-                        df[parq_col] = df[col].astype(str)
-                    elif(col_form == 'int'):
-                        self.partition_for_parquet.extend([parq_col])
-                        df[parq_col] = df[col].astype(int)
-                    elif(col_form == 'datetime'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                        temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
-                        df[parq_col + "_year"] = temp.dt.year
-                        df[parq_col + "_month"] = temp.dt.month
-                        df[parq_col + "_day"] = temp.dt.day
-                    else:
-                        raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime.") 
-            else:
-                self.warn("Unable to find partition_col. Continuing without partitioning.")
-        df_consider = df
-        df_insert = pd.DataFrame({})
-        df_update = pd.DataFrame({})
-        if('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump']):
-            if('primary_keys' not in self.curr_mapping):
-                self.curr_mapping['primary_keys'] = df.columns.values.tolist()
-                self.warn("Unable to find primary_keys in mapping. Taking entire records into consideration.")
-            if(isinstance(self.curr_mapping['primary_keys'], str)):
-                self.curr_mapping['primary_keys'] = [self.curr_mapping['primary_keys']]
-            self.curr_mapping['primary_keys'] = [x.lower() for x in self.curr_mapping['primary_keys']]
-            df['unique_migration_record_id'] = df[self.curr_mapping['primary_keys']].astype(str).sum(1)
-            if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
-                df_consider = df[df[self.curr_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > self.last_run_cron_job]
-                df_consider = df[df[self.curr_mapping['bookmark']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.curr_run_cron_job]
-                if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-                    df_insert = df_consider[df_consider[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > self.last_run_cron_job]
-                    df_update = df_consider[df_consider[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.last_run_cron_job]
-                else:
-                    df_insert, df_update = self.distribute_records(collection_encr, df_consider)
-            else:
-                if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-                    df_consider = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.curr_run_cron_job]
-                    df_insert = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) > self.last_run_cron_job]
-                    df_consider = df[df[self.curr_mapping['bookmark_creation']].apply(lambda x: convert_to_datetime(x, self.tz_info)) <= self.last_run_cron_job]
-                    _, df_update = self.distribute_records(collection_encr, df_consider)
-                else:
-                    df_insert, df_update = self.distribute_records(collection_encr, df_consider)
-        else:
-            df_insert = df_consider
-            df_update = pd.DataFrame({})
-        df_insert = convert_to_dtype(df_insert, col_dtypes)
-        df_update = convert_to_dtype(df_update, col_dtypes)
+            self.add_partitions(df)
+        df_insert = convert_to_dtype(df, col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
-        return {'name': table_name, 'df_insert': df_insert, 'df_update': df_update, 'dtypes': dtypes}
+        return {'name': table_name, 'df_insert': df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
+
+
+
+
+    def inserting_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
+        collection_encr = get_data_from_encr_db()
+ 
+        ## Adding partition if required
+        self.partition_for_parquet = []
+        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
+            self.add_partitions(df)
+ 
+        ## Adding a primary key "unique_migration_record_id" for every record
+        if('primary_keys' not in self.curr_mapping):
+            self.curr_mapping['primary_keys'] = df.columns.values.tolist()
+            self.warn("Unable to find primary_keys in mapping. Taking entire records into consideration.")
+        if(isinstance(self.curr_mapping['primary_keys'], str)):
+            self.curr_mapping['primary_keys'] = [self.curr_mapping['primary_keys']]
+        self.curr_mapping['primary_keys'] = [x.lower() for x in self.curr_mapping['primary_keys']]
+        df['unique_migration_record_id'] = df[self.curr_mapping['primary_keys']].astype(str).sum(1)
+ 
+        ## If the records were not already filtered as per creation_date, filter them first
+        if('bookmark_creation' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark_creation']):
+            df, _ = self.distribute_records(collection_encr, df, mode='insert')
+        
+        ## Convert to required data types and return
+        df = convert_to_dtype(df, col_dtypes)
+        dtypes = get_athena_dtypes(col_dtypes)
+        return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
+
+
+
+
+    def updating_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
+        collection_encr = get_data_from_encr_db()
+
+        ## Adding partition if required
+        self.partition_for_parquet = []
+        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
+            self.add_partitions(df)
+
+        ## Adding a primary key "unique_migration_record_id" for every record
+        if('primary_keys' not in self.curr_mapping):
+            self.curr_mapping['primary_keys'] = df.columns.values.tolist()
+            self.warn("Unable to find primary_keys in mapping. Taking entire records into consideration.")
+        if(isinstance(self.curr_mapping['primary_keys'], str)):
+            self.curr_mapping['primary_keys'] = [self.curr_mapping['primary_keys']]
+        self.curr_mapping['primary_keys'] = [x.lower() for x in self.curr_mapping['primary_keys']]
+        df['unique_migration_record_id'] = df[self.curr_mapping['primary_keys']].astype(str).sum(1)
+        
+        ## If the records were not already filtered as per creation_date or updation_date, filter them first
+        if('bookmark_creation' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark_creation'] or 'bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark']):
+            _, df = self.distribute_records(collection_encr, df, mode='update')
+        
+        ## Convert to required data types and return
+        df = convert_to_dtype(df, col_dtypes)
+        dtypes = get_athena_dtypes(col_dtypes)
+        return {'name': table_name, 'df_insert': pd.DataFrame({}), 'df_update': df, 'dtypes': dtypes}
+
+
 
     def save_data(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = None) -> None:
         if(not processed_data):
             return
         else:
+            if('name' not in processed_data.keys()):
+                processed_data['name'] = self.curr_mapping['table_name']
+            if('df_insert' not in processed_data.keys()):
+                processed_data['df_insert'] = pd.DataFrame({})
+            if('df_update' not in processed_data.keys()):
+                processed_data['df_update'] = pd.DataFrame({})
             primary_keys = []
-            if('is_dump' not in self.curr_mapping.keys() or not self.curr_mapping['is_dump']):
+            if(self.curr_mapping['mode'] != 'dumping'):
                 primary_keys = ['unique_migration_record_id']
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
-    
+
+
+
     def get_list_tables(self) -> List[str]:
         sql_stmt = '''
             SELECT schemaname, tablename
@@ -156,10 +213,6 @@ class PGSQLMigrate:
             WHERE schemaname != 'pg_catalog' AND 
             schemaname != 'information_schema';
         '''
-        if('username' not in self.db['source'].keys()):
-            self.db['source']['username'] = ''
-        if('password' not in self.db['source'].keys()):
-            self.db['source']['password'] = ''
         try:
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
@@ -182,9 +235,16 @@ class PGSQLMigrate:
             self.err(e)
             raise ConnectionError("Unable to connect to source.")
 
+
+
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
         if('fetch_data_query' in self.curr_mapping.keys() and isinstance(self.curr_mapping['fetch_data_query'], str) and len(self.curr_mapping['fetch_data_query']) > 0):
-            return {}
+            ret_dtype = {}
+            if('fields' in self.curr_mapping.keys()):
+                ret_dtype = self.curr_mapping['fields']
+            if(self.curr_mapping['mode'] == 'dumping'):
+                ret_dtype['migration_snapshot_date'] = 'datetime'
+            return ret_dtype
         tn = curr_table_name.split('.')
         schema_name = 'public'
         table_name = ''
@@ -201,20 +261,15 @@ class PGSQLMigrate:
             rows = curs.fetchall()
             for key, val in rows:
                 col_dtypes[key] = val
+        if(self.curr_mapping['mode'] == 'dumping'):
+            col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
 
-    def migrate_data(self, table_name: str = None) -> None:
-        if(table_name.count('.') >= 2):
-            self.inform("Can not migrate table with table_name: " + table_name)
-            return
-        self.inform("Migrating table " + table_name + ".")
-        sql_stmt = "SELECT * FROM " + table_name
-        if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
-            sql_stmt = self.curr_mapping['fetch_data_query']
-        if('username' not in self.db['source'].keys()):
-            self.db['source']['username'] = ''
-        if('password' not in self.db['source'].keys()):
-            self.db['source']['password'] = ''
+    
+    def process_sql_query(self, table_name: str = None, sql_stmt: str = None, mode: str = "dumping", sync_mode: int = 1) -> None:
+        processed_data = {}
+        processed_data_u = {}
+        updated_in_destination = True
         try:
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
@@ -236,9 +291,34 @@ class PGSQLMigrate:
                             break
                         else:
                             data_df = pd.DataFrame(rows, columns = columns)
-                            processed_data = self.process_table(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
-                            self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
-                self.inform("Completed migration of table " + table_name + ".\n")
+                            if(mode == "dumping"):
+                                processed_data = self.dumping_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
+                                self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                            elif(mode == "logging"):
+                                processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
+                                self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                            elif(mode == "syncing"):
+                                if(sync_mode == 1):
+                                    ## INSERTION MODE
+                                    processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
+                                    self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                                else:
+                                    ## UPDATION MODE
+                                    processed_data_u = {}
+                                    processed_data_u = self.updating_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
+                                    if(processed_data_u):
+                                        if(not updated_in_destination):
+                                            processed_data['df_update'] = processed_data['df_update'].append([processed_data_u['df_update']])
+                                        else:
+                                            processed_data['df_update'] = processed_data_u['df_update']
+                                        self.inform("Found " + str(processed_data['df_update'].shape[0]) + " updations upto now.")
+                                    if(processed_data['df_update'].shape[0] >= self.batch_size):
+                                        self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                                        processed_data = {}
+                                        updated_in_destination = True
+                                    else:
+                                        updated_in_destination = False                            
+                self.inform("Completed logging of table " + table_name + ".\n")
             except Exception as e:
                 self.err(e)
                 raise ProcessingError("Caught some exception while processing records.")
@@ -248,7 +328,80 @@ class PGSQLMigrate:
             self.err(e)
             raise ConnectionError("Unable to connect to source.")
 
+        if(mode == 'syncing' and sync_mode == 2 and processed_data):
+            ## If processing updates are completed, and total updated records present in processed_data are less than batch_size, still save them now
+            self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+            processed_data = {}
+
+
+
+    def dumping_process(self, table_name: str = None) -> None:
+        sql_stmt = "SELECT * FROM " + table_name
+        if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
+            sql_stmt = self.curr_mapping['fetch_data_query']
+        self.process_sql_query(table_name, sql_stmt, mode='dumping')
+
+
+
+    def logging_process(self, table_name: str = None) -> None:
+        sql_stmt = "SELECT * FROM " + table_name
+        if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
+            raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
+        curr = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+        last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+        if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
+            if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
+                sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) > CAST(\'" + last + "\' as timestamp) AND Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + curr + "\' as timestamp)"
+            else:
+                sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " > \'" + last + "\'::timestamp AND " + self.curr_mapping['bookmark_creation'] + " <= \'" + curr + "\'::timestamp"
+        self.process_sql_query(table_name, sql_stmt, mode='logging')
+
+
+
+    def syncing_process(self, table_name: str = None) -> None:
+        ## FIRST, LET'S FOCUS ON INSERTING NEW DATA
+        sql_stmt = "SELECT * FROM " + table_name
+        if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
+            raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
+        curr = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+        last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+        if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
+            if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
+                sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) > CAST(\'" + last + "\' as timestamp) AND Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + curr + "\' as timestamp)"
+            else:
+                sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " > \'" + last + "\'::timestamp AND " + self.curr_mapping['bookmark_creation'] + " <= \'" + curr + "\'::timestamp"
+        self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 1)
+        
+        ## NOW INSERTION IS COMPLETE, LET'S FOCUS ON UPDATING OLD DATA
+        sql_stmt = "SELECT * FROM " + table_name
+        curr = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+        last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+        if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
+            if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
+                sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + last + "\' as timestamp)"
+            else:
+                sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " <= \'" + last + "\'::timestamp"
+            if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
+                if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
+                    sql_stmt += " AND Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)"
+                else:
+                    sql_stmt += " AND " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp"
+        else:
+            if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
+                if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
+                    sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)"
+                else:
+                    sql_stmt += " WHERE " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp"
+        self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
+
+
+
     def process(self) -> None:
+        if('username' not in self.db['source'].keys()):
+            self.db['source']['username'] = ''
+        if('password' not in self.db['source'].keys()):
+            self.db['source']['password'] = ''
+        
         name_tables = []
         if(self.curr_mapping['table_name'] == '*'):
             name_tables = self.get_list_tables()
@@ -280,10 +433,19 @@ class PGSQLMigrate:
         self.inform("Starting to migrating following " + str(len(name_tables)) + " useful tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
         
         for table_name in name_tables:
-            self.migrate_data(table_name)
+            if(table_name.count('.') >= 2):
+                self.warn("Can not migrate table with table_name: " + table_name)
+            elif(self.curr_mapping['mode'] == 'dumping'):
+                self.dumping_process(table_name)
+            elif(self.curr_mapping['mode'] == 'logging'):
+                self.logging_process(table_name)
+            elif(self.curr_mapping['mode'] == 'syncing'):
+                self.syncing_process(table_name)
+            else:
+                raise IncorrectMapping("Wrong mode of operation: can be syncing, logging or dumping only.")
                 
         self.inform("Overall migration complete.")
-        if('is_dump' in self.curr_mapping.keys() and self.curr_mapping['is_dump'] and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
+        if(self.curr_mapping['mode'] == 'dumping' and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform("Expired data removed.")
         self.saver.close()

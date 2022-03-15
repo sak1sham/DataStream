@@ -4,7 +4,11 @@ import pytz
 from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
 
+<<<<<<< HEAD
 # from helper.logger import logger
+=======
+from helper.logger import logger
+>>>>>>> origin/s3
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
@@ -51,18 +55,20 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
     if(x is None or x == pd.Timestamp(None) or x is pd.NaT):
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
+<<<<<<< HEAD
         x = convert_to_utc(dt = x)
         # x = pd.to_datetime(x, utc=True)
         return x
+=======
+        return convert_to_utc(dt = x)
+>>>>>>> origin/s3
     elif(isinstance(x, int) or isinstance(x, float)):
-        x = datetime.datetime.fromtimestamp(x, pytz.utc)
-        return pd.to_datetime(x, utc=True)
+        return datetime.datetime.fromtimestamp(x, pytz.utc)
     else:
         try:
-            x = pd.to_datetime(x, utc = True)
-            return x
+            return pd.to_datetime(x, utc = True)
         except Exception as e:
-            logger.warn("Unable to convert " + x + " to any datetime format. Returning None")
+            logger.warn("Unable to convert " + str(x) + " of type " + str(type(x)) + " to any datetime format. Returning None")
             return pd.Timestamp(None)
 
 def convert_json_to_string(x: Dict[str, Any]) -> str:
@@ -214,39 +220,42 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 dtype = schema[col].lower()
                 if(dtype == 'jsonb' or dtype == 'json'):
                     df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
                     df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
                 elif(dtype == 'boolean' or dtype == 'bool'):
-                    df[col] = df[col].astype(bool)
+                    df[col] = df[col].astype(bool, copy=False, errors='ignore')
                 elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype.startswith('serial') or dtype.startswith('int')):
-                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int, copy=False, errors='ignore')
                 elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
-                    df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
+                    df[col] = pd.to_numeric(df[col], errors='coerce').astype(float, copy=False, errors='ignore')
                 elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
                 elif('range' in dtype):
-                    df[col] = df[col].apply(convert_range_to_str).astype(str)
+                    df[col] = df[col].apply(convert_range_to_str).astype(str, copy=False, errors='ignore')
                 elif('interval' in dtype):
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
                 else:
-                    df[col] = df[col].astype(str)
+                    df[col] = df[col].astype(str, copy=False, errors='ignore')
             else:
-                df[col] = df[col].astype(str)
+                df[col] = df[col].astype(str, copy=False, errors='ignore')
+    if(df.shape[0]):
+        df = df.reindex(sorted(df.columns), axis=1)
     return df
     
-def df_upsert(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> Tuple[dftype, bool]:
+def df_update_records(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> Tuple[dftype, bool]:
     '''
         While upserting the data, we will be having only one record in df_u, as we are upserting record by record in s3
     '''
-    pkey = df_u.iloc[0][primary_key]
-    modify = pkey in df[primary_key].values
-    if(modify):
-        final_df = df.merge(df_u, on = primary_key, how = 'outer', suffixes=('', '_dms'))
-        final_df.drop(list(final_df.filter(regex=r'.*_dms$').columns), axis=1, inplace=True)
-        return final_df, True
+    intersection = pd.merge(df, df_u, how='inner', on=primary_key)
+    if(intersection.shape[0]):
+        common = df_u[df_u[primary_key].isin(intersection[primary_key])]
+        uncommon = df_u[~df_u[primary_key].isin(intersection[primary_key])]
+        final_df = pd.concat([df, common]).drop_duplicates(subset=[primary_key], keep='last')
+        final_df.reset_index(drop=True, inplace=True)
+        return final_df, True, uncommon
     else:
-        return df, False
+        return df, False, df_u
 
 def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
     athena_types = {}
