@@ -51,13 +51,7 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
     if(x is None or x == pd.Timestamp(None) or x is pd.NaT):
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
-<<<<<<< HEAD
-        x = convert_to_utc(dt = x)
-        # x = pd.to_datetime(x, utc=True)
-        return x
-=======
         return convert_to_utc(dt = x)
->>>>>>> origin/s3
     elif(isinstance(x, int) or isinstance(x, float)):
         return datetime.datetime.fromtimestamp(x, pytz.utc)
     else:
