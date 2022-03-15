@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+'''
 mapping = {
     "mongo_support_service_to_s3": {
         'source': {
@@ -66,6 +67,32 @@ mapping = {
                 'archive': False,
                 'to_partition': True,
             },
+        ]
+    },
+}
+'''
+mapping = {
+    "dispatch_or_received_shipments_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'database-migration-service-prod'
+        },
+        'tables': [
+            {
+                'table_name': 'dispatch_or_received_shipments',
+                'cron': 'self-managed',
+                'to_partition': True,
+                'partition_col': 'scanned_at',
+                'partition_col_format': 'datetime',
+                'mode': 'logging',
+            }
         ]
     },
 }
