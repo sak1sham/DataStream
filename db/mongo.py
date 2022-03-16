@@ -188,7 +188,6 @@ class MongoMigrate:
             return None
         for document in all_documents:
             insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
-            document['migration_snapshot_date'] = self.curr_run_cron_job
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
                 document = self.add_partitions(document=document, insertion_time=insertion_time)
             if(mode == 'syncing' and ('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark'])):
