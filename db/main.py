@@ -1,6 +1,7 @@
 from db.mongo import MongoMigrate
 from db.pgsql import PGSQLMigrate
 from db.s3 import S3Migrate
+from db.api import APIMigrate
 
 from typing import Dict, Any
 from helper.logging import logger
@@ -21,6 +22,9 @@ class DMS_importer:
         elif(db['source']['source_type'] == 's3'):
             self.name = curr_mapping['table_name']
             self.obj = S3Migrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
+        elif(db['source']['source_type'] == 'api'):
+            self.name = curr_mapping['api_names']
+            self.obj = APIMigrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
     
     def process(self):
         try:
