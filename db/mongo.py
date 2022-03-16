@@ -54,9 +54,9 @@ class MongoMigrate:
 
     def fetch_data(self, start: int = 0, end: int = 0, query: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         if(query):
-            return list(self.db_collection.find(query)[start:end])
+            return list(self.db_collection.find(query).sort( [['_id', 1]] )[start:end])
         else:
-            return list(self.db_collection.find()[start:end])
+            return list(self.db_collection.find().sort( [['_id', 1]] )[start:end])
 
 
     def preprocess(self) -> None:
