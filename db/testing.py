@@ -8,9 +8,14 @@ x = [
     {
         'a': 'c',
         'b': 'd'
+    },
+    {
+        'a': 'c',
+        'b': 'd'
     }
 ]
 
-#print(pd.DataFrame(x))
-x = json.dumps(x)
-print(json.loads(x))
+df = pd.DataFrame(x)
+print(df)
+df.insert(0, 'New_ID', range(880, 880 + len(df)))
+print(df)

@@ -625,6 +625,34 @@ mapping = {
     }
 }
 
+mapping = {
+    'testing_only': {
+        'source': {
+            'source_type': 'kafka',
+            'kafka_server': 'localhost:9092',
+            'db_name': 'test'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'learning-migrationservice',
+        },
+        'topics': [
+            {
+                'topic_name': 'test_2',
+                'fields': {
+                    'Name': 'str',
+                    'Marks': 'int',
+                    'Class': 'int',
+                },
+                'cron': 'self-managed',
+                'to_partition': True,
+                'partition_col': 'Class',
+                'partition_col_format': ['int']
+            },
+        ]
+    }
+}
+
 settings = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',

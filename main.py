@@ -23,8 +23,10 @@ group_key = {
     'sql': 'tables',
     'mongo': 'collections',
     'api': 'apis',
-    's3': 'tables'
+    's3': 'tables',
+    'kafka': 'topics'
 }
+
 tz__ = 'Asia/Kolkata'
 
 @app.on_event("startup")

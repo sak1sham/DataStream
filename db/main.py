@@ -1,8 +1,10 @@
 from db.mongo import MongoMigrate
 from db.pgsql import PGSQLMigrate
 from db.s3 import S3Migrate
+from db.kafka_dms import KafkaMigrate
 
 from typing import Dict, Any
+from helper.exceptions import IncorrectMapping
 from helper.logger import logger
 import traceback
 from notifications.slack_notify import send_message
@@ -26,6 +28,11 @@ class DMS_importer:
         elif(db['source']['source_type'] == 's3'):
             self.name = curr_mapping['table_name']
             self.obj = S3Migrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
+        elif(db['source']['source_type'] == 'kafka'):
+            self.name = curr_mapping['topic_name']
+            self.obj = KafkaMigrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
+        else:
+            raise IncorrectMapping("source_type can be sql, mongo, s3 or kafka")
     
     def process(self):
         try:

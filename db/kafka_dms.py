@@ -1,157 +1,158 @@
 import pandas as pd
-import awswrangler as wr
 import json
 import datetime
 from typing import NewType, Any, Dict
 from kafka import KafkaConsumer
-import logging
-import pytz
 
-from dotenv import load_dotenv
-load_dotenv()
-
-#from helper.util import *
-#from helper.logger import logger
+from helper.util import *
+from helper.logger import logger
+from helper.exceptions import *
+from dst.main import DMS_exporter
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
 
-topic = 'test_2'
-kafka_server = 'localhost:9092'
 kafka_group = 'dms_kafka'
 
 s3_bucket_destination = 's3://learning-migrationservice/Kafka/'
 s3_athena_database = 'kafka'
 s3_athena_database_table = 'kafka'
 
-# util function below 
-
-def convert_to_utc(dt: datetype = None) -> datetype:
-    if(dt.tzinfo is None):
-        dt = pytz.utc.localize(dt)
-    dt = dt.astimezone(pytz.utc)
-    return dt
-
-
-def convert_to_datetime(x: Any = None) -> datetype:
-    if(x is None or x == pd.Timestamp(None) or x is pd.NaT):
-        return pd.Timestamp(None)
-    elif(isinstance(x, datetime.datetime)):
-        x = convert_to_utc(dt=x)
-        return x
-    elif(isinstance(x, int) or isinstance(x, float)):
-        x = datetime.datetime.fromtimestamp(x, pytz.utc)
-        return pd.to_datetime(x, utc=True)
-    else:
-        try:
-            x = pd.to_datetime(x, utc=True)
-            return x
-        except Exception as e:
-            return pd.Timestamp(None)
-
-
-def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
-    if(df.shape[0]):
-        for col in df.columns.tolist():
-            if(col in schema.keys()):
-                dtype = schema[col].lower()
-                if(dtype == 'jsonb' or dtype == 'json'):
-                    df[col] = df[col].apply(lambda x: json.dumps(x))
-                    df[col] = df[col].astype(str)
-                elif(dtype.startswith('timestamp') or dtype.startswith('date')):
-                    df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(
-                        lambda x: pd.Timestamp(x))
-                elif(dtype == 'boolean' or dtype == 'bool'):
-                    df[col] = df[col].astype(bool)
-                elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype.startswith('serial') or dtype.startswith('int')):
-                    df[col] = pd.to_numeric(
-                        df[col], errors='coerce').fillna(0).astype(int)
-                elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
-                    df[col] = pd.to_numeric(
-                        df[col], errors='coerce').astype(float)
-                else:
-                    df[col] = df[col].astype(str)
-            else:
-                df[col] = df[col].astype(str)
-    return df
-
-
-def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
-    athena_types = {}
-    for key, dtype in maps.items():
-        if(dtype == 'str' or dtype == 'string' or dtype == 'jsonb' or dtype == 'json' or dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml' or 'range' in dtype or 'interval' in dtype):
-            athena_types[key] = 'string'
-        elif(dtype == 'datetime' or dtype.startswith('timestamp') or dtype.startswith('date')):
-            athena_types[key] = 'timestamp'
-        elif(dtype == 'bool' or dtype == 'boolean'):
-            athena_types[key] = 'boolean'
-        elif(dtype == 'int' or dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype == 'serial' or dtype.startswith('serial') or dtype.startswith('int')):
-            athena_types[key] = 'bigint'
-        elif(dtype == 'float' or dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
-            athena_types[key] = 'float'
-    return athena_types
-
-
-
-
 class KafkaMigrate:
-    def __init__(self) -> None:
-        self.curr_mapping = {
-            'topic_name': 'test_2',
-            'fields': {
-                'msg': 'str',
-            },
-            's3_bucket_destination': s3_bucket_destination,
-        }
+    def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, tz_str: str = 'Asia/Kolkata') -> None:
+        if (not db or not curr_mapping):
+            raise MissingData("db or curr_mapping can not be None.")
+        self.db = db
+        self.curr_mapping = curr_mapping
+        self.tz_info = pytz.timezone(tz_str)
+        self.primary_key = 0
 
-    def process_table(self, df: dftype = pd.DataFrame({})) -> dftype:
+    def inform(self, message: str = None) -> None:
+        logger.inform(self.curr_mapping['unique_id'] + ": " + message)
+
+    def warn(self, message: str = None) -> None:
+        logger.warn(self.curr_mapping['unique_id'] + ": " + message)
+
+    def err(self, error: Any = None) -> None:
+        logger.err(error)
+
+    def preprocess(self) -> None:
+        if('fields' not in self.curr_mapping.keys()):
+            self.curr_mapping['fields'] = {}
+        
+        self.partition_for_parquet = []
+        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
+            if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col']):
+                if(isinstance(self.curr_mapping['partition_col'], str)):
+                    self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+                
+                if('partition_col_format' not in self.curr_mapping.keys()):
+                    self.curr_mapping['partition_col_format'] = ['str']
+                if(isinstance(self.curr_mapping['partition_col_format'], str)):
+                    self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
+                while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
+                    self.curr_mapping['partition_col_format'].append('str')
+                
+                for i in range(len(self.curr_mapping['partition_col'])):
+                    col = self.curr_mapping['partition_col'][i]
+                    col_form = self.curr_mapping['partition_col_format'][i]
+                    parq_col = "parquet_format_" + col
+                    if(col_form == 'str'):
+                        self.partition_for_parquet.extend([parq_col])
+                        self.curr_mapping['fields'][parq_col] = 'str'
+                    elif(col_form == 'int'):
+                        self.partition_for_parquet.extend([parq_col])
+                        self.curr_mapping['fields'][parq_col] = 'int'
+                    elif(col_form == 'float'):
+                        self.partition_for_parquet.extend([parq_col])
+                        self.curr_mapping['fields'][parq_col] = 'float'
+                    elif(col_form == 'datetime'):
+                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                        self.curr_mapping['fields'][parq_col + "_year"] = 'int'
+                        self.curr_mapping['fields'][parq_col + "_month"] = 'int'
+                        self.curr_mapping['fields'][parq_col + "_day"] = 'int'
+                    else:
+                        raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+            else:
+                self.warn("Unable to find partition_col. Continuing without partitioning.")
+        self.curr_mapping['fields']['dms_pkey'] = 'int'
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
         self.athena_dtypes = get_athena_dtypes(self.curr_mapping['fields'])
-        df["msg_parquet"] = df['msg']
-        schema = self.curr_mapping['fields']
-        df = convert_to_dtype(df, schema)
-        {'name': 'kafka'}
+
+    def add_partitions(self, df: dftype) -> dftype:
+        for i in range(len(self.curr_mapping['partition_col'])):
+            col = self.curr_mapping['partition_col'][i]
+            col_form = self.curr_mapping['partition_col_format'][i]
+            parq_col = "parquet_format_" + col
+            if(col_form == 'datetime'):
+                temp = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
+                df[parq_col + "_year"] = temp.dt.year
+                df[parq_col + "_month"] = temp.dt.month
+                df[parq_col + "_day"] = temp.dt.day
+            elif(col_form == 'str'):
+                df[parq_col] = df[col].astype(str)
+            elif(col_form == 'int'):
+                df[parq_col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int, copy=False, errors='ignore')
+            else:
+                raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, str or datetime.") 
         return df
 
+
+    def process_table(self, df: dftype = pd.DataFrame({})) -> dftype:
+        end = self.primary_key + len(df)
+        df.insert(0, 'dms_pkey', range(self.primary_key, end))
+        self.primary_key = end
+        df = self.add_partitions(df)
+        print(df)
+        df = convert_to_dtype(df, self.curr_mapping['fields'])
+        processed_data = {'name': self.curr_mapping['topic_name'], 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': self.athena_dtypes}
+        return processed_data
+
     def save_data(self, processed_data: dftype = None) -> None:
-        wr.s3.to_parquet(
-            df=processed_data,
-            path=self.curr_mapping['s3_bucket_destination'],
-            compression='snappy',
-            mode='append',
-            database=s3_athena_database,
-            table=s3_athena_database_table,
-            dtype=self.athena_dtypes,
-            description='data coming from kafka producer',
-            dataset=True,
-            partition_cols=['msg_parquet'],
-            schema_evolution=True,
-        )
+        if(not processed_data):
+            return
+        else:
+            if('name' not in processed_data.keys()):
+                processed_data['name'] = self.curr_mapping['collection_name']
+            if('df_insert' not in processed_data.keys()):
+                processed_data['df_insert'] = pd.DataFrame({})
+            if('df_update' not in processed_data.keys()):
+                processed_data['df_update'] = pd.DataFrame({})
+            primary_keys = ['dms_pkey']
+            self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
 
-def value_deserializer(x):
-    return json.loads(x.decode('utf-8'))
 
-if __name__ == "__main__":
-    obj = KafkaMigrate()
-    consumer = KafkaConsumer(topic, bootstrap_servers = [kafka_server], enable_auto_commit = True, group_id = kafka_group, value_deserializer = value_deserializer)
-    print('Started consuming messages.')
-    for message in consumer:
+    def value_deserializer(self, x):
+        return json.loads(x.decode('utf-8'))
+
+    
+    def process(self) -> None:
         try:
-            print(message)
-            df = pd.DataFrame(message.value)
-            print(df.columns.tolist())
-            processed_data = obj.process_table(df=df)
-            print('processed data')
-            obj.save_data(processed_data=processed_data)
-            print("Data saved")
+            consumer = KafkaConsumer(self.curr_mapping['topic_name'], bootstrap_servers = [self.db['source']['kafka_server']], enable_auto_commit = True, group_id = 'dms_kafka_group', value_deserializer = self.value_deserializer)
+            self.inform('Started consuming messages.')
+            self.preprocess()
+            self.inform("Preprocessing done.")
+            for message in consumer:
+                try:
+                    self.inform("Recieved data")
+                    df = pd.DataFrame(message.value)
+                    print(df)
+                    processed_data = self.process_table(df=df)
+                    print(processed_data)
+                    self.inform('Processed data')
+                    self.save_data(processed_data=processed_data)
+                    print("Data saved")
+                except Exception as e:
+                    print(e)
+                    print('Consumer exception')
+                    continue
         except Exception as e:
-            print(e)
-            print('Consumer exception')
-            continue
-
+            print("Got some error in Kafka Consumer.")
 
 '''
 kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic test_2
 kafka-console-producer --broker-list localhost:9092 --topic
 kafka-console-consumer --bootstrap-server localhost:9092 --topic test1 --from-beginning
+[{"Name": "John", "Marks": 80, "Class": 12},{"Name": "John II", "Marks": 90, "Class": 10}]
 [{"msg": "hi"}, {"msg": "hey"}]
 '''
