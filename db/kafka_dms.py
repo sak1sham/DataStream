@@ -7,6 +7,9 @@ from kafka import KafkaConsumer
 import logging
 import pytz
 
+from dotenv import load_dotenv
+load_dotenv()
+
 #from helper.util import *
 #from helper.logger import logger
 
@@ -15,7 +18,7 @@ dftype = NewType("dftype", pd.DataFrame)
 
 topic = 'test_2'
 kafka_server = 'localhost:9092'
-kafka_group = 'group'
+kafka_group = 'dms_kafka'
 
 s3_bucket_destination = 's3://learning-migrationservice/Kafka/'
 s3_athena_database = 'kafka'
@@ -94,6 +97,7 @@ def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
 class KafkaMigrate:
     def __init__(self) -> None:
         self.curr_mapping = {
+            'topic_name': 'test_2',
             'fields': {
                 'msg': 'str',
             },
@@ -105,6 +109,7 @@ class KafkaMigrate:
         df["msg_parquet"] = df['msg']
         schema = self.curr_mapping['fields']
         df = convert_to_dtype(df, schema)
+        {'name': 'kafka'}
         return df
 
     def save_data(self, processed_data: dftype = None) -> None:
@@ -134,9 +139,10 @@ if __name__ == "__main__":
             print(message)
             df = pd.DataFrame(message.value)
             print(df.columns.tolist())
-            # processed_data = obj.process_table(df=df)
-            # obj.save_data(processed_data=processed_data)
-            # print("Data saved")
+            processed_data = obj.process_table(df=df)
+            print('processed data')
+            obj.save_data(processed_data=processed_data)
+            print("Data saved")
         except Exception as e:
             print(e)
             print('Consumer exception')
@@ -147,4 +153,5 @@ if __name__ == "__main__":
 kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic test_2
 kafka-console-producer --broker-list localhost:9092 --topic
 kafka-console-consumer --bootstrap-server localhost:9092 --topic test1 --from-beginning
+[{"msg": "hi"}, {"msg": "hey"}]
 '''
