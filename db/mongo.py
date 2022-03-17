@@ -16,7 +16,7 @@ from typing import List, Dict, Any
 import time
 
 class MongoMigrate:
-    def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
+    def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, batch_size: int = 2, tz_str: str = 'Asia/Kolkata') -> None:
         if (not db or not curr_mapping):
             raise MissingData("db or curr_mapping can not be None.")
         if('batch_size' in curr_mapping.keys() and isinstance(curr_mapping['batch_size'], int)):
@@ -30,7 +30,6 @@ class MongoMigrate:
         self.db = db
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
-        self.resume = False
 
     def inform(self, message: str = None) -> None:
         logger.inform(self.curr_mapping['unique_id'] + ": " + message)
@@ -317,13 +316,6 @@ class MongoMigrate:
             if(self.curr_mapping['mode'] != 'dumping'):
                 primary_keys = ['_id']
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
-
-
-    def resume_previous_if_pending(self) -> None:
-        rec = get_last_migrated_record(self.curr_mapping['unique_id'])
-        if(rec):
-            self.inform("Found a job had stopped unexpectedly previously. Trying to resume.")
-            self.resume = rec
 
 
     def process(self) -> None:
