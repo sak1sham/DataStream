@@ -1,29 +1,23 @@
 import pandas as pd
 import awswrangler as wr
-from dotenv import load_dotenv
-import os
 import json
 import datetime
 from typing import NewType
 from kafka import KafkaConsumer
-from os.path import join, dirname
 
 from helper.util import *
 from helper.logger import logger
 
-
-dotenv_path = join(dirname(__file__), '../impressions.env')
-load_dotenv(dotenv_path)
-
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
 
-topic = os.environ.get('KAFKA_IMPRESSION_S3_TOPIC')
-kafka_server = os.environ.get('KAFKA_BOOTSTRAP_SERVER')
-kafka_group = os.environ.get('KAFKA_GROUP')
-s3_bucket_destination = os.environ.get('s3_bucket_destination')
-s3_athena_database=os.environ.get('s3_athena_database')
-s3_athena_database_table=os.environ.get('s3_athena_database_table')
+topic = 'topic'
+kafka_server = 'localhost:9092'
+kafka_group = 'group'
+
+s3_bucket_destination = 's3://learning-migrationservice/Kafka/'
+s3_athena_database = 'kafka'
+s3_athena_database_table = 'kafka'
 
 class KafkaMigrate:
     def __init__(self) -> None:
