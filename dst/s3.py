@@ -1,7 +1,7 @@
 import awswrangler as wr
 
 from helper.logger import logger
-
+from helper.util import convert_heads_to_lowercase
 from typing import List, Dict, Any
 import datetime
 from helper.util import utc_to_local, df_update_records
@@ -12,7 +12,7 @@ load_dotenv()
 class s3Saver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, c_partition: List[str] = [], unique_id: str = "") -> None:
         self.s3_location = "s3://" + db_destination['s3_bucket_name'] + "/" + db_source['source_type'] + "/" + db_source['db_name'] + "/"
-        self.partition_cols = c_partition
+        self.partition_cols = convert_heads_to_lowercase(c_partition)
         self.unique_id = unique_id
         self.name_ = ""
         self.table_list = []
@@ -33,13 +33,16 @@ class s3Saver:
 
     def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = [], primary_keys: List[str] = None) -> None:
         if(c_partition and len(c_partition) > 0):
-            self.partition_cols = c_partition
+            self.partition_cols = convert_heads_to_lowercase(c_partition)
         if(not self.name_ or not(self.name_ == processed_data['name'])):
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
         file_name = self.s3_location + processed_data['name'] + "/"
         self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
+
         if(processed_data['df_insert'].shape[0] > 0):
+            processed_data['df_insert'] = convert_heads_to_lowercase(processed_data['df_insert'])
+            processed_data['dtypes'] = convert_heads_to_lowercase(processed_data["dtypes"])
             wr.s3.to_parquet(
                 df = processed_data['df_insert'],
                 path = file_name,
@@ -58,6 +61,7 @@ class s3Saver:
         n_updations = processed_data['df_update'].shape[0]
         self.inform("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
         if(n_updations > 0):
+            processed_data['df_update'] = convert_heads_to_lowercase(processed_data['df_update'])
             print(processed_data['df_update'].groupby(self.partition_cols).size())
             dfs_u = [x for _, x in processed_data['df_update'].groupby(self.partition_cols)]
             ## Now all the records which are of same partition are grouped together, and will be updated in the same run

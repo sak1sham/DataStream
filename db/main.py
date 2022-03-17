@@ -10,6 +10,11 @@ from config.migration_mapping import settings
 
 class DMS_importer:
     def __init__(self, db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
+        '''
+            db = complete mapping for a particular job_id
+            curr_mapping = mapping for table/collection/api within db
+            tz__ = timezone
+        '''
         self.db = db
         self.curr_mapping = curr_mapping
         if(db['source']['source_type'] == 'mongo'):

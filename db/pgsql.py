@@ -3,7 +3,7 @@ import psycopg2
 import pymongo
 
 from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, utc_to_local, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
@@ -41,9 +41,12 @@ class PGSQLMigrate:
 
  
     def preprocess(self) -> None:
-        self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
-        self.curr_run_cron_job = convert_to_datetime(utc_to_local(datetime.datetime.utcnow(), self.tz_info), self.tz_info)
+        self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
+        self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
+
+    def postprocess(self):
+        set_last_run_cron_job(id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
 
 
     def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({}), mode: str = "both") -> Tuple[dftype]:
@@ -448,5 +451,9 @@ class PGSQLMigrate:
         if(self.curr_mapping['mode'] == 'dumping' and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform("Expired data removed.")
+
+        self.postprocess()
+        self.inform("Post processing completed.")
+
         self.saver.close()
         self.inform("Hope to see you again :')")

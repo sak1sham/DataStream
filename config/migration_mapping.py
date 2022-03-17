@@ -92,7 +92,7 @@ with all_products as (
 '''
 
 
-mapping = {
+'''mapping = {
     "dms_iswq_ll_cciv": {
         'source': {
             'source_type': 'sql',
@@ -270,7 +270,7 @@ mapping = {
         ]
     },
 }
-
+'''
 '''
 mapping = {
     "order_actions_cmdb_s3": {
@@ -592,12 +592,43 @@ mapping = {
         ]
     },
 }
-
 '''
+
+mapping = {
+    'testing_only': {
+        'source': {
+            'source_type': 'mongo',
+            'url': 'mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+            'db_name': 'test'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'learning-migrationservice',
+        },
+        'collections': [
+            {
+                'collection_name': 'migration_test',
+                'fields': {
+                    'Age': 'int',
+                    'Marks': 'int',
+                    'Updated_at': 'datetime',
+                    'Random_other': 'int',
+                },
+                'bookmark': 'Updated_at',
+                'archive': False,
+                'cron': 'self-managed',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+        ]
+    }
+}
+
 settings = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-    'notify': True,
+    'notify': False,
     'encryption_store': {
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),
@@ -605,6 +636,6 @@ settings = {
     },
     'slack_notif': {
         'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C0357UJ2YCF"
+        'channel': "C035WQHD291"
     }
 }

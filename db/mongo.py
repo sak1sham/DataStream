@@ -1,5 +1,5 @@
 from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
@@ -63,8 +63,9 @@ class MongoMigrate:
         if('fields' not in self.curr_mapping.keys()):
             self.curr_mapping['fields'] = {}
         
-        self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
-        self.curr_run_cron_job = convert_to_datetime(datetime.datetime.utcnow(), self.tz_info)
+        self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
+        self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
+
         self.partition_for_parquet = []
         if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
             if('partition_col' not in self.curr_mapping.keys() or not self.curr_mapping['partition_col']):
@@ -118,6 +119,10 @@ class MongoMigrate:
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
 
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
+
+
+    def postprocess(self):
+        set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
 
 
     def add_partitions(self, document: Dict[str, Any], insertion_time) -> Dict[str, Any]:
@@ -177,6 +182,7 @@ class MongoMigrate:
         collection_encr = get_data_from_encr_db()
         migration_start_id = ObjectId.from_datetime(self.curr_run_cron_job)
         migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
+        self.inform('Inserting all records created between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
         query = {
             "_id": {
                 "$gte": migration_prev_id, 
@@ -184,6 +190,7 @@ class MongoMigrate:
             }
         }
         all_documents = self.fetch_data(start=start, end=end, query=query)
+        #sorted, and batch wise
         if(not all_documents or len(all_documents) == 0):
             return None
         for document in all_documents:
@@ -212,16 +219,16 @@ class MongoMigrate:
         ## Both bookmarks are otherwise required 
         docu_update = []
         collection_encr = get_data_from_encr_db()
-        migration_start_id = ObjectId.from_datetime(self.curr_run_cron_job)
         migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
+        self.inform('Updating all records updated between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
         all_documents = []
         if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and not improper_bookmarks):
             query = {
                 "$and":[
                     {
                         self.curr_mapping['bookmark']: {
-                            "$gte": migration_prev_id,
-                            "$lt": migration_start_id
+                            "$gte": self.last_run_cron_job,
+                            "$lt": self.curr_run_cron_job,
                         }
                     },
                     {   "_id": {
@@ -297,13 +304,25 @@ class MongoMigrate:
         self.inform("Data fetched.")
         self.preprocess()
         self.inform("Collection pre-processed.")
+
         start = 0
         already_done_with_insertion = False
         updated_in_destination = True
         processed_collection = {}
         processed_collection_u = {}
         end = 0
-
+        ## mode = 'syncing', 'logging', 'dumping'
+        '''
+            When we are dumping data, snapshots of the datastore are captured at regular intervals. We maintain multiple copies of the tables
+            Logging is the mode where the data is only being added to the source table, and we assume no updations are ever performed. Only new records are migrated.
+            Syncing: Where all new records is migrated, and all updations are also mapped to destination. If a record is deleted at source, it's NOT deleted at destination
+            processed_collection = {
+                'name': str: collection_name,
+                'df_insert': pd.Dataframe({}): all records to be inserted
+                'df_update': pd.DataFrame({}): all records to be updated,
+                'dtypes': Dict[str, str]: Glue/Athena mapping of all fields
+            }
+        '''
         while(True):
             end = start + self.batch_size
             if(self.curr_mapping['mode'] == 'dumping'):
@@ -360,6 +379,29 @@ class MongoMigrate:
         if(self.curr_mapping['mode'] == 'dumping' and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform("Expired data removed.")
+        
+        self.postprocess()
+        self.inform("Post processing completed.")
+
         self.saver.close()
         self.inform("Hope to see you again :')\n")
- 
+
+
+
+'''
+Support-service : support_tickets
+Second_last_cron_job == 14/3
+Last_cron_job == 15/3
+
+count
+
+
+For every time we start a job, we count the number of records to be inserted
+After insertion gives error we stop
+Before we resume, we check from athena how many records are inserted (N)
+If inserted records are less, we resume again from that N+1
+
+main
+    ----s3
+        -----system-recovery
+'''
