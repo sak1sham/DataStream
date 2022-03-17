@@ -4,7 +4,6 @@ import certifi
 from helper.exceptions import ConnectionError
 from helper.logger import logger
 
-from bson import ObjectId
 import pytz
 import datetime
 from typing import NewType, Any, Dict
@@ -49,16 +48,10 @@ def get_last_migrated_record(job_id: str) -> Dict[str, Any]:
     db = get_data_from_encr_db()
     prev = db.find_one({'last_migrated_record_for_id': job_id})
     if(prev):
-        prev = pytz.utc.localize(prev['timing'])
+        prev['timing'] = pytz.utc.localize(prev['timing'])
         return prev
     else:
-        prev_time = datetime.datetime(1999, 1, 1, 0, 0, 0, 0, tzinfo=pytz.utc)
-        prev = {
-            'last_migrated_record_for_id': job_id,
-            'record_id': ObjectId(prev_time),
-            'timing': prev_time,
-        }
-        return prev
+        return None
 
 def set_last_migrated_record(job_id: str, _id: Any, timing: datetype) -> None:
     rec = {
@@ -73,3 +66,10 @@ def set_last_migrated_record(job_id: str, _id: Any, timing: datetype) -> None:
         db.insert_one(rec)
     else:
         db.insert_one(rec)
+
+def delete_last_migrated_record(job_id: str):
+    '''
+        Delete the last migrated record if entire batch is processed successfully
+    '''
+    db = get_data_from_encr_db()
+    db.delete_one({'last_migrated_record_for_id': job_id})

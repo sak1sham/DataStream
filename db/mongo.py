@@ -1,5 +1,5 @@
 from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record, delete_last_migrated_record
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
@@ -30,6 +30,7 @@ class MongoMigrate:
         self.db = db
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
+        self.resume = False
 
     def inform(self, message: str = None) -> None:
         logger.inform(self.curr_mapping['unique_id'] + ": " + message)
@@ -178,18 +179,37 @@ class MongoMigrate:
         ## It's assumed that no updation is performed
         ## bookmark_creation is required, which in case of mongo is '_id'
         ## If bookmark_updation is not provided, and the mode is syncing, then hashes are stored
+        migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
+        migration_start_id = ObjectId.from_datetime(self.curr_run_cron_job)
+        
+        resume = False
+        rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+        if(rec):
+            migration_prev_id = rec['record_id']
+            resume = True
+        
         docu_insert = []
         collection_encr = get_data_from_encr_db()
-        migration_start_id = ObjectId.from_datetime(self.curr_run_cron_job)
-        migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
-        self.inform('Inserting all records created between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
-        query = {
-            "_id": {
-                "$gte": migration_prev_id, 
-                "$lt": migration_start_id
+        all_documents = []
+
+        if(resume):
+            self.inform('Inserting some records created after ' + str(migration_prev_id.generation_time) + " and before " + str(migration_start_id.generation_time))
+            query = {
+                "_id": {
+                    "$gt": migration_prev_id, 
+                    "$lt": migration_start_id
+                }
             }
-        }
-        all_documents = self.fetch_data(start=start, end=end, query=query)
+            all_documents = self.fetch_data(start=start, end=end, query=query)
+        else:
+            self.inform('Inserting some records created between ' + str(migration_prev_id.generation_time) + " and " + str(migration_start_id.generation_time))
+            query = {
+                "_id": {
+                    "$gte": migration_prev_id, 
+                    "$lt": migration_start_id
+                }
+            }
+            all_documents = self.fetch_data(start=start, end=end, query=query)
         #sorted, and batch wise
         if(not all_documents or len(all_documents) == 0):
             return None
@@ -299,6 +319,13 @@ class MongoMigrate:
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
 
 
+    def resume_previous_if_pending(self) -> None:
+        rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+        if(rec):
+            self.inform("Found a job had stopped unexpectedly previously. Trying to resume.")
+            self.resume = rec
+
+
     def process(self) -> None:
         max_end = self.get_connectivity()
         self.inform("Data fetched.")
@@ -349,6 +376,7 @@ class MongoMigrate:
                 if(self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion):
                     already_done_with_insertion = True
                     self.inform("Inserted all records from collection, looking forward to updations.")
+                    delete_last_migrated_record(self.curr_mapping['unique_id'])
                     start = 0
                     end = 0
                     processed_collection = {}
@@ -359,6 +387,9 @@ class MongoMigrate:
             else:
                 if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'logging' or (self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion)):
                     self.save_data(processed_collection=processed_collection)
+                    if(processed_collection['df_insert'].shape[0]):
+                        last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
+                        set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time.replace(tzinfo=pytz.utc))
                     processed_collection = {}
                 elif(processed_collection['df_update'].shape[0] >= self.batch_size):
                     self.save_data(processed_collection=processed_collection)
