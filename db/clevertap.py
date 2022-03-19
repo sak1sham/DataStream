@@ -45,7 +45,7 @@ class ClevertapManager(EventsAPIManager):
         self.project_name = project_name
         self.event_names = []
         self.tz_info = pytz.timezone(tz_str)
-        supper().__init__(project_name)
+        super().__init__(project_name)
     
     def set_and_get_event_names(self, event_names) -> None:
         if (isinstance(event_names, str)) and event_names=='*':
