@@ -269,3 +269,18 @@ def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
         elif(dtype == 'float' or dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
             athena_types[key] = 'float'
     return athena_types
+
+
+def get_yyyymmdd_from_date(days=0):
+        sync_date = datetime.date.today() + datetime.timedelta(days=int(days))
+        return int(sync_date.strftime('%Y%m%d'))
+
+def transformTs(ts):
+    value = str(ts)
+    year = int(value[0:4])
+    month = int(value[4:6])
+    day = int(value[6:8])
+    hour = int(value[8:10])
+    minute = int(value[10:12])
+    second = int(value[12:14])
+    return datetime(year, month, day, hour, minute, second, 0, pytz.timezone('Asia/Kolkata')).isoformat()

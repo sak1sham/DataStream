@@ -2,6 +2,9 @@ from config.clevertap import *
 import requests
 import json
 from slugify import slugify
+from helper.util import get_yyyymmdd_from_date, transformTs, validate_or_convert, typecast_df_to_schema
+import pytz
+import pandas as pd
 
 class EventsAPIManager:
     CLEVERTAP_API_BASE_URL = "https://in1.api.clevertap.com/1/"
@@ -38,9 +41,10 @@ class EventsAPIManager:
 
 
 class ClevertapManager(EventsAPIManager):
-    def __init__(self, project_name) -> None:
+    def __init__(self, project_name, tz_str: str = 'Asia/Kolkata') -> None:
         self.project_name = project_name
         self.event_names = []
+        self.tz_info = pytz.timezone(tz_str)
         supper().__init__(project_name)
     
     def set_and_get_event_names(self, event_names) -> None:
@@ -52,80 +56,64 @@ class ClevertapManager(EventsAPIManager):
             raise Exception("invalid event names")
         return self.event_names
 
-    def api_to_dataframe(self, records, event_name, from_date):
-        file_name = event_name + '-' + str(from_date) + '-' + str(batch_count) + '.csv'
-        year = str(from_date)[0:4]
-        month = str(from_date)[4:6]
-        day = str(from_date)[6:8]
-        event_slug = slugify(event_name)
+    def transform_api_data(self, records, event_name, curr_mapping):
+        tf_records = []
+        for record in records:
+            tf_record = {
+                "event_name": event_name,
+                "ct_ts": record.get("ts"),
+                "timestamp": transformTs(record.get("ts", "")),
+                "name": record["profile"].get("name", ""),
+                "phone": record["profile"].get("phone", ""),
+                "cx_city": record["profile"].get("profileData", {}).get("cx_city", ""),
+                "city": record["profile"].get("profileData", {}).get("city", ""),
+                "user_id": record["profile"].get("profileData", {}).get("user_id"),
+                "whatsapp_opted_in":record["profile"].get("profileData", {}).get("whatsapp_opted_in", ""),
 
-        with open(file_name, 'w', newline='') as csvfile:
-            csv_writer = csv.writer(csvfile)
-            for record in records:
-                leaderlat=0.0
-                leaderlng=0.0
-                leaderuserid = 0
-                try:
-                    leaderlat = float(record["profile"].get("profileData", {}).get("leaderlat", 0.0))
-                except:
-                    pass
-                try:        
-                    leaderlng = float(record["profile"].get("profileData", {}).get("leaderlng", 0.0))
-                except:
-                    pass
-                try:        
-                    leaderuserid = int(record["profile"].get("profileData", {}).get("leaderuserid", 0))
-                except:
-                    pass
+                "leader_id": record["profile"].get("profileData", {}).get("leaderid", ""),
+                "leader_name": record["profile"].get("profileData", {}).get("leadername", ""),
+                "leader_user_id": record["profile"].get("profileData", {}).get("leaderuserid", 0),
+                "leader_lat": record["profile"].get("profileData", {}).get("leaderlat", 0.0),
+                "leader_lng": record["profile"].get("profileData", {}).get("leaderlng", 0.0),
+                "catalogue_name": record["profile"].get("profileData", {}).get("catalogue_name", ""),
+                "platform": record["profile"].get("platform", ""),
 
-                try:
-                    csv_writer.writerow([
-                        event_name,
-                        record.get("ts", ""),
-                        transformTs(record.get("ts", "")),
-                        record["profile"].get("name", ""),
-                        record["profile"].get("phone", ""),
-                        record["profile"].get("profileData", {}).get("cx_city", ""),
-                        record["profile"].get("profileData", {}).get("city", ""),
-                        int(record["profile"].get("profileData", {}).get("user_id")),
-                        record["profile"].get("profileData", {}).get("whatsapp_opted_in", ""),
+                "ct_object_id": record["profile"].get("objectId", ""),
+                "ct_session_id": record.get("event_props", {}).get("CT Session Id", ""),
+                "screen_name": record.get("event_props", {}).get("screen_name", ""),
 
-                        record["profile"].get("profileData", {}).get("leaderid", ""),
-                        record["profile"].get("profileData", {}).get("leadername", ""),
-                        leaderuserid,
-                        leaderlat,
-                        leaderlng,
-                        record["profile"].get("profileData", {}).get("catalogue_name", ""),
-                        record["profile"].get("platform", ""),
+                "os_version": record["profile"].get("os_version", ""),
+                "app_version": record["profile"].get("app_version", ""),
+                "make": record["profile"].get("make", ""),
+                "model": record["profile"].get("model", ""),
+                "cplabel": record["profile"].get("profileData", {}).get("cplabel", ""),
 
-                        record["profile"].get("objectId", ""),
-                        record.get("event_props", {}).get("CT Session Id", ""),
-                        record.get("event_props", {}).get("screen_name", ""),
-
-                        record["profile"].get("os_version", ""),
-                        record["profile"].get("app_version", ""),
-                        record["profile"].get("make", ""),
-                        record["profile"].get("model", ""),
-                        record["profile"].get("profileData", {}).get("cplabel", ""),
-
-                        json.dumps(record["profile"].get("profileData", {}).get("tags", "")),
-                        json.dumps(record.get("event_props", ""))
-                    ])
-                except:
-                    pass
+                "tags": record["profile"].get("profileData", {}).get("tags", ""),
+                "event_props": record.get("event_props", "")
+            }
+            tf_record = validate_or_convert(tf_record, curr_mapping['fields'], self.tz_info)
+            tf_records.append(tf_record)
+        return tf_records
 
     def get_processed_data(self, event_name, curr_mapping):
-        records = []
-        start_cursor = self.get_event_cursor(event_name, start_date, end_date)
+        bookmark_key = curr_mapping.get('bookmark_key', '')
+        if not bookmark_key:
+            raise Exception("please provide bookmark key")
+        sync_date = get_yyyymmdd_from_date(days=bookmark_key)
+        start_cursor = self.get_event_cursor(event_name, sync_date, sync_date)
         cursor_data = self.get_records_for_cursor(start_cursor)
+        transformed_records = []
         if cursor_data["status"] == "success":
             if "records" in cursor_data:
-                records += cursor_data['records']
+                transformed_records += self.transform_api_data(event_name, cursor_data['records'], curr_mapping)
                 while "next_cursor" in cursor_data:
                     cursor_data = self.get_records_for_cursor(cursor_data["next_cursor"])
                     if "records" in cursor_data:
-                        records += cursor_data['records']
-        return records
+                        transformed_records += self.transform_api_data(event_name, cursor_data['records'], curr_mapping)
+        return {
+            'name': curr_mapping['api_name'],
+            'df_insert': typecast_df_to_schema(pd.DataFrame(transformed_records), curr_mapping['fields'])
+        }
 
 
 

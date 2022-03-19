@@ -2,6 +2,7 @@ from clevertap import ClevertapManager
 from helper.logging import logger
 from typing import Dict, Any
 import pytz
+from dst.main import DMS_exporter
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -11,9 +12,13 @@ class APIMigrate:
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
         self.client = None
-        
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
+
     def save_data_to_destination(self, processed_data, partition):
-        pass
+        if(not processed_data):
+            return
+        else:
+            self.saver.save(processed_data = processed_data)
 
     def process(self) -> None:
         if (self.db['source']['source_client'] and self.db['source']['source_client']=='clevertap'):
