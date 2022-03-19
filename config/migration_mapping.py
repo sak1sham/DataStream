@@ -620,7 +620,8 @@ mapping = {
                 'project_name': 'cx_app',
                 'event_names': '*',
                 'bookmark_key_type': 'date',
-                'bookmark_interval': '-1',
+                'bookmark_init_value': '-1',
+                'interval_period': '0',
                 'fields': {
 
                 },

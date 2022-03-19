@@ -1,5 +1,5 @@
-CLEVERTAP_CX_ACCOUNT_ID = "4RW-KZK-995Z"
-CLEVERTAP_CX_PASSCODE = "AOW-ROB-WXKL"
+CLEVERTAP_CX_APP_ACCOUNT_ID = "4RW-KZK-995Z"
+CLEVERTAP_CX_APP_PASSCODE = "AOW-ROB-WXKL"
 
 cx_app_event_names = [
     'Notification Clicked', 
@@ -61,8 +61,8 @@ cx_app_event_names = [
     "Null Search"
     ]
 
-CLEVERTAP_CL_ACCOUNT_ID = "867-RZK-995Z"
-CLEVERTAP_CL_PASSCODE = "SMQ-IOB-WXKL"
+CLEVERTAP_CL_APP_ACCOUNT_ID = "867-RZK-995Z"
+CLEVERTAP_CL_APP_PASSCODE = "SMQ-IOB-WXKL"
 
 cl_app_event_names = [
     'Notification Clicked', 
