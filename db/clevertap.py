@@ -11,10 +11,28 @@ class EventsAPIManager:
 
     def __init__(self, project_name):
         self.CLEVERTAP_API_HEADERS = {
-            'X-CleverTap-Account-Id': 'CLEVERTAP_'+ project_name.upper() + 'ACCOUNT_ID', 
-            'X-CleverTap-Passcode': 'CLEVERTAP_'+ project_name.upper() + 'PASSCODE', 
+            'X-CleverTap-Account-Id': self.get_static_value(project_name, 'account_id'), 
+            'X-CleverTap-Passcode': self.get_static_value(project_name, 'passcode'), 
             'Content-Type': 'application/json'
         }
+
+    @staticmethod
+    def get_static_value(project_name, key):
+        if project_name=='cx_app':
+            if key == 'account_id':
+                return CLEVERTAP_CX_APP_ACCOUNT_ID
+            if key == 'passcode':
+                return CLEVERTAP_CX_APP_PASSCODE
+            if key == 'events':
+                return cx_app_event_names
+        if project_name=='cl_app':
+            if key == 'account_id':
+                return CLEVERTAP_CL_APP_ACCOUNT_ID
+            if key == 'passcode':
+                return CLEVERTAP_CL_APP_PASSCODE
+            if key == 'events':
+                return cl_app_event_names
+        return None
 
     def get_event_cursor(self, event_name, from_date, to_date):
         params = {"batch_size": 10000, "events": "false"}
@@ -45,12 +63,12 @@ class ClevertapManager(EventsAPIManager):
         self.project_name = project_name
         self.event_names = []
         self.tz_info = pytz.timezone(tz_str)
-        super().__init__(project_name)
+        super().__init__(self.project_name)    
     
     def set_and_get_event_names(self, event_names) -> None:
         if (isinstance(event_names, str)) and event_names=='*':
-            self.event_names = (self.project_name + '_event_names').lower()
-        if (isinstance(event_names, list)):
+            self.event_names = self.get_static_value(self.project_name, 'events')
+        elif (isinstance(event_names, list)):
             self.event_names = event_names
         else:
             raise Exception("invalid event names")
@@ -105,7 +123,7 @@ class ClevertapManager(EventsAPIManager):
         transformed_records = []
         if cursor_data["status"] == "success":
             if "records" in cursor_data:
-                transformed_records += self.transform_api_data(event_name, cursor_data['records'], curr_mapping)
+                transformed_records += self.transform_api_data(cursor_data['records'], event_name, curr_mapping)
                 while "next_cursor" in cursor_data:
                     cursor_data = self.get_records_for_cursor(cursor_data["next_cursor"])
                     if "records" in cursor_data:
@@ -114,6 +132,32 @@ class ClevertapManager(EventsAPIManager):
             'name': curr_mapping['api_name'],
             'df_insert': typecast_df_to_schema(pd.DataFrame(transformed_records), curr_mapping['fields'])
         }
+    
+    def cleaned_processed_data(self, event_name, curr_mapping, dst_saver):
+        bookmark_key = curr_mapping.get('bookmark_key', '')
+        if not bookmark_key:
+            raise Exception("please provide bookmark key")
+        sync_date = get_yyyymmdd_from_date(days=bookmark_key)
+        year = str(sync_date)[0:4]
+        month = str(sync_date)[4:6]
+        day = str(sync_date)[6:8]
 
+        if dst_saver.type=='redshift':
+            try:
+                cur = dst_saver.saver.conn.cursor()
+                delete_query = "delete from {0}.{1} where DATE(timestamp AT TIME ZONE 'Asia/Kolkata') = '{4}-{5}-{6}' and event_name='{2}'".format(
+                    dst_saver.saver.schema,
+                    curr_mapping['api_name'],
+                    event_name,
+                    year, 
+                    month, 
+                    day
+                    )
+                cur.execute(delete_query)
+                dst_saver.saver.conn.commit()
+                cur.close() 
+                dst_saver.saver.conn.close()
+            except:
+                pass
 
 
