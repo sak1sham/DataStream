@@ -544,75 +544,19 @@ mapping = {
 }'''
 
 mapping = {
-    "ct-cx-events-to-s3": {
+    "ct-events-to-redshift": {
         "source": {
             "source_type": "api",
-            "base_url": "https://in1.api.clevertap.com/1/",
-            "auth_params": {
-                'X-CleverTap-Account-Id': 'CLEVERTAP_ACCOUNT_ID', 
-                'X-CleverTap-Passcode': 'CLEVERTAP_PASSCODE'
-            }
+            "db_name": "clevertap"
         },
         "destination": {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod'
-        },
-        "apis": [
-            {
-                'api_name':'*',
-                'api_name_key':'event_names',
-                'event_names': [],
-                'end_point': 'events.json',
-                'request_method': 'POST',
-                'extra_header': {
-                    'Content-Type': 'application/json'
-                },
-                'params': {
-                    "batch_size": 10000, 
-                    "events": "false"
-                },
-                'body': {
-                    'event_name': {
-                        'type': 'str',
-                        'value': '*'
-                    },
-                    'from': {
-                        'type': 'date',
-                        'format': 'YYYYMMDD'
-                    },
-                    'to': {
-                        'type': 'date',
-                        'format': 'YYYYMMDD'
-                    }
-                },
-                'multi_level': 'True',
-                'level_key': 'next_cursor',
-                'bookmark_key': ['from', 'to'],
-                'bookmark_key_type': 'date',
-                'bookmark_interval': '-1',
-                'next_api': {
-
-                },
-                'fields': {
-
-                },
-                'cron': 'self-managed',
-            }
-        ]
-    }
-}
-
-
-
-mapping = {
-    "ct-events-to-s3": {
-        "source": {
-            "source_type": "api",
-            "source_client": "clevertap"
-        },
-        "destination": {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod'
+            'destination_type': 'redshift',
+            'host': 'redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+            'database': 'dev',
+            'user': 'admin-redshift',
+            'password': 'CitymallDevAdmin123',
+            'schema': 'cm_clevertap',
+            's3_bucket_name': 'database-migration-service-prod',
         },
         "apis": [
             {

@@ -23,7 +23,7 @@ class DMS_importer:
             self.name = curr_mapping['table_name']
             self.obj = S3Migrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
         elif(db['source']['source_type'] == 'api'):
-            self.name = curr_mapping['api_names']
+            self.name = curr_mapping['api_name']
             self.obj = APIMigrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
     
     def process(self):

@@ -1,4 +1,4 @@
-from clevertap import ClevertapManager
+from db.clevertap import ClevertapManager
 from helper.logging import logger
 from typing import Dict, Any
 import pytz
@@ -21,7 +21,7 @@ class APIMigrate:
             self.saver.save(processed_data = processed_data)
 
     def process(self) -> None:
-        if (self.db['source']['source_client'] and self.db['source']['source_client']=='clevertap'):
+        if (self.db['source']['db_name'] and self.db['source']['db_name']=='clevertap'):
             self.client = ClevertapManager(self.curr_mapping['project_name'])
             event_names = self.client.set_and_get_event_names(self.curr_mapping['event_namess'])
             for event_name in event_names:
