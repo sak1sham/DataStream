@@ -3,6 +3,7 @@ from helper.logging import logger
 from typing import Dict, Any
 import pytz
 from dst.main import DMS_exporter
+import traceback
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -31,5 +32,6 @@ class APIMigrate:
                     self.client.cleaned_processed_data(event_name, self.saver)
                     self.save_data_to_destination(processed_data=processed_data)
                 except:
+                    logger.err(traceback.format_exc())
                     logger.err(self.curr_mapping['unique_id'] + " - "+ event_name + ": " + "caught some error while migrating event data.")
 
