@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-'''
+
 mapping = {
     "dms_iswq_ll_cciv": {
         'source': {
@@ -159,7 +159,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 47 0',
+                'cron': '* * * * * 19 26 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -172,7 +172,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 14 47 0',
+                'cron': '* * * * * 19 26 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -184,7 +184,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 47 0',
+                'cron': '* * * * * 19 26 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -194,7 +194,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 47 0',
+                'cron': '* * * * * 19 26 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -213,7 +213,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 14 47 0',
+                'cron': '* * * * * 19 26 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -244,7 +244,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 14 47 0',
+                'cron': '* * * * * 19 26 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -261,7 +261,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 14 47 0',
+                'cron': '* * * * * 19 26 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -271,7 +271,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 14 47 0',
+                'cron': '* * * * * 19 26 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -279,7 +279,7 @@ mapping = {
         ]
     },
 }
-'''
+
 '''
 mapping = {
     "order_actions_cmdb_s3": {
@@ -633,7 +633,7 @@ mapping = {
         ]
     }
 }
-
+'''
 '''
 mapping = {
     'testing_only': {
@@ -662,12 +662,12 @@ mapping = {
         ]
     }
 }
-
+'''
 
 settings = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-    'notify': False,
+    'notify': True,
     'encryption_store': {
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),
