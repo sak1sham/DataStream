@@ -4,6 +4,9 @@ from typing import Dict, Any
 import pytz
 from dst.main import DMS_exporter
 import traceback
+from helper.util import convert_to_datetime
+from db.encr_db import get_last_run_cron_job
+import datetime
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -13,13 +16,18 @@ class APIMigrate:
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
 
-    def save_data_to_destination(self, processed_data):
+    def save_data_to_destination(self, processed_data: Dict[str, Any]):
         if(not processed_data):
             return
         else:
             self.saver.save(processed_data = processed_data)
 
     def presetup(self) -> None:
+        if('fields' not in self.curr_mapping.keys()):
+            self.curr_mapping['fields'] = {}
+
+        self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
+        self.curr_run_cron_job = convert_to_datetime(datetime.datetime.utcnow(), self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
     def process(self) -> None:
