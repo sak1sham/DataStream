@@ -60,7 +60,7 @@ class RedshiftSaver:
                     varchar_lengths = varchar_lengths,
                     varchar_lengths_default = 512
                 )
-        self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")    
+            self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")    
         if('df_update' in processed_data and processed_data['df_update'].shape[0] > 0):
             self.inform("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
             # is_dump = False, and primary_keys will be present.
@@ -87,7 +87,7 @@ class RedshiftSaver:
                     varchar_lengths = varchar_lengths,
                     varchar_lengths_default = 512
                 )
-        self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
+            self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
     
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()
