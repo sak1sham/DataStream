@@ -1,3 +1,5 @@
+from re import T
+from numpy import true_divide
 import pandas as pd
 import json
 import datetime
@@ -27,14 +29,14 @@ class KafkaMigrate:
         self.tz_info = pytz.timezone(tz_str)
         self.primary_key = 0
 
-    def inform(self, message: str = None) -> None:
-        logger.inform(self.curr_mapping['unique_id'] + ": " + message)
+    def inform(self, message: str = None, save: bool = False) -> None:
+        logger.inform(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message), save=save)
 
     def warn(self, message: str = None) -> None:
-        logger.warn(self.curr_mapping['unique_id'] + ": " + message)
+        logger.warn(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message))
 
     def err(self, error: Any = None) -> None:
-        logger.err(error)
+        logger.err(job_id= self.curr_mapping['unique_id'], s=error)
 
     def preprocess(self) -> None:
         if('fields' not in self.curr_mapping.keys()):
@@ -74,7 +76,7 @@ class KafkaMigrate:
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
             else:
-                self.warn("Unable to find partition_col. Continuing without partitioning.")
+                self.warn(message=("Unable to find partition_col. Continuing without partitioning."))
         self.curr_mapping['fields']['dms_pkey'] = 'int'
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
         self.athena_dtypes = get_athena_dtypes(self.curr_mapping['fields'])
@@ -129,25 +131,25 @@ class KafkaMigrate:
     def process(self) -> None:
         try:
             consumer = KafkaConsumer(self.curr_mapping['topic_name'], bootstrap_servers = [self.db['source']['kafka_server']], enable_auto_commit = True, group_id = 'dms_kafka_group', value_deserializer = self.value_deserializer)
-            self.inform('Started consuming messages.')
+            self.inform(message='Started consuming messages.', save=True)
             self.preprocess()
-            self.inform("Preprocessing done.")
+            self.inform(message="Preprocessing done.", save=True)
             for message in consumer:
                 try:
-                    self.inform("Recieved data")
+                    self.inform(message="Recieved data", save=True)
                     df = pd.DataFrame(message.value)
                     print(df)
                     processed_data = self.process_table(df=df)
                     print(processed_data)
-                    self.inform('Processed data')
+                    self.inform(message='Processed data', save=True)
                     self.save_data(processed_data=processed_data)
-                    print("Data saved")
+                    self.inform(message="Data saved", save=True)
                 except Exception as e:
-                    print(e)
-                    print('Consumer exception')
+                    # self.err(e)
+                    self.err(error=('Consumer exception', e))
                     continue
         except Exception as e:
-            print("Got some error in Kafka Consumer.")
+            self.err(error=("Got some error in Kafka Consumer.", e))
 
 '''
 kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic test_2

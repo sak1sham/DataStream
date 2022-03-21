@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-
+'''
 mapping = {
     "dms_iswq_ll_cciv": {
         'source': {
@@ -279,7 +279,7 @@ mapping = {
         ]
     },
 }
-
+'''
 '''
 mapping = {
     "order_actions_cmdb_s3": {
@@ -634,6 +634,7 @@ mapping = {
     }
 }
 
+'''
 mapping = {
     'testing_only': {
         'source': {
@@ -661,7 +662,7 @@ mapping = {
         ]
     }
 }
-'''
+
 
 settings = {
     'fastapi_server': True,

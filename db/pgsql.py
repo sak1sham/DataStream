@@ -28,16 +28,16 @@ class PGSQLMigrate:
         self.last_run_cron_job = pd.Timestamp(None)
     
 
-    def inform(self, message: str = None) -> None:
-        logger.inform(self.curr_mapping['unique_id'] + ": " + message)
+    def inform(self, message: str = None, save: bool = False) -> None:
+        logger.inform(job_id=self.curr_mapping['unique_id'], s= self.curr_mapping['unique_id'] + ": " + message, save=save)
 
 
     def warn(self, message: str = None) -> None:
-        logger.warn(self.curr_mapping['unique_id'] + ": " + message)
+        logger.warn(job_id=self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message))
 
 
     def err(self, error: Any = None) -> None:
-        logger.err(error)
+        logger.err(job_id=self.curr_mapping['unique_id'], s=error)
 
  
     def preprocess(self) -> None:
@@ -46,7 +46,7 @@ class PGSQLMigrate:
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
     def postprocess(self):
-        set_last_run_cron_job(id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
+        set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
 
 
     def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({}), mode: str = "both") -> Tuple[dftype]:
@@ -118,7 +118,7 @@ class PGSQLMigrate:
                 else:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, str or datetime.") 
         else:
-            self.warn("Unable to find partition_col. Continuing without partitioning.")
+            self.warn(message=("Unable to find partition_col. Continuing without partitioning."))
         return df
 
 
@@ -146,7 +146,7 @@ class PGSQLMigrate:
         ## Adding a primary key "unique_migration_record_id" for every record
         if('primary_keys' not in self.curr_mapping):
             self.curr_mapping['primary_keys'] = df.columns.values.tolist()
-            self.warn("Unable to find primary_keys in mapping. Taking entire records into consideration.")
+            self.warn(message=("Unable to find primary_keys in mapping. Taking entire records into consideration."))
         if(isinstance(self.curr_mapping['primary_keys'], str)):
             self.curr_mapping['primary_keys'] = [self.curr_mapping['primary_keys']]
         self.curr_mapping['primary_keys'] = [x.lower() for x in self.curr_mapping['primary_keys']]
@@ -175,7 +175,7 @@ class PGSQLMigrate:
         ## Adding a primary key "unique_migration_record_id" for every record
         if('primary_keys' not in self.curr_mapping):
             self.curr_mapping['primary_keys'] = df.columns.values.tolist()
-            self.warn("Unable to find primary_keys in mapping. Taking entire records into consideration.")
+            self.warn(message=("Unable to find primary_keys in mapping. Taking entire records into consideration."))
         if(isinstance(self.curr_mapping['primary_keys'], str)):
             self.curr_mapping['primary_keys'] = [self.curr_mapping['primary_keys']]
         self.curr_mapping['primary_keys'] = [x.lower() for x in self.curr_mapping['primary_keys']]
@@ -230,12 +230,12 @@ class PGSQLMigrate:
                     table_names = [str(t[0] + "." + t[1]) for t in rows]
                     return table_names
             except Exception as e:
-                self.err(e)
+                self.err(error=e)
                 raise ProcessingError("Caught some exception while getting list of all tables.")
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(e)
+            self.err(error=e)
             raise ConnectionError("Unable to connect to source.")
 
 
@@ -314,21 +314,21 @@ class PGSQLMigrate:
                                             processed_data['df_update'] = processed_data['df_update'].append([processed_data_u['df_update']])
                                         else:
                                             processed_data['df_update'] = processed_data_u['df_update']
-                                        self.inform("Found " + str(processed_data['df_update'].shape[0]) + " updations upto now.")
+                                        self.inform(message="Found " + str(processed_data['df_update'].shape[0]) + " updations upto now.")
                                     if(processed_data['df_update'].shape[0] >= self.batch_size):
                                         self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                                         processed_data = {}
                                         updated_in_destination = True
                                     else:
                                         updated_in_destination = False                            
-                self.inform("Completed logging of table " + table_name + ".\n")
+                self.inform(message="Completed logging of table " + table_name + ".\n", save=True)
             except Exception as e:
-                self.err(e)
+                self.err(error=e)
                 raise ProcessingError("Caught some exception while processing records.")
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(e)
+            self.err(error=e)
             raise ConnectionError("Unable to connect to source.")
 
         if(mode == 'syncing' and sync_mode == 2 and processed_data):
@@ -411,7 +411,7 @@ class PGSQLMigrate:
         else:
             name_tables = [self.curr_mapping['table_name']]
         name_tables.sort()
-        self.inform("Found following " + str(len(name_tables)) + " tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
+        self.inform(message="Found following " + str(len(name_tables)) + " tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables), save=True)
         
         b_start = 0
         b_end = len(name_tables)
@@ -421,7 +421,7 @@ class PGSQLMigrate:
             b_end = self.curr_mapping['batch_end']
         name_tables = name_tables[b_start:b_end]
         self.preprocess()
-        self.inform("Mapping pre-processed.")
+        self.inform(message="Mapping pre-processed.", save=True)
         
         if('exclude_tables' not in self.curr_mapping.keys()):
             self.curr_mapping['exclude_tables'] = []
@@ -433,11 +433,11 @@ class PGSQLMigrate:
                 useful_tables.append(name_)
         name_tables = useful_tables
         name_tables.sort()
-        self.inform("Starting to migrating following " + str(len(name_tables)) + " useful tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
+        self.inform(message="Starting to migrating following " + str(len(name_tables)) + " useful tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables), save=True)
         
         for table_name in name_tables:
             if(table_name.count('.') >= 2):
-                self.warn("Can not migrate table with table_name: " + table_name)
+                self.warn(message=("Can not migrate table with table_name: " + table_name))
             elif(self.curr_mapping['mode'] == 'dumping'):
                 self.dumping_process(table_name)
             elif(self.curr_mapping['mode'] == 'logging'):
@@ -447,13 +447,13 @@ class PGSQLMigrate:
             else:
                 raise IncorrectMapping("Wrong mode of operation: can be syncing, logging or dumping only.")
                 
-        self.inform("Overall migration complete.")
+        self.inform(message="Overall migration complete.", save=True)
         if(self.curr_mapping['mode'] == 'dumping' and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
-            self.inform("Expired data removed.")
+            self.inform(message="Expired data removed.", save=True)
 
         self.postprocess()
-        self.inform("Post processing completed.")
+        self.inform(message="Post processing completed.", save=True)
 
         self.saver.close()
         self.inform("Hope to see you again :')")

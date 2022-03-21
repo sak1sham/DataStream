@@ -21,13 +21,13 @@ class s3Saver:
 
 
 
-    def inform(self, message: str = "") -> None:
-        logger.inform(self.unique_id + ": " + message)
+    def inform(self, message: str = "", save: bool = False) -> None:
+        logger.inform(job_id=self.unique_id, s=(self.unique_id + ": " + message), save=save)
 
 
 
     def warn(self, message: str = "") -> None:
-        logger.warn(self.unique_id + ": " + message)
+        logger.warn(job_id = self.unique_id, s=(self.unique_id + ": " + message))
 
 
 
@@ -38,7 +38,7 @@ class s3Saver:
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
         file_name = self.s3_location + processed_data['name'] + "/"
-        self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
+        self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."), save=True)
 
         if(processed_data['df_insert'].shape[0] > 0):
             processed_data['df_insert'] = convert_heads_to_lowercase(processed_data['df_insert'])
@@ -56,10 +56,10 @@ class s3Saver:
                 partition_cols = self.partition_cols,
                 schema_evolution = True,
             )
-        self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
+        self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."), save=True)
 
         n_updations = processed_data['df_update'].shape[0]
-        self.inform("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
+        self.inform(message=("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."), save=True)
         if(n_updations > 0):
             processed_data['df_update'] = convert_heads_to_lowercase(processed_data['df_update'])
             print(processed_data['df_update'].groupby(self.partition_cols).size())
@@ -72,7 +72,7 @@ class s3Saver:
                 ## Now, all records within df_u are found within this same location
                 df_u.drop(self.partition_cols, axis=1, inplace=True)
                 prev_files = wr.s3.list_objects(file_name_u)
-                self.inform("Found all files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations))
+                self.inform(message=("Found all files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations)))
                 for file_ in prev_files:
                     df_to_be_updated = wr.s3.read_parquet(
                         path = [file_],
@@ -87,7 +87,7 @@ class s3Saver:
                     if(df_u.shape[0] == 0):
                         ## This one is complete now. Go and handle the next set of records to be updated
                         break
-        self.inform(str(n_updations) + " updations done.")
+        self.inform(message=(str(n_updations) + " updations done."), save=True)
 
 
 
@@ -102,7 +102,7 @@ class s3Saver:
         if('hours' in expiry.keys()):
             hours = expiry['hours']
         delete_before_date = today_ - datetime.timedelta(days=days, hours=hours)
-        self.inform("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d'))
+        self.inform(message=("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d')), save=True)
         for table_name in self.table_list:
             wr.s3.delete_objects(
                 path = self.s3_location + table_name + "/",

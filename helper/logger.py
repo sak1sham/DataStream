@@ -1,5 +1,37 @@
+from datetime import datetime
 import logging
 from typing import Any
+
+from config.migration_mapping import settings
+from pymongo import MongoClient
+import certifi
+from helper.exceptions import ConnectionError
+
+
+
+from typing import NewType, Any
+datetype = NewType("datetype", datetime)
+
+encryption_store = settings['encryption_store']
+
+def get_data_from_encr_db():
+    try:
+        client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
+        db_encr = client_encr[encryption_store['db_name']]
+        collection_encr = db_encr[encryption_store['collection_name']]
+        return collection_encr
+    except:
+        raise ConnectionError("Unable to connect to Encryption DB.")
+
+# function to write logs into mongodb
+def write_logs(job_id: str = None, log: str = None, timing: datetype = datetime.utcnow()) -> None:
+    rec = {
+        'log_for_job': job_id,
+        'log': str(log),
+        'timing': timing
+    }
+    db = get_data_from_encr_db()
+    db.insert_one(rec)
 
 class Log_manager:
     def __init__(self) -> None:
@@ -10,11 +42,16 @@ class Log_manager:
             datefmt = '%Y-%m-%d %H:%M:%S'
         )
         logging.getLogger().setLevel(logging.INFO)
-    def inform(self, s: str) -> None:
+    def inform(self, job_id: str = None, s: str = None, save : bool = False) -> None:
         logging.info(s)
-    def warn(self, s: str) -> None:
+        if save:
+            write_logs(job_id, s)
+    def warn(self, job_id: str = None, s: str = None) -> None:
         logging.warning(s)
-    def err(self, s: Any) -> None:
+        write_logs(job_id, s)
+    def err(self, job_id: str = None, s: Any = None) -> None:
         logging.error(s)
+        write_logs(job_id, s)
+
 
 logger = Log_manager()

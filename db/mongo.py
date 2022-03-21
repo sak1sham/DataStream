@@ -15,8 +15,20 @@ import pytz
 from typing import List, Dict, Any
 import time
 
+
+'''
+    Dictionary returned after processing data contains following fields:
+        processed_collection = {
+            'name': str: collection_name,
+            'df_insert': pd.Dataframe({}): all records to be inserted
+            'df_update': pd.DataFrame({}): all records to be updated,
+            'dtypes': Dict[str, str]: Glue/Athena mapping of all fields
+        }
+'''
+
+
 class MongoMigrate:
-    def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, batch_size: int = 2, tz_str: str = 'Asia/Kolkata') -> None:
+    def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, batch_size: int = 10000, tz_str: str = 'Asia/Kolkata') -> None:
         if (not db or not curr_mapping):
             raise MissingData("db or curr_mapping can not be None.")
         if('batch_size' in curr_mapping.keys() and isinstance(curr_mapping['batch_size'], int)):
@@ -31,14 +43,16 @@ class MongoMigrate:
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
 
-    def inform(self, message: str = None) -> None:
-        logger.inform(self.curr_mapping['unique_id'] + ": " + message)
+
+    def inform(self, message: str = None, save: bool = False) -> None:
+        logger.inform(job_id= self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message), save=save)
 
     def warn(self, message: str = None) -> None:
-        logger.warn(self.curr_mapping['unique_id'] + ": " + message)
+        logger.warn(job_id=self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message))
 
     def err(self, error: Any = None) -> None:
-        logger.err(error)
+        logger.err(job_id=self.curr_mapping['unique_id'], s=error)
+
 
     def get_connectivity(self) -> int:
         try:
@@ -47,17 +61,23 @@ class MongoMigrate:
             self.db_collection = database_[self.curr_mapping['collection_name']]
             return self.db_collection.count_documents({})
         except Exception as e:
-            self.err(e)
+            self.err(error = e)
             self.db_collection = None
             raise ConnectionError("Unable to connect to source.")
 
 
-    def fetch_data(self, start: int = 0, end: int = 0, query: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+    def fetch_data(self, start: int = -1, end: int = -1, query: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         if(query):
-            return list(self.db_collection.find(query).sort( [['_id', 1]] )[start:end])
+            if(start == -1 and end == -1):
+                return list(self.db_collection.find(query).sort("_id", 1).limit(self.batch_size))
+            else:
+                return list(self.db_collection.find(query).sort("_id", 1)[start:end])
         else:
-            return list(self.db_collection.find().sort( [['_id', 1]] )[start:end])
-
+            if(start == -1 and end == -1):
+                return list(self.db_collection.find().sort("_id", 1).limit(self.batch_size))
+            else:
+                return list(self.db_collection.find().sort("_id", 1)[start:end])
+            
 
     def preprocess(self) -> None:
         if('fields' not in self.curr_mapping.keys()):
@@ -69,7 +89,7 @@ class MongoMigrate:
         self.partition_for_parquet = []
         if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
             if('partition_col' not in self.curr_mapping.keys() or not self.curr_mapping['partition_col']):
-                self.warn("Partition_col not specified. Making partition using _id.")
+                self.warn(message="Partition_col not specified. Making partition using _id.")
                 self.curr_mapping['partition_col'] = ['_id']
                 self.curr_mapping['partition_col_format'] = ['datetime']
             if(isinstance(self.curr_mapping['partition_col'], str)):
@@ -170,54 +190,55 @@ class MongoMigrate:
             docu_insert.append(document)
         ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.curr_mapping['fields'])
         dtypes = get_athena_dtypes(self.curr_mapping['fields'])
-        return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
+        return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}        
 
 
-    def adding_new_data(self, start: int = 0, end: int = 0, mode: str = 'logging') -> Dict[str, Any]:
-        ## Only insertions are captured from source and sent to destination.
-        ## It's assumed that no updation is performed
-        ## bookmark_creation is required, which in case of mongo is '_id'
-        ## If bookmark_updation is not provided, and the mode is syncing, then hashes are stored
-        migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
+    def adding_new_data(self, mode: str = 'logging') -> Dict[str, Any]:
+        '''
+            Function to find new data in the collection and return after processing it. Final result is a dataframe in the required data type format
+                1. Only insertions are captured from source and sent to destination.
+                2. It's assumed that no updation is performed
+                3. '_id' field is used to identify when the record was created
+                4. If bookmark (to check for updation) is not provided, and the mode is syncing, then hashes are stored in order to check for updations later
+            Returns None if no more batches need to be searched for. Otherwise, returns a dictionary (Dict[str, Any]) of data to be saved with following keys:
+            processed_collection = {
+                'name': str: collection_name,
+                'df_insert': pd.Dataframe({}): all records to be inserted
+                'df_update': pd.DataFrame({}): all records to be updated,
+                'dtypes': Dict[str, str]: Glue/Athena mapping of all fields
+            }
+        '''
         migration_start_id = ObjectId.from_datetime(self.curr_run_cron_job)
-        
-        resume = False
+        migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
         rec = get_last_migrated_record(self.curr_mapping['unique_id'])
         if(rec):
+            ## If we know till which record was the last migration performed, then we can filter new records easily
             migration_prev_id = rec['record_id']
-            resume = True
         
         docu_insert = []
         collection_encr = get_data_from_encr_db()
         all_documents = []
 
-        if(resume):
-            self.inform('Inserting some records created after ' + str(migration_prev_id.generation_time) + " and before " + str(migration_start_id.generation_time))
-            query = {
-                "_id": {
-                    "$gt": migration_prev_id, 
-                    "$lt": migration_start_id
-                }
+        self.inform(message = 'Inserting some records created after ' + str(migration_prev_id.generation_time) + '.')
+        query = {
+            "_id": {
+                "$gt": migration_prev_id, 
+                "$lt": migration_start_id
             }
-            all_documents = self.fetch_data(start=start, end=end, query=query)
-        else:
-            self.inform('Inserting some records created between ' + str(migration_prev_id.generation_time) + " and " + str(migration_start_id.generation_time))
-            query = {
-                "_id": {
-                    "$gte": migration_prev_id, 
-                    "$lt": migration_start_id
-                }
-            }
-            all_documents = self.fetch_data(start=start, end=end, query=query)
-        #sorted, and batch wise
+        }
+        all_documents = self.fetch_data(query=query)
         if(not all_documents or len(all_documents) == 0):
             return None
+        ## all_documents is a list of documents, each document as a dictionary datatype. 
+        ## The documents are all sorted as per creation_date and belong to a particular batch (self.batch_size)
+        
         for document in all_documents:
             insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
+                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
                 document = self.add_partitions(document=document, insertion_time=insertion_time)
             if(mode == 'syncing' and ('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark'])):
-                ## if updation bookmark is not present, we need to store hashes to check for updates later
+                ## if updation bookmark (for example - 'updated_at', or 'modified_at') is not present, we need to store hashes as metadata to check for updates later
                 document['_id'] = str(document['_id'])
                 encr = {
                     'collection': self.curr_mapping['unique_id'],
@@ -225,23 +246,42 @@ class MongoMigrate:
                     'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
                 }
                 collection_encr.insert_one(encr)
+            ## All pre-requisite processing has been done. Next step is to convert all documents (dictionaries) into destined data-types.
             document = validate_or_convert(document, self.curr_mapping['fields'], self.tz_info)
             docu_insert.append(document)
+        ## All fields in the document have been individually converted to destined data-types.
+        ## Next and final processing step is to convert the documents into a dataframe, and type-cast the dataframe as a whole to destined data-types (as a double-check)
         ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.curr_mapping['fields'])
+        ## Processing is complete. While saving, we need to pass the datatypes of columns to Athena (to create SQL table).
         dtypes = get_athena_dtypes(self.curr_mapping['fields'])
         return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
 
     def updating_data(self, start: int = 0, end: int = 0, improper_bookmarks: bool = False) -> Dict[str, Any]:
-        ## When we are updating data, no need to capture new records, only old records are to be processed
-        ## If bookmark for updation is not provided, we can ignore it, and filter it further through encryption
-        ## Both bookmarks are otherwise required 
+        '''
+            This function finds all records which are updated at the source, and accordingly returns a set of records to be overwritten at destination.
+                1. When we are updating data, no need to capture new records, only old records are to be processed
+                2. If bookmark for updation is not provided, we can find all records, and filter them further while matching with their encryptions
+            Returns None if no more batches need to be searched for. Otherwise, returns a dictionary (Dict[str, Any]) of data to be saved with following keys:
+            processed_collection = {
+                'name': str: collection_name,
+                'df_insert': pd.Dataframe({}): all records to be inserted
+                'df_update': pd.DataFrame({}): all records to be updated,
+                'dtypes': Dict[str, str]: Glue/Athena mapping of all fields
+            }
+        '''
         docu_update = []
         collection_encr = get_data_from_encr_db()
         migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
-        self.inform('Updating all records updated between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
+        self.inform(message = 'Updating all records updated between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
         all_documents = []
+        ## Bookmark is that field in the document (dictionary) which identifies the timestamp when the record was updated
+        ## If bookmark field is not proper (can either be string, or integer timestamp, or datetime), we set improper_bookmarks as True, and can't query inside mongodb collection using that field directly
+        ## In case of improper_bookmarks = True, we need to convert that field into a datetime.datetime datatype and then compare
         if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and not improper_bookmarks):
+            ## Return all documents which are greater than and equal to ('$gte') the time when last job was performed
+            ## and less than ('$lt') the starting time of current job
+            ## Also, the record shall be created before the last job ended (i.e., it should already be migrated and present in destination)
             query = {
                 "$and":[
                     {
@@ -258,6 +298,8 @@ class MongoMigrate:
             }
             all_documents = self.fetch_data(start=start, end=end, query=query)
         else:
+            ## If we are not able to do the comparison of when the document was updated,
+            ## we fetch all documents migrated until the last job, and filter them in further processing steps
             query = {
                 "_id": {
                     "$lt": migration_prev_id,
@@ -266,9 +308,13 @@ class MongoMigrate:
             all_documents = self.fetch_data(start=start, end=end, query=query)
         if(not all_documents or len(all_documents) == 0):
             return None
+        ## all_documents is a list of documents, each document as a dictionary datatype. 
+        ## The documents are all sorted as per creation_date and belong to a particular batch (self.batch_size)
+
         for document in all_documents:
             insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
+                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
                 document = self.add_partitions(document=document, insertion_time=insertion_time)
 
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and improper_bookmarks):
@@ -279,6 +325,9 @@ class MongoMigrate:
                 if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date < self.last_run_cron_job):
                     continue
             elif('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark']):
+                ## if bookmark is not present, we need to do the encryption of the document
+                ## if the encryption of document is different when compared to its previous hash (already stored in metadata) that means the document has been modified
+                ## otherwise, no updation are performed in that document
                 document['_id'] = str(document['_id'])
                 encr = {
                     'collection': self.curr_mapping['unique_id'],
@@ -302,6 +351,104 @@ class MongoMigrate:
         return {'name': self.curr_mapping['collection_name'], 'df_insert': pd.DataFrame({}), 'df_update': ret_df_update, 'dtypes': dtypes}
 
 
+    def dumping_process(self) -> None:
+        start = 0
+        processed_collection = {}
+        end = 0
+        while(True):
+            end = start + self.batch_size
+            processed_collection = self.dumping_data(start=start, end=end)
+            if(not processed_collection):
+                self.inform(message = "Processing complete.")
+                break
+            else:
+                self.save_data(processed_collection=processed_collection)
+                processed_collection = {}
+            time.sleep(self.time_delay)
+        self.inform(message = "Dumping Complete.", save=True)
+        if('expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
+            self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
+            self.inform(message = "Expired data removed.", save=True)
+
+
+    def logging_process(self) -> None:
+        processed_collection = {}
+        while(True):
+            processed_collection = self.adding_new_data(mode='logging')
+            if(not processed_collection):
+                self.inform(message = "Processing complete.")
+                break
+            else:
+                self.save_data(processed_collection=processed_collection)
+                if(processed_collection['df_insert'].shape[0]):
+                    last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
+                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time.replace(tzinfo=pytz.utc))
+                processed_collection = {}
+            time.sleep(self.time_delay)
+            
+        self.inform(messsage = "Logging operation complete.", save=True)
+
+
+    def syncing_process(self) -> None:
+        ## FIRST DO ALL INSERTIONS
+        self.inform(message="Starting to migrate newly inserted records.")
+        processed_collection = {}
+        while(True):
+            processed_collection = self.adding_new_data(mode='syncing')
+            if(not processed_collection):
+                self.inform(message="Insertions complete.")
+                break
+            else:
+                self.save_data(processed_collection=processed_collection)
+                if(processed_collection['df_insert'].shape[0]):
+                    last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
+                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time.replace(tzinfo=pytz.utc))
+                processed_collection = {}
+            time.sleep(self.time_delay)
+        self.inform(message = "Insertions completed, starting to update records", save = True)
+        ## NOW, DO ALL REQUIRED UPDATIONS
+        self.inform(message="Starting to migrate updations in records.")
+        start = 0
+        updated_in_destination = True
+        processed_collection = {}
+        processed_collection_u = {}
+        end = 0
+        while(True):
+            end = start + self.batch_size
+            if('improper_bookmarks' not in self.curr_mapping.keys()):
+                self.curr_mapping['improper_bookmarks'] = True
+            processed_collection_u = {}
+            processed_collection_u = self.updating_data(start=start, end=end, improper_bookmarks=self.curr_mapping['improper_bookmarks'])
+            '''
+                self.updating_data() returns either None or Dict[str, Any]
+                None is returned when no more records need to be checked for updations and all updations have been identified.
+                Dict[str, Any] is returned in case either updations are found, or if not found then there is scope to find updations in next batch
+            '''
+            if(processed_collection_u is not None):
+                if(updated_in_destination):
+                    processed_collection['df_update'] = processed_collection_u['df_update']
+                else:
+                    processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
+                self.inform(message="Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
+            else:
+                if(processed_collection):
+                    self.save_data(processed_collection=processed_collection)
+                    updated_in_destination = True
+                    processed_collection = {}
+                    break
+
+            if(processed_collection['df_update'].shape[0] >= self.batch_size):
+                self.save_data(processed_collection=processed_collection)
+                updated_in_destination = True
+                processed_collection = {}
+            else:
+                updated_in_destination = False
+                ## Still not saved the updates, will update together a large number of records...will save time
+            time.sleep(self.time_delay)
+            start += self.batch_size
+        self.inform(message="Syncing operation complete (Both - Insertion and Deletion).", save=True)
+
+
     def save_data(self, processed_collection: Dict[str, Any] = None) -> None:
         if(not processed_collection):
             return
@@ -319,112 +466,28 @@ class MongoMigrate:
 
 
     def process(self) -> None:
-        max_end = self.get_connectivity()
-        self.inform("Data fetched.")
+        self.get_connectivity()
+        self.inform(message="Connected to database and collection.", save=True)
         self.preprocess()
-        self.inform("Collection pre-processed.")
+        self.inform(message="Collection pre-processed.", save=True)
 
-        start = 0
-        already_done_with_insertion = False
-        updated_in_destination = True
-        processed_collection = {}
-        processed_collection_u = {}
-        end = 0
-        ## mode = 'syncing', 'logging', 'dumping'
         '''
+            Mode = 'syncing', 'logging', 'dumping'
             When we are dumping data, snapshots of the datastore are captured at regular intervals. We maintain multiple copies of the tables
             Logging is the mode where the data is only being added to the source table, and we assume no updations are ever performed. Only new records are migrated.
             Syncing: Where all new records is migrated, and all updations are also mapped to destination. If a record is deleted at source, it's NOT deleted at destination
-            processed_collection = {
-                'name': str: collection_name,
-                'df_insert': pd.Dataframe({}): all records to be inserted
-                'df_update': pd.DataFrame({}): all records to be updated,
-                'dtypes': Dict[str, str]: Glue/Athena mapping of all fields
-            }
         '''
-        while(True):
-            end = start + self.batch_size
-            if(self.curr_mapping['mode'] == 'dumping'):
-                processed_collection = self.dumping_data(start=start, end=end)
-            elif(self.curr_mapping['mode'] == 'logging'):
-                processed_collection = self.adding_new_data(start=start, end=end, mode='logging')
-            elif(self.curr_mapping['mode'] == 'syncing'):
-                if(not already_done_with_insertion):
-                    processed_collection = self.adding_new_data(start=start, end=end, mode='syncing')
-                else:
-                    if('improper_bookmarks' not in self.curr_mapping.keys()):
-                        self.curr_mapping['improper_bookmarks'] = True
-                    processed_collection_u = {}
-                    processed_collection_u = self.updating_data(start=start, end=end, improper_bookmarks=self.curr_mapping['improper_bookmarks'])
-                    if(processed_collection_u):
-                        if(not updated_in_destination):
-                            processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
-                        else:
-                            processed_collection['df_update'] = processed_collection_u['df_update']
-                        self.inform("Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
-            else:
-                raise IncorrectMapping("migration mode can either be \'dumping\', \'logging\' or \'syncing\'")
-            if(not processed_collection):
-                if(self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion):
-                    already_done_with_insertion = True
-                    self.inform("Inserted all records from collection, looking forward to updations.")
-                    delete_last_migrated_record(self.curr_mapping['unique_id'])
-                    start = 0
-                    end = 0
-                    processed_collection = {}
-                    continue
-                else:
-                    self.inform("Processing complete.")
-                    break
-            else:
-                if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'logging' or (self.curr_mapping['mode'] == 'syncing' and not already_done_with_insertion)):
-                    self.save_data(processed_collection=processed_collection)
-                    if(processed_collection['df_insert'].shape[0]):
-                        last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
-                        set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time.replace(tzinfo=pytz.utc))
-                    processed_collection = {}
-                elif(processed_collection['df_update'].shape[0] >= self.batch_size):
-                    self.save_data(processed_collection=processed_collection)
-                    updated_in_destination = True
-                    processed_collection = {}
-                elif((not self.curr_mapping['improper_bookmarks'] and not processed_collection_u) or (self.curr_mapping['improper_bookmarks'] and end >= max_end)):
-                    self.save_data(processed_collection=processed_collection)
-                    updated_in_destination = True
-                    break
-                else:
-                    updated_in_destination = False
-                    ## Still not saved the updates, will update together a large number of records...will save time
+        if(self.curr_mapping['mode'] == 'dumping'):
+            self.dumping_process()
+        elif(self.curr_mapping['mode'] == 'logging'):
+            self.logging_process()
+        elif(self.curr_mapping['mode'] == 'syncing'):
+            self.syncing_process()
+        else:
+            raise IncorrectMapping("Please specify a mode of operation.")
 
-            time.sleep(self.time_delay)
-            start += self.batch_size
-
-        self.inform("Migration Complete.")
-        if(self.curr_mapping['mode'] == 'dumping' and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
-            self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
-            self.inform("Expired data removed.")
-        
         self.postprocess()
-        self.inform("Post processing completed.")
+        self.inform(message="Post processing completed.", save=True)
 
         self.saver.close()
-        self.inform("Hope to see you again :')\n")
-
-
-
-'''
-Support-service : support_tickets
-Second_last_cron_job == 14/3
-Last_cron_job == 15/3
-
-count
-
-
-For every time we start a job, we count the number of records to be inserted
-After insertion gives error we stop
-Before we resume, we check from athena how many records are inserted (N)
-If inserted records are less, we resume again from that N+1
-
-main
-    ----s3
-        -----system-recovery
-'''
+        self.inform(message="Hope to see you again :')\n")
