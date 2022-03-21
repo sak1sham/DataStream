@@ -13,7 +13,7 @@ class APIMigrate:
         self.tz_info = pytz.timezone(tz_str)
         self.client = None
         self.saver = None
-        # self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
     def save_data_to_destination(self, processed_data, partition):
         if(not processed_data):
