@@ -130,7 +130,8 @@ class ClevertapManager(EventsAPIManager):
                         transformed_records += self.transform_api_data(cursor_data['records'], event_name, curr_mapping)
         return {
             'name': curr_mapping['api_name'],
-            'df_insert': typecast_df_to_schema(pd.DataFrame(transformed_records), curr_mapping['fields'])
+            'df_insert': typecast_df_to_schema(pd.DataFrame(transformed_records), curr_mapping['fields']),
+            "lob_fields_lengths": curr_mapping['lob_fields']
         }
     
     def cleaned_processed_data(self, event_name, curr_mapping, dst_saver):

@@ -35,6 +35,7 @@ class RedshiftSaver:
         self.name_ = processed_data['name']
         file_name = self.s3_location + self.name_ + "/"
         self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
+        varchar_lengths = processed_data['lob_fields'] if 'lob_fields' in processed_data else {}
         if(processed_data['df_insert'].shape[0] > 0):
             if(self.is_small_data):
                 wr.redshift.to_sql(
@@ -43,7 +44,8 @@ class RedshiftSaver:
                     schema = self.schema,
                     table = self.name_,
                     mode = "append",
-                    primary_keys = primary_keys
+                    primary_keys = primary_keys,
+                    varchar_lengths = varchar_lengths
                 )
             else:
                 wr.redshift.copy(
@@ -53,7 +55,8 @@ class RedshiftSaver:
                     schema = self.schema,
                     table = self.name_,
                     mode = "append",
-                    primary_keys = primary_keys
+                    primary_keys = primary_keys,
+                    varchar_lengths = varchar_lengths
                 )
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
         self.inform("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")    
@@ -66,7 +69,8 @@ class RedshiftSaver:
                     schema = self.schema,
                     table = self.name_,
                     mode = "upsert",
-                    primary_keys = primary_keys
+                    primary_keys = primary_keys,
+                    varchar_lengths = varchar_lengths
                 )
             else:
                 wr.redshift.copy(
@@ -76,7 +80,8 @@ class RedshiftSaver:
                     schema = self.schema,
                     table = self.name_,
                     mode = "upsert",
-                    primary_keys = primary_keys
+                    primary_keys = primary_keys,
+                    varchar_lengths = varchar_lengths
                 )
         self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
     
