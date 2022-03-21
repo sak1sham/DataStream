@@ -5,37 +5,30 @@ from slugify import slugify
 from helper.util import get_yyyymmdd_from_date, transformTs, validate_or_convert, typecast_df_to_schema
 import pytz
 import pandas as pd
+import os
 
 class EventsAPIManager:
-    CLEVERTAP_API_BASE_URL = "https://in1.api.clevertap.com/1/"
+    CLEVERTAP_API_BASE_URL = os.getenv('CLEVERTAP_BASE_URL')
 
-    def __init__(self, project_name):
+    def __init__(self, project_name: str):
         self.CLEVERTAP_API_HEADERS = {
-            'X-CleverTap-Account-Id': self.get_static_value(project_name, 'account_id'), 
-            'X-CleverTap-Passcode': self.get_static_value(project_name, 'passcode'), 
+            'X-CleverTap-Account-Id': os.getenv('CLEVERTAP_'+str(project_name).upper()+'_ACCOUNT_ID'), 
+            'X-CleverTap-Passcode': os.getenv('CLEVERTAP_'+str(project_name).upper()+'_PASSCODE'), 
             'Content-Type': 'application/json'
         }
 
     @staticmethod
     def get_static_value(project_name, key):
         if project_name=='cx_app':
-            if key == 'account_id':
-                return CLEVERTAP_CX_APP_ACCOUNT_ID
-            if key == 'passcode':
-                return CLEVERTAP_CX_APP_PASSCODE
             if key == 'events':
                 return cx_app_event_names
         if project_name=='cl_app':
-            if key == 'account_id':
-                return CLEVERTAP_CL_APP_ACCOUNT_ID
-            if key == 'passcode':
-                return CLEVERTAP_CL_APP_PASSCODE
             if key == 'events':
                 return cl_app_event_names
         return None
 
     def get_event_cursor(self, event_name, from_date, to_date):
-        params = {"batch_size": 10000, "events": "false"}
+        params = {"batch_size": os.getenv('CLEVERTAP_BATCHH_SIZE'), "events": "false"}
         payload = {
                     "event_name": event_name,
                     "from": from_date,
@@ -65,7 +58,7 @@ class ClevertapManager(EventsAPIManager):
         self.tz_info = pytz.timezone(tz_str)
         super().__init__(self.project_name)    
     
-    def set_and_get_event_names(self, event_names) -> None:
+    def set_and_get_event_names(self, event_names: any) -> None:
         if (isinstance(event_names, str)) and event_names=='*':
             self.event_names = self.get_static_value(self.project_name, 'events')
         elif (isinstance(event_names, list)):
