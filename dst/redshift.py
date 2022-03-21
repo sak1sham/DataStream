@@ -45,7 +45,8 @@ class RedshiftSaver:
                     table = self.name_,
                     mode = "append",
                     primary_keys = primary_keys,
-                    varchar_lengths = varchar_lengths
+                    varchar_lengths = varchar_lengths,
+                    varchar_lengths_default = 512
                 )
             else:
                 wr.redshift.copy(
@@ -56,7 +57,8 @@ class RedshiftSaver:
                     table = self.name_,
                     mode = "append",
                     primary_keys = primary_keys,
-                    varchar_lengths = varchar_lengths
+                    varchar_lengths = varchar_lengths,
+                    varchar_lengths_default = 512
                 )
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
         self.inform("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")    
@@ -70,7 +72,8 @@ class RedshiftSaver:
                     table = self.name_,
                     mode = "upsert",
                     primary_keys = primary_keys,
-                    varchar_lengths = varchar_lengths
+                    varchar_lengths = varchar_lengths,
+                    varchar_lengths_default = 512
                 )
             else:
                 wr.redshift.copy(
@@ -81,7 +84,8 @@ class RedshiftSaver:
                     table = self.name_,
                     mode = "upsert",
                     primary_keys = primary_keys,
-                    varchar_lengths = varchar_lengths
+                    varchar_lengths = varchar_lengths,
+                    varchar_lengths_default = 512
                 )
         self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
     

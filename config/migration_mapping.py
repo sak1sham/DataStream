@@ -595,8 +595,8 @@ mapping = {
                     "event_props": 'str'
                 },
                 'lob_fields': {
-                    "tags": 2048,
-                    "event_props": 2048
+                    "tags": 4096,
+                    "event_props": 4096
                 },
                 'cron': 'self-managed',
             }
