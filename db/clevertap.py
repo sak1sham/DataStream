@@ -127,7 +127,7 @@ class ClevertapManager(EventsAPIManager):
                 while "next_cursor" in cursor_data:
                     cursor_data = self.get_records_for_cursor(cursor_data["next_cursor"])
                     if "records" in cursor_data:
-                        transformed_records += self.transform_api_data(event_name, cursor_data['records'], curr_mapping)
+                        transformed_records += self.transform_api_data(cursor_data['records'], event_name, curr_mapping)
         return {
             'name': curr_mapping['api_name'],
             'df_insert': typecast_df_to_schema(pd.DataFrame(transformed_records), curr_mapping['fields'])

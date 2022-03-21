@@ -562,7 +562,7 @@ mapping = {
             {
                 'api_name':'cx_app_events',
                 'project_name': 'cx_app',
-                'event_names': '*',
+                'event_names': ['Address Submit'],
                 'bookmark_key_type': 'date',
                 'bookmark_key_format': 'YYYYMMDD',
                 'bookmark_key': '-1',

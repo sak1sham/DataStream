@@ -31,5 +31,5 @@ class APIMigrate:
                     self.client.cleaned_processed_data(event_name, self.saver)
                     self.save_data_to_destination(processed_data=processed_data)
                 except:
-                    logger.err(self.curr_mapping['api_unique_id'] + " - "+ event_name + ": " + "caught some error while migrating event data.")
+                    logger.err(self.curr_mapping['unique_id'] + " - "+ event_name + ": " + "caught some error while migrating event data.")
 
