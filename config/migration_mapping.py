@@ -92,7 +92,7 @@ with all_products as (
 '''
 
 
-'''mapping = {
+mapping = {
     "dms_iswq_ll_cciv": {
         'source': {
             'source_type': 'sql',
@@ -159,17 +159,20 @@ with all_products as (
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 14 40 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_form_items',
-                'fields': {},
-                'bookmark': False,
+                'fields': {
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
+                },
+                'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 14 40 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -181,7 +184,7 @@ with all_products as (
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 14 40 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -191,7 +194,7 @@ with all_products as (
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 14 40 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -204,11 +207,13 @@ with all_products as (
                     'freshdesk_user_id': 'int',
                     '__v': 'int',
                     'created_at': 'datetime',
-                    'updated_at': 'datetime'
+                    'updated_at': 'datetime',
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
                 },
-                'bookmark': 'updated_at',
+                'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 1 15 0',
+                'cron': '* * * * * 14 40 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -234,10 +239,12 @@ with all_products as (
                     'fr_due_by':'datetime',
                     'resolved_at':'datetime',
                     'status_updated_at':'datetime',
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
                 },
-                'bookmark': 'updated_at',
+                'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 1 15 0',
+                'cron': '* * * * * 14 40 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -249,10 +256,12 @@ with all_products as (
                     '__v': 'int',
                     'updatedAt': 'datetime',
                     'createdAt': 'datetime',
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
                 },
-                'bookmark': 'updatedAt',
+                'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 1 15 0',
+                'cron': '* * * * * 14 40 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -262,7 +271,7 @@ with all_products as (
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 14 40 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
@@ -270,7 +279,7 @@ with all_products as (
         ]
     },
 }
-'''
+
 '''
 mapping = {
     "order_actions_cmdb_s3": {
@@ -593,7 +602,7 @@ mapping = {
     },
 }
 '''
-
+'''
 mapping = {
     'testing_only': {
         'source': {
@@ -652,6 +661,7 @@ mapping = {
         ]
     }
 }
+'''
 
 settings = {
     'fastapi_server': True,
