@@ -16,7 +16,7 @@ class APIMigrate:
         self.saver = None
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
-    def save_data_to_destination(self, processed_data, partition):
+    def save_data_to_destination(self, processed_data):
         if(not processed_data):
             return
         else:
