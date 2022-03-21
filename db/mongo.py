@@ -435,15 +435,15 @@ class MongoMigrate:
                     self.save_data(processed_collection=processed_collection)
                     updated_in_destination = True
                     processed_collection = {}
-                    break
-
-            if(processed_collection['df_update'].shape[0] >= self.batch_size):
-                self.save_data(processed_collection=processed_collection)
-                updated_in_destination = True
-                processed_collection = {}
-            else:
-                updated_in_destination = False
-                ## Still not saved the updates, will update together a large number of records...will save time
+                break
+            if('df_update' in processed_collection.keys()):
+                if(processed_collection['df_update'].shape[0] >= self.batch_size):
+                    self.save_data(processed_collection=processed_collection)
+                    updated_in_destination = True
+                    processed_collection = {}
+                else:
+                    updated_in_destination = False
+                    ## Still not saved the updates, will update together a large number of records...will save time
             time.sleep(self.time_delay)
             start += self.batch_size
         self.inform(message="Syncing operation complete (Both - Insertion and Deletion).", save=True)
