@@ -13,4 +13,4 @@ psycopg2-binary==2.9.3
 dnspython==2.2.0
 redshift-connector==2.0.904
 slackclient==2.9.3
-kafka
+kafka==1.3.5
