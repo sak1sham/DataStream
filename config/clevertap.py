@@ -1,5 +1,3 @@
-CLEVERTAP_CX_APP_ACCOUNT_ID = "4RW-KZK-995Z"
-CLEVERTAP_CX_APP_PASSCODE = "AOW-ROB-WXKL"
 
 cx_app_event_names = [
     'Notification Clicked', 
@@ -60,9 +58,6 @@ cx_app_event_names = [
     "Application Opened",
     "Null Search"
     ]
-
-CLEVERTAP_CL_APP_ACCOUNT_ID = "867-RZK-995Z"
-CLEVERTAP_CL_APP_PASSCODE = "SMQ-IOB-WXKL"
 
 cl_app_event_names = [
     'Notification Clicked', 
@@ -129,12 +124,6 @@ cl_app_event_names = [
     "Shop Share",
     "Cx Page Banner Clicked"
     ]
-
-
-
-
-CLEVERTAP_CX_ACCOUNT_ID = "4RW-KZK-995Z"
-CLEVERTAP_CX_PASSCODE = "AOW-ROB-WXKL"
 
 cx_web_event_names = [
     "Msite address form landing",

@@ -34,8 +34,8 @@ class s3Saver:
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
         file_name = self.s3_location + processed_data['name'] + "/"
-        self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
-        if(processed_data['df_insert'].shape[0] > 0):
+        if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
+            self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
             wr.s3.to_parquet(
                 df = processed_data['df_insert'],
                 path = file_name,
@@ -50,27 +50,28 @@ class s3Saver:
                 schema_evolution = True,
             )
         self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")
-        n_updations = processed_data['df_update'].shape[0]
-        self.inform("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
-        for i in range(n_updations):
-            file_name_u = self.s3_location + processed_data['name'] + "/"
-            for x in self.partition_cols:
-                file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[i][x]) + "/"
-            prev_files = wr.s3.list_objects(file_name_u)
-            self.inform("Found all files while updating record: " + str(i+1) + "/" + str(n_updations))
-            for file_ in prev_files:
-                df_to_be_updated = wr.s3.read_parquet(
-                    path = [file_],
-                )
-                df_to_be_updated, modified = df_upsert(df = df_to_be_updated, df_u = processed_data['df_update'].iloc[i:i+1], primary_key = primary_keys[0])
-                if(modified):
-                    wr.s3.to_parquet(
-                        df = df_to_be_updated,
-                        path = file_,
-                        compression = 'snappy',
+        if 'df_update' in processed_data:
+            n_updations = processed_data['df_update'].shape[0]
+            self.inform("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
+            for i in range(n_updations):
+                file_name_u = self.s3_location + processed_data['name'] + "/"
+                for x in self.partition_cols:
+                    file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[i][x]) + "/"
+                prev_files = wr.s3.list_objects(file_name_u)
+                self.inform("Found all files while updating record: " + str(i+1) + "/" + str(n_updations))
+                for file_ in prev_files:
+                    df_to_be_updated = wr.s3.read_parquet(
+                        path = [file_],
                     )
-                    break
-        self.inform(str(n_updations) + " updations done.")
+                    df_to_be_updated, modified = df_upsert(df = df_to_be_updated, df_u = processed_data['df_update'].iloc[i:i+1], primary_key = primary_keys[0])
+                    if(modified):
+                        wr.s3.to_parquet(
+                            df = df_to_be_updated,
+                            path = file_,
+                            compression = 'snappy',
+                        )
+                        break
+            self.inform(str(n_updations) + " updations done.")
     
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()
