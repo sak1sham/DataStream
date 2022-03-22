@@ -619,7 +619,7 @@ mapping = {
                     "os_version": 'profile.os_version',
                     "app_version": 'profile.app_version',
                     "make": 'profile.make',
-                    "model": 'profle.model',
+                    "model": 'profile.model',
                     "cplabel": 'profile.profileData.cplabel',
                     "tags": 'profile.profileData.tags',
                     "event_props": 'event_props'
@@ -686,7 +686,7 @@ mapping = {
                     "os_version": 'profile.os_version',
                     "app_version": 'profile.app_version',
                     "make": 'profile.make',
-                    "model": 'profle.model',
+                    "model": 'profile.model',
                     "cplabel": 'profile.profileData.cplabel',
                     "tags": 'profile.profileData.tags',
                     "event_props": 'event_props'

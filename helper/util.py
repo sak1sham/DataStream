@@ -293,6 +293,5 @@ def extract_value_from_nested_obj(obj: Dict[str, Any] = {}, key: str = ''):
             value = obj[k]
             obj = obj[k]
         except KeyError:
-            logger.warn("Can't get value for key, returning None")
             return None
     return value
