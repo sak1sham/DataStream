@@ -6,6 +6,7 @@ from helper.util import get_yyyymmdd_from_date, transformTs, validate_or_convert
 import pytz
 import pandas as pd
 import os
+from typing import Dict, Any, List
 
 class EventsAPIManager:
     CLEVERTAP_API_BASE_URL = os.getenv('CLEVERTAP_BASE_URL')
@@ -18,10 +19,10 @@ class EventsAPIManager:
         }
 
     @staticmethod
-    def get_static_value(project_name):
+    def get_static_value(project_name: str):
         return cx_app_event_names if project_name=='cx_app' else cl_app_event_names if project_name=='cl_app' else None
 
-    def get_event_cursor(self, event_name, from_date, to_date):
+    def get_event_cursor(self, event_name: str, from_date: str, to_date: str):
         params = {
             "batch_size": os.getenv('CLEVERTAP_BATCHH_SIZE'), 
             "events": "false"
@@ -41,7 +42,7 @@ class EventsAPIManager:
         data = self.make_request("events.json?cursor={}".format(cursor), data="").json()
         return data
 
-    def make_request(self, endpoint, data=None, params=None):
+    def make_request(self, endpoint: str, data: Dict[str, Any]=None, params: Dict[str, Any]=None):
         res = requests.post(self.CLEVERTAP_API_BASE_URL + endpoint, data=json.dumps(data), params=params, headers=self.CLEVERTAP_API_HEADERS)
         if res.status_code != 200:
             raise Exception("Request to {2} returned an error {0}:\n{1}".format(res.status_code, res.text, self.CLEVERTAP_API_BASE_URL + endpoint))    
@@ -49,13 +50,13 @@ class EventsAPIManager:
 
 
 class ClevertapManager(EventsAPIManager):
-    def __init__(self, project_name, tz_str: str = 'Asia/Kolkata') -> None:
+    def __init__(self, project_name: str, tz_str: str = 'Asia/Kolkata') -> None:
         self.project_name = project_name
         self.event_names = []
         self.tz_info = pytz.timezone(tz_str)
         super().__init__(self.project_name)    
     
-    def set_and_get_event_names(self, event_names):
+    def set_and_get_event_names(self, event_names: Any):
         if (isinstance(event_names, str)) and event_names=='*':
             self.event_names = self.get_static_value(self.project_name)
         elif (isinstance(event_names, list)):
@@ -64,7 +65,7 @@ class ClevertapManager(EventsAPIManager):
             raise Exception("invalid event names")
         return self.event_names
 
-    def transform_api_data(self, records, event_name, curr_mapping):
+    def transform_api_data(self, records: List[Any], event_name: str, curr_mapping: Dict[str, Any]):
         tf_records = []
         for record in records:
             tf_record = {
@@ -103,7 +104,7 @@ class ClevertapManager(EventsAPIManager):
             tf_records.append(tf_record)
         return tf_records
 
-    def get_processed_data(self, event_name, curr_mapping):
+    def get_processed_data(self, event_name: str, curr_mapping: Dict[str, Any]):
         bookmark_key = curr_mapping.get('bookmark_key', '')
         if not bookmark_key:
             raise Exception("please provide bookmark key")
@@ -124,7 +125,7 @@ class ClevertapManager(EventsAPIManager):
             "lob_fields_length": curr_mapping['lob_fields']
         }
     
-    def cleaned_processed_data(self, event_name, curr_mapping, dst_saver):
+    def cleaned_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], dst_saver: Any):
         bookmark_key = curr_mapping.get('bookmark_key', '')
         if not bookmark_key:
             raise Exception("please provide bookmark key")
