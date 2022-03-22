@@ -38,19 +38,10 @@ class APIMigrate:
             for event_name in event_names:
                 try:
                     processed_data = self.client.get_processed_data(event_name, self.curr_mapping)
-                except:
-                    logger.err(traceback.format_exc())
-                    logger.err(self.curr_mapping['unique_id'] + " - "+ event_name + ": " + "caught some error while getting processed data.")
-
-                try:
                     self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
-                except KeyError:
-                    pass
-
-                try:
                     self.save_data_to_destination(processed_data=processed_data)
                 except:
                     logger.err(traceback.format_exc())
-                    logger.err(self.curr_mapping['unique_id'] + " - "+ event_name + ": " + "caught some error while saving event data into destination.")
+                    logger.err(self.curr_mapping['unique_id'] + " - "+ event_name + ": " + "caught some error while migrating event data.")
 
         self.saver.close()
