@@ -4,7 +4,7 @@ services:
     container_name: clevertap_events
     build:
       context: .
-      dockerfile: deployment/dockerfile/clevertap.Dockerfile
+      dockerfile: deployment/dockerfiles/clevertap.Dockerfile
     image: clevertap_events
     ports:
       - "8012:8012"
