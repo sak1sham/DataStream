@@ -38,9 +38,9 @@ class s3Saver:
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
         file_name = self.s3_location + processed_data['name'] + "/"
-        self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."), save=True)
 
         if(processed_data['df_insert'].shape[0] > 0):
+            self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."), save=True)
             processed_data['df_insert'] = convert_heads_to_lowercase(processed_data['df_insert'])
             processed_data['dtypes'] = convert_heads_to_lowercase(processed_data["dtypes"])
             wr.s3.to_parquet(
@@ -56,21 +56,27 @@ class s3Saver:
                 partition_cols = self.partition_cols,
                 schema_evolution = True,
             )
-        self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."), save=True)
+            self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."), save=True)
 
         n_updations = processed_data['df_update'].shape[0]
-        self.inform(message=("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."), save=True)
         if(n_updations > 0):
+            self.inform(message=("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."), save=True)
             processed_data['df_update'] = convert_heads_to_lowercase(processed_data['df_update'])
-            print(processed_data['df_update'].groupby(self.partition_cols).size())
-            dfs_u = [x for _, x in processed_data['df_update'].groupby(self.partition_cols)]
+            dfs_u = [processed_data['df_update']]
+            if(self.partition_cols and len(self.partition_cols) > 0):
+                print(processed_data['df_update'].groupby(self.partition_cols).size())
+                dfs_u = [x for _, x in processed_data['df_update'].groupby(self.partition_cols)]
             ## Now all the records which are of same partition are grouped together, and will be updated in the same run
             for df_u in dfs_u:
-                file_name_u = self.s3_location + processed_data['name'] + "/"
-                for x in self.partition_cols:
-                    file_name_u = file_name_u + x + "=" + str(processed_data['df_update'].iloc[0][x]) + "/"
+                file_name_u = self.s3_location + processed_data['name']
+                print(file_name_u)
+                if(self.partition_cols):
+                    for x in self.partition_cols:
+                        file_name_u = file_name_u + "/" + x + "=" + str(processed_data['df_update'].iloc[0][x])
+                    print(file_name_u)
                 ## Now, all records within df_u are found within this same location
-                df_u.drop(self.partition_cols, axis=1, inplace=True)
+                if(self.partition_cols):
+                    df_u.drop(self.partition_cols, axis=1, inplace=True)
                 prev_files = wr.s3.list_objects(file_name_u)
                 self.inform(message=("Found all files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations)))
                 for file_ in prev_files:
@@ -87,7 +93,7 @@ class s3Saver:
                     if(df_u.shape[0] == 0):
                         ## This one is complete now. Go and handle the next set of records to be updated
                         break
-        self.inform(message=(str(n_updations) + " updations done."), save=True)
+            self.inform(message=(str(n_updations) + " updations done."), save=True)
 
 
 

@@ -1,5 +1,5 @@
 from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record, delete_last_migrated_record
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter

@@ -3,6 +3,7 @@ import datetime
 import pytz
 from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
+from config.migration_mapping import settings
 
 from helper.logger import logger
 
@@ -45,9 +46,9 @@ def utc_to_local(utc_dt: datetype = None, tz_: Any = pytz.utc) -> datetype:
     return tz_.normalize(local_dt)
 
 
-def convert_to_utc(dt: datetype = None) -> datetype:
+def convert_to_utc(dt: datetype = None, tz_: Any = pytz.utc) -> datetype:
     if(dt.tzinfo is None):
-        dt = pytz.utc.localize(dt)
+        dt = tz_.localize(dt)
     dt = dt.astimezone(pytz.utc)
     return dt
 
@@ -56,7 +57,7 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
     if(x is None or x == pd.Timestamp(None) or x is pd.NaT):
         return pd.Timestamp(None)
     elif(isinstance(x, datetime.datetime)):
-        return convert_to_utc(dt = x)
+        return convert_to_utc(dt = x, tz_ = tz_)
     elif(isinstance(x, int) or isinstance(x, float)):
         return datetime.datetime.fromtimestamp(x, pytz.utc)
     else:
@@ -214,6 +215,9 @@ def convert_range_to_str(r) -> str:
 
 
 def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
+    tz_ = pytz.utc
+    if('timezone' in settings.keys() and settings['timezone']):
+        tz_ = pytz.timezone(settings['timezone'])
     if(df.shape[0]):
         for col in df.columns.tolist():
             if(col in schema.keys()):
@@ -222,7 +226,7 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                     df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
                     df[col] = df[col].astype(str, copy=False, errors='ignore')
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
-                    df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
+                    df[col] = df[col].apply(lambda x: convert_to_datetime(x, tz_))
                 elif(dtype == 'boolean' or dtype == 'bool'):
                     df[col] = df[col].astype(bool, copy=False, errors='ignore')
                 elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype.startswith('serial') or dtype.startswith('int')):

@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-
+'''
 mapping = {
     "dms_iswq_ll_cciv": {
         'source': {
@@ -279,7 +279,7 @@ mapping = {
         ]
     },
 }
-
+'''
 '''
 mapping = {
     "order_actions_cmdb_s3": {
@@ -575,7 +575,7 @@ mapping = {
 }
 '''
 
-'''
+
 mapping = {
     "test_modes_pgsql": {
         'source': {
@@ -589,19 +589,18 @@ mapping = {
         },
         'tables': [
             {
-                'table_name': 'phonebook',
+                'table_name': 'accounts',
                 'cron': 'self-managed',
-                'bookmark': 'updated_at',
-                'to_partition': True,
-                'partition_col': 'created_at',
-                'partition_col_format': 'datetime',
                 'mode': 'syncing',
-                'primary_keys': 'firstname'
+                'primary_key': 'created_on',
+                'primary_key_datatype': 'datetime',
+                'to_partition': True,
+                'partition_col': 'name'
             }
         ]
     },
 }
-'''
+
 '''
 mapping = {
     'testing_only': {
@@ -665,9 +664,9 @@ mapping = {
 '''
 
 settings = {
-    'fastapi_server': True,
+    'fastapi_server': False,
     'timezone': 'Asia/Kolkata',
-    'notify': True,
+    'notify': False,
     'encryption_store': {
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),
@@ -677,5 +676,5 @@ settings = {
         'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
         'channel': "C035WQHD291"
     },
-    'save_logs': True
+    'save_logs': False
 }

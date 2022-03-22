@@ -11,7 +11,11 @@ datetype = NewType("datetype", datetime.datetime)
 
 encryption_store = settings['encryption_store']
 
+
 def get_data_from_encr_db():
+    '''
+        Function to get connection to the encryption database/collection
+    '''
     try:
         client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
         db_encr = client_encr[encryption_store['db_name']]
@@ -22,6 +26,10 @@ def get_data_from_encr_db():
 
 
 def get_last_run_cron_job(job_id: str) -> datetype:
+    '''
+        Function to find and return the time when the job with id job_id was last run.
+        If the job was never run before, it returns an old date (Jan 1, 1999)
+    '''
     db = get_data_from_encr_db()
     prev = db.find_one({'last_run_cron_job_for_id': job_id})
     if(prev):
@@ -33,24 +41,32 @@ def get_last_run_cron_job(job_id: str) -> datetype:
         logger.inform(job_id=job_id, s=(job_id + ": Never seen it before. Taking previously run cron job time as on January 1, 1999."), save=True)
         return timing
 
-def get_last_migrated_record_prev_job(job_id: str = None) -> None:
+
+def get_last_migrated_record_prev_job(job_id: str = None) -> Any:
     '''
-        get last migrated record when job was run last time
+        Function to return last migrated record on completion of last cron job
+        Returns the id of last record
     '''
     db = get_data_from_encr_db()
     prev = db.find_one({'last_run_cron_job_for_id': job_id})
-    return prev['record_id']
+    if(prev):
+        return prev['record_id']
+    else:
+        return None
+
 
 def set_last_run_cron_job(job_id: str, timing: datetype, last_record_id: Any = None) -> None:
+    '''
+        Function to set the time of current job. This might prove useful on running the job next time
+        We can also pass a record_id of the last record migrated during the job to store it.
+    '''
     db = get_data_from_encr_db()
     prev = db.find_one({'last_run_cron_job_for_id': job_id})
     rec = {
         'last_run_cron_job_for_id': job_id, 
-        'timing': timing
-    }
-    if(last_record_id):
-        rec['record_id'] = last_record_id
-    
+        'timing': timing,
+        'record_id': last_record_id
+    }    
     if(prev):
         db.delete_one({'last_run_cron_job_for_id': job_id})
         db.insert_one(rec)
@@ -59,6 +75,10 @@ def set_last_run_cron_job(job_id: str, timing: datetype, last_record_id: Any = N
 
 
 def get_last_migrated_record(job_id: str) -> Dict[str, Any]:
+    '''
+        After every batch is saved, we save the record_id of its last record in order to resume in case the system fails
+        This function returns that record_id whenever called.
+    '''
     db = get_data_from_encr_db()
     prev = db.find_one({'last_migrated_record_for_id': job_id})
     if(prev):
@@ -67,7 +87,12 @@ def get_last_migrated_record(job_id: str) -> Dict[str, Any]:
     else:
         return None
 
+
 def set_last_migrated_record(job_id: str, _id: Any, timing: datetype) -> None:
+    '''
+        After every batch is saved, we save the record_id of its last record in order to resume in case the system fails
+        This function saves that record_id corresponding to every job_id
+    '''
     rec = {
         'last_migrated_record_for_id': job_id,
         'record_id': _id,
@@ -80,13 +105,4 @@ def set_last_migrated_record(job_id: str, _id: Any, timing: datetype) -> None:
         db.insert_one(rec)
     else:
         db.insert_one(rec)
-
-
-def delete_last_migrated_record(job_id: str):
-    '''
-        Delete the last migrated record if entire batch is processed successfully
-    '''
-    db = get_data_from_encr_db()
-    db.delete_one({'last_migrated_record_for_id': job_id})
-
 
