@@ -562,7 +562,7 @@ mapping = {
             {
                 'api_name':'cx_app_events',
                 'project_name': 'cx_app',
-                'event_names': ['Address Submit'],
+                'event_names': '*',
                 'bookmark_key_type': 'date',
                 'bookmark_key_format': 'YYYYMMDD',
                 'bookmark_key': '-1',
@@ -629,7 +629,7 @@ mapping = {
             {
                 'api_name':'cl_app_events',
                 'project_name': 'cl_app',
-                'event_names': ['Address Submit'],
+                'event_names': '*',
                 'bookmark_key_type': 'date',
                 'bookmark_key_format': 'YYYYMMDD',
                 'bookmark_key': '-1',
@@ -696,7 +696,7 @@ mapping = {
             {
                 'api_name':'cx_web_events',
                 'project_name': 'cx_web',
-                'event_names': ['Msite landing'],
+                'event_names': '*',
                 'bookmark_key_type': 'date',
                 'bookmark_key_format': 'YYYYMMDD',
                 'bookmark_key': '-1',
