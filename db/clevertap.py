@@ -123,7 +123,7 @@ class ClevertapManager(EventsAPIManager):
                     if "records" in cursor_data:
                         total_records += len(cursor_data['records'])
                         transformed_records += self.transform_api_data(cursor_data['records'], event_name, curr_mapping)
-        logger.inform("Total Clevertap events: " + str(len(total_records)))
+        logger.inform("Total Clevertap events: " + str(total_records))
         logger.inform("Tatal Clevertap events after transformation: " + str(len(transformed_records)))
         return {
             'name': curr_mapping['api_name'],
