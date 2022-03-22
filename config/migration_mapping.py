@@ -692,6 +692,35 @@ mapping = {
                     "event_props": 'event_props'
                 },
                 'cron': 'self-managed',
+            },
+            {
+                'api_name':'cx_web_events',
+                'project_name': 'cx_web',
+                'event_names': ['Msite landing'],
+                'bookmark_key_type': 'date',
+                'bookmark_key_format': 'YYYYMMDD',
+                'bookmark_key': '-1',
+                'fields': {
+                    "event_name": 'str',
+                    "ct_ts": 'int',
+                    "timestamp": 'datetime',
+                    "session_source": 'str',
+                    "visitor_id": 'str',
+                    "slug": 'str',
+                    "event_props": 'str'
+                },
+                'lob_fields': {
+                    "slug": 1024,
+                    "event_props": 4096
+                },
+                'api_to_field_mapping': {
+                    "ct_ts": 'ts',
+                    "session_source": 'session_props.session_source',
+                    "visitor_id": 'event_props.visitorId',
+                    "slug": 'event_props.slug',
+                    "event_props": 'event_props'
+                },
+                'cron': 'self-managed',
             }
         ]
     }
