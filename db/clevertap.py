@@ -2,12 +2,14 @@ from config.clevertap import *
 import requests
 import json
 from slugify import slugify
+from dst.main import DMS_exporter
 from helper.util import get_yyyymmdd_from_date, transformTs, validate_or_convert, typecast_df_to_schema
 import pytz
 import pandas as pd
 import os
 from typing import Dict, Any, List
 from helper.logging import logger
+import traceback
 
 class EventsAPIManager:
     CLEVERTAP_API_BASE_URL = os.getenv('CLEVERTAP_BASE_URL')
@@ -132,7 +134,7 @@ class ClevertapManager(EventsAPIManager):
             "lob_fields_length": curr_mapping['lob_fields']
         }
     
-    def cleaned_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], dst_saver: Any):
+    def cleaned_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], dst_saver: DMS_exporter):
         bookmark_key = curr_mapping.get('bookmark_key', '')
         if not bookmark_key:
             raise Exception("please provide bookmark key")
@@ -154,9 +156,9 @@ class ClevertapManager(EventsAPIManager):
                     )
                 cur.execute(delete_query)
                 dst_saver.saver.conn.commit()
-                cur.close() 
-                dst_saver.saver.conn.close()
-            except:
-                pass
+                cur.close()
+            except Exception as e:
+                logger.err(traceback.format_exc())
+                logger.err("Error in deleting existing event - {0} for date {1} in redshift. Exception: {2}".format(event_name, sync_date, str(e)))
 
 

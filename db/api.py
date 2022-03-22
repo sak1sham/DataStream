@@ -44,3 +44,4 @@ class APIMigrate:
                     logger.err(traceback.format_exc())
                     logger.err(self.curr_mapping['unique_id'] + " - "+ event_name + ": " + "caught some error while migrating event data.")
 
+        self.saver.close()
