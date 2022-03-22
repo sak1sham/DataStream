@@ -69,19 +69,20 @@ class MongoTester(unittest.TestCase):
                     assert str(record[key]) == athena_record[athena_key]
                 elif(key in self.col_map['fields'].keys()):
                     val = self.col_map['fields'][key]
-                    if(val == 'int'):
-                        assert int(float(record[key])) == athena_record[athena_key] or athena_record[athena_key] == 0
-                    elif(val == 'float'):
-                        assert float(record[key]) == athena_record[key] or athena_record[athena_key] is None
-                    elif(val == 'bool'):
-                        record[key] = str(record[key])
-                        assert (record[key].lower() in ['true', '1', 't', 'y', 'yes'] and athena_record[athena_key]) or (not athena_record[key])
-                    elif(val == 'datetime'):
-                        date1 = convert_to_datetime(record[key])
-                        date2 = convert_to_datetime(athena_record[athena_key])
-                        assert (date1 is pd.NaT and date2 is pd.NaT) or (abs((date1-date2).total_seconds()) <= 1)
-                    else:
-                        assert convert_to_str(record[key]) == athena_record[athena_key]
+                    if record[key]:
+                        if(val == 'int'):
+                            assert int(float(record[key])) == athena_record[athena_key] or athena_record[athena_key] == 0
+                        elif(val == 'float'):
+                            assert float(record[key]) == athena_record[key] or athena_record[athena_key] is None
+                        elif(val == 'bool'):
+                            record[key] = str(record[key])
+                            assert (record[key].lower() in ['true', '1', 't', 'y', 'yes'] and athena_record[athena_key]) or (not athena_record[key])
+                        elif(val == 'datetime'):
+                            date1 = convert_to_datetime(record[key])
+                            date2 = convert_to_datetime(athena_record[athena_key])
+                            assert (date1 is pd.NaT and date2 is pd.NaT) or (abs((date1-date2).total_seconds()) <= 1)
+                        else:
+                            assert convert_to_str(record[key]) == athena_record[athena_key]
                 else:
                     assert convert_to_str(record[key]) == athena_record[athena_key]
             return True
@@ -123,7 +124,7 @@ if __name__ == "__main__":
         id = sys.argv.pop()
     if('collections' not in mapping[id].keys()):
         mapping[id]['collections'] = []
-    for i in range(10):
+    for i in range(100):
         for col in mapping[id]['collections']:
             print("Testing", col['collection_name'])
             MongoTester.url = mapping[id]['source']['url']

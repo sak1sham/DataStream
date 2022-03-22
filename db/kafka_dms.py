@@ -1,5 +1,3 @@
-from re import T
-from numpy import true_divide
 import pandas as pd
 import json
 import datetime
@@ -16,9 +14,6 @@ dftype = NewType("dftype", pd.DataFrame)
 
 kafka_group = 'dms_kafka'
 
-s3_bucket_destination = 's3://learning-migrationservice/Kafka/'
-s3_athena_database = 'kafka'
-s3_athena_database_table = 'kafka'
 
 class KafkaMigrate:
     def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, tz_str: str = 'Asia/Kolkata') -> None:
@@ -39,6 +34,12 @@ class KafkaMigrate:
         logger.err(job_id= self.curr_mapping['unique_id'], s=error)
 
     def preprocess(self) -> None:
+        '''
+            This function handles all the preprocessing steps.
+                1. If partitions need to be made, store separate partition fields and their datatypes in the job-mapping.
+                2. If data is to be dumped, add a field 'migration_snapshot_date' in job-mapping with format as datetime
+                3. Create a saver object to save data at destination.
+        '''
         if('fields' not in self.curr_mapping.keys()):
             self.curr_mapping['fields'] = {}
         
@@ -82,6 +83,9 @@ class KafkaMigrate:
         self.athena_dtypes = get_athena_dtypes(self.curr_mapping['fields'])
 
     def add_partitions(self, df: dftype) -> dftype:
+        '''
+            If partitions are specified in mapping, add partition fields to the documents.
+        '''
         for i in range(len(self.curr_mapping['partition_col'])):
             col = self.curr_mapping['partition_col'][i]
             col_form = self.curr_mapping['partition_col_format'][i]
@@ -111,6 +115,9 @@ class KafkaMigrate:
         return processed_data
 
     def save_data(self, processed_data: dftype = None) -> None:
+        '''
+            This function saves the processed data into destination
+        '''
         if(not processed_data):
             return
         else:
@@ -129,12 +136,22 @@ class KafkaMigrate:
 
     
     def process(self) -> None:
+        '''
+                This function handles the entire flow of preprocessing, processing and saving data.
+            '''
         try:
-            consumer = KafkaConsumer(self.curr_mapping['topic_name'], bootstrap_servers = [self.db['source']['kafka_server']], enable_auto_commit = True, group_id = 'dms_kafka_group', value_deserializer = self.value_deserializer)
+            '''
+                Consumes the data in kafka
+            '''
+            consumer = KafkaConsumer(self.curr_mapping['topic_name'], bootstrap_servers = [self.db['source']['kafka_server']], 
+            enable_auto_commit = True, group_id = 'dms_kafka_group', value_deserializer = self.value_deserializer)
             self.inform(message='Started consuming messages.', save=True)
             self.preprocess()
             self.inform(message="Preprocessing done.", save=True)
             for message in consumer:
+                '''
+                    reads the data in the messages being consumed
+                '''
                 try:
                     self.inform(message="Recieved data", save=True)
                     df = pd.DataFrame(message.value)

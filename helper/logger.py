@@ -24,14 +24,16 @@ def get_data_from_encr_db():
         raise ConnectionError("Unable to connect to Encryption DB.")
 
 # function to write logs into mongodb
-def write_logs(job_id: str = None, log: str = None, timing: datetype = datetime.utcnow()) -> None:
+def write_logs(job_id: str = None, log: str = None, timing: datetype = datetime.utcnow(), type_of_log: int = 0) -> None:
     rec = {
         'log_for_job': job_id,
         'log': str(log),
-        'timing': timing
+        'timing': timing,
+        'type_of_log': type_of_log
     }
     db = get_data_from_encr_db()
     db.insert_one(rec)
+
 
 class Log_manager:
     def __init__(self) -> None:
@@ -44,14 +46,16 @@ class Log_manager:
         logging.getLogger().setLevel(logging.INFO)
     def inform(self, job_id: str = None, s: str = None, save : bool = False) -> None:
         logging.info(s)
-        if save:
-            write_logs(job_id, s)
+        if(save and 'save_logs' in settings.keys() and settings['save_logs']):
+            write_logs(job_id, s, 0)
     def warn(self, job_id: str = None, s: str = None) -> None:
         logging.warning(s)
-        write_logs(job_id, s)
+        if ('save_logs' in settings.keys() and settings['save_logs']):
+            write_logs(job_id, s, 1)
     def err(self, job_id: str = None, s: Any = None) -> None:
         logging.error(s)
-        write_logs(job_id, s)
+        if ('save_logs' in settings.keys() and settings['save_logs']):
+            write_logs(job_id, s, 2)
 
 
 logger = Log_manager()

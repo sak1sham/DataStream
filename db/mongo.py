@@ -55,6 +55,9 @@ class MongoMigrate:
 
 
     def get_connectivity(self) -> int:
+        '''
+            Makes the connection to the MongoDb database and returns the number of documents present inside the collection
+        '''
         try:
             client = MongoClient(self.db['source']['url'], tlsCAFile=certifi.where())
             database_ = client[self.db['source']['db_name']]
@@ -67,6 +70,12 @@ class MongoMigrate:
 
 
     def fetch_data(self, start: int = -1, end: int = -1, query: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        '''
+            This functions returns the list of all documents inside the collection, or when the query (mongo query) is executed
+                1. All records are sorted as per date of creation
+                2. start and end specify the starting and ending of records to be returned
+                3. if start and end are not specified, self.batch_size is used to return some records from beginning
+        '''
         if(query):
             if(start == -1 and end == -1):
                 return list(self.db_collection.find(query).sort("_id", 1).limit(self.batch_size))
@@ -80,6 +89,12 @@ class MongoMigrate:
             
 
     def preprocess(self) -> None:
+        '''
+            This function handles all the preprocessing steps.
+                1. If partitions need to be made, store separate partition fields and their datatypes in the job-mapping.
+                2. If data is to be dumped, add a field 'migration_snapshot_date' in job-mapping with format as datetime
+                3. Create a saver object to save data at destination.
+        '''
         if('fields' not in self.curr_mapping.keys()):
             self.curr_mapping['fields'] = {}
         
@@ -142,10 +157,16 @@ class MongoMigrate:
 
 
     def postprocess(self):
+        '''
+            After all migration has been performed, we save the datetime of this job. This helps in finding all records updated after this datetime, and before next job is running.
+        '''
         set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
 
 
     def add_partitions(self, document: Dict[str, Any], insertion_time) -> Dict[str, Any]:
+        '''
+            If partitions are specified in mapping, add partition fields to the documents.
+        '''
         for i in range(len(self.curr_mapping['partition_col'])):
             col = self.curr_mapping['partition_col'][i]
             col_form = self.curr_mapping['partition_col_format'][i]
@@ -171,10 +192,12 @@ class MongoMigrate:
 
 
     def dumping_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
-        ## When we are dumping data, snapshots of the datastore are captured at regular intervals inside destination
-        ## We insert the snapshots, and no updation is performed
-        ## All the records are inserted, there is no need for bookmarks
-        ## By default, we add a column 'migration_snapshot_date' to capture the starting time of migration
+        '''
+            When we are dumping data, snapshots of the datastore are captured at regular intervals inside destination
+            We insert the snapshots, and no updation is performed
+            All the records are inserted, there is no need for bookmarks
+            By default, we add a column 'migration_snapshot_date' to capture the starting time of migration
+        '''
         docu_insert = []
         migration_start_id = ObjectId.from_datetime(self.curr_run_cron_job)
         query = {"_id": {"$lt": migration_start_id}}
@@ -352,6 +375,12 @@ class MongoMigrate:
 
 
     def dumping_process(self) -> None:
+        '''
+            DUMPING: Everytime the job runs, entire data present in the collection is migrated to destination,
+            Multiple copies of the same data are created.
+            This function handles the dumping process.
+            While dumping, we add another column 'migration_snapshot_date' that indicates the datetime when migration was performed.
+        '''
         start = 0
         processed_collection = {}
         end = 0
@@ -372,6 +401,11 @@ class MongoMigrate:
 
 
     def logging_process(self) -> None:
+        '''
+            Function to handle logging process.
+            LOGGING: We assume no updations are performed at source, and if performed, the updates need not be migrated to destination
+            Only newly inserted records are migrated
+        '''
         processed_collection = {}
         while(True):
             processed_collection = self.adding_new_data(mode='logging')
@@ -390,6 +424,10 @@ class MongoMigrate:
 
 
     def syncing_process(self) -> None:
+        '''
+            Function to handle all syncing process. First we find all records to be inserted and make the changes at destination
+            Then we find all records to be updated and overwrite those records sequentially in destination.
+        '''
         ## FIRST DO ALL INSERTIONS
         self.inform(message="Starting to migrate newly inserted records.")
         processed_collection = {}
@@ -450,9 +488,14 @@ class MongoMigrate:
 
 
     def save_data(self, processed_collection: Dict[str, Any] = None) -> None:
+        '''
+            processed_collection is a dictionary type object with fields: name (of the collection), df_insert (dataframe of records to be inserted), df_update (dataframe of records to be deleted) and dtypes (athena datatypes one to one mapping for every column in dataframe)
+            This function saves the processed data into destination
+        '''
         if(not processed_collection):
             return
         else:
+            ## If there is data in processed collection and some field is missing, we handle it by setting the field by some value (mostly empty)
             if('name' not in processed_collection.keys()):
                 processed_collection['name'] = self.curr_mapping['collection_name']
             if('df_insert' not in processed_collection.keys()):
@@ -461,11 +504,15 @@ class MongoMigrate:
                 processed_collection['df_update'] = pd.DataFrame({})
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping'):
+                ## If mode is dumping, then there can't be any primary key. Otherwise, set _id as primary_key
                 primary_keys = ['_id']
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
 
 
     def process(self) -> None:
+        '''
+            This function handles the entire flow of preprocessing, processing, saving and postprocessing data.
+        '''
         self.get_connectivity()
         self.inform(message="Connected to database and collection.", save=True)
         self.preprocess()

@@ -33,15 +33,29 @@ def get_last_run_cron_job(job_id: str) -> datetype:
         logger.inform(job_id=job_id, s=(job_id + ": Never seen it before. Taking previously run cron job time as on January 1, 1999."), save=True)
         return timing
 
-
-def set_last_run_cron_job(job_id: str, timing: datetype) -> None:
+def get_last_migrated_record_prev_job(job_id: str = None) -> None:
+    '''
+        get last migrated record when job was run last time
+    '''
     db = get_data_from_encr_db()
     prev = db.find_one({'last_run_cron_job_for_id': job_id})
+    return prev['record_id']
+
+def set_last_run_cron_job(job_id: str, timing: datetype, last_record_id: Any = None) -> None:
+    db = get_data_from_encr_db()
+    prev = db.find_one({'last_run_cron_job_for_id': job_id})
+    rec = {
+        'last_run_cron_job_for_id': job_id, 
+        'timing': timing
+    }
+    if(last_record_id):
+        rec['record_id'] = last_record_id
+    
     if(prev):
         db.delete_one({'last_run_cron_job_for_id': job_id})
-        db.insert_one({'last_run_cron_job_for_id': job_id, 'timing': timing})
+        db.insert_one(rec)
     else:
-        db.insert_one({'last_run_cron_job_for_id': job_id, 'timing': timing})
+        db.insert_one(rec)
 
 
 def get_last_migrated_record(job_id: str) -> Dict[str, Any]:

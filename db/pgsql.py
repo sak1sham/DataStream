@@ -3,7 +3,7 @@ import psycopg2
 import pymongo
 
 from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, utc_to_local, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
@@ -45,8 +45,13 @@ class PGSQLMigrate:
         self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
+
     def postprocess(self):
-        set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
+        last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+        if(last_rec):
+            set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job, last_record_id = last_rec['record_id'])
+        else:
+            set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
 
 
     def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({}), mode: str = "both") -> Tuple[dftype]:
@@ -87,7 +92,6 @@ class PGSQLMigrate:
         return df_insert, df_update
 
 
-
     def add_partitions(self, df: dftype = pd.DataFrame({})) -> dftype:
         self.partition_for_parquet = []
         if('partition_col' in self.curr_mapping.keys()):
@@ -122,7 +126,6 @@ class PGSQLMigrate:
         return df
 
 
-
     def dumping_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
         df['migration_snapshot_date'] = self.curr_run_cron_job
         self.partition_for_parquet = []
@@ -131,8 +134,6 @@ class PGSQLMigrate:
         df_insert = convert_to_dtype(df, col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
         return {'name': table_name, 'df_insert': df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
-
-
 
 
     def inserting_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
@@ -162,8 +163,6 @@ class PGSQLMigrate:
         return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
 
-
-
     def updating_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
         collection_encr = get_data_from_encr_db()
 
@@ -191,7 +190,6 @@ class PGSQLMigrate:
         return {'name': table_name, 'df_insert': pd.DataFrame({}), 'df_update': df, 'dtypes': dtypes}
 
 
-
     def save_data(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = None) -> None:
         if(not processed_data):
             return
@@ -206,7 +204,6 @@ class PGSQLMigrate:
             if(self.curr_mapping['mode'] != 'dumping'):
                 primary_keys = ['unique_migration_record_id']
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
-
 
 
     def get_list_tables(self) -> List[str]:
@@ -237,7 +234,6 @@ class PGSQLMigrate:
         except Exception as e:
             self.err(error=e)
             raise ConnectionError("Unable to connect to source.")
-
 
 
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
@@ -297,14 +293,25 @@ class PGSQLMigrate:
                             if(mode == "dumping"):
                                 processed_data = self.dumping_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
                                 self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                                processed_data = {}
                             elif(mode == "logging"):
                                 processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
                                 self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                                if(processed_data['df_insert'].shape[0]):
+                                    pkey = self.curr_mapping['primary_key']
+                                    last_record_id = processed_data['df_insert'][pkey].iloc[-1]
+                                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = datetime.datetime.utcnow())
+                                processed_data = {}
                             elif(mode == "syncing"):
                                 if(sync_mode == 1):
                                     ## INSERTION MODE
                                     processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
                                     self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                                    if(processed_data['df_insert'].shape[0]):
+                                        pkey = self.curr_mapping['primary_key']
+                                        last_record_id = processed_data['df_insert'][pkey].iloc[-1]
+                                        set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = datetime.datetime.utcnow())
+                                    processed_data = {}
                                 else:
                                     ## UPDATION MODE
                                     processed_data_u = {}
@@ -337,6 +344,30 @@ class PGSQLMigrate:
             processed_data = {}
 
 
+    def get_last_pkey(self, table_name: str = None) -> Any:
+        sql_stmt = 'SELECT max(' + self.curr_mapping['primary_key'] + ') as curr_max_pkey FROM ' + table_name
+        try:
+            conn = psycopg2.connect(
+                host = self.db['source']['url'],
+                database = self.db['source']['db_name'],
+                user = self.db['source']['username'],
+                password = self.db['source']['password']
+            )
+            try:
+                with conn.cursor('cursor-name', scrollable = True) as curs:
+                    curs.itersize = 2
+                    curs.execute(sql_stmt)
+                    curr_max_pkey = curs.fetchone()[0]
+                    return curr_max_pkey
+            except Exception as e:
+                self.err(error=e)
+                raise ProcessingError("Caught some exception while finding maximum value of primary_key till now.")
+        except ProcessingError:
+            raise
+        except Exception as e:
+            self.err(error=e)
+            raise ConnectionError("Unable to connect to source.")
+
 
     def dumping_process(self, table_name: str = None) -> None:
         sql_stmt = "SELECT * FROM " + table_name
@@ -345,20 +376,41 @@ class PGSQLMigrate:
         self.process_sql_query(table_name, sql_stmt, mode='dumping')
 
 
-
     def logging_process(self, table_name: str = None) -> None:
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
-        curr = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
-        last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
-        if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-            if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
-                sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) > CAST(\'" + last + "\' as timestamp) AND Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + curr + "\' as timestamp)"
+       
+        if('primary_key_datatype' == 'int'):
+            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+            last = -2147483648
+            curr = int(self.get_last_pkey(table_name = table_name))
+            if(last_rec):
+                last = int(last['record_id'])
+            curr = str(curr)
+            last = str(last)
+            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " > " + last + " AND " + self.curr_mapping['primary_key'] + " <= " + curr
+        elif('primary_key_datatype' == 'str'):
+            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+            last = ""
+            curr = str(self.get_last_pkey(table_name = table_name))
+            if(last_rec):
+                last = str(last['record_id'])
+            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " > \'" + last + "\' AND " + self.curr_mapping['primary_key'] + " <= \'" + curr + "\'"
+        elif('primary_key_datatype' == 'datetime'):
+            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+            last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
+            curr = self.get_last_pkey(table_name = table_name)
+            if(curr.tzinfo):
+                curr = curr.astimezone(pytz.utc)
             else:
-                sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " > \'" + last + "\'::timestamp AND " + self.curr_mapping['bookmark_creation'] + " <= \'" + curr + "\'::timestamp"
+                curr = self.tz_info.localize(curr)
+            if(last_rec):
+                last = pytz.utc.localize(last['record_id']).astimezone(self.tz_info)
+            sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) > Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp) AND Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + curr.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
+        else:
+            IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         self.process_sql_query(table_name, sql_stmt, mode='logging')
-
 
 
     def syncing_process(self, table_name: str = None) -> None:
@@ -366,40 +418,80 @@ class PGSQLMigrate:
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
-        curr = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
-        last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
-        if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
-            if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
-                sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) > CAST(\'" + last + "\' as timestamp) AND Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + curr + "\' as timestamp)"
+        
+        if('primary_key_datatype' == 'int'):
+            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+            last = -2147483648
+            curr_max = int(self.get_last_pkey(table_name = table_name))
+            if(last_rec):
+                last = int(last['record_id'])
+            curr_max = str(curr_max)
+            last = str(last)
+            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " > " + last + " AND " + self.curr_mapping['primary_key'] + " <= " + curr_max
+        elif('primary_key_datatype' == 'str'):
+            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+            last = ""
+            curr_max = str(self.get_last_pkey(table_name = table_name))
+            if(last_rec):
+                last = str(last['record_id'])
+            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " > \'" + last + "\' AND " + self.curr_mapping['primary_key'] + " <= \'" + curr_max + "\'"
+        elif('primary_key_datatype' == 'datetime'):
+            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+            last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
+            curr_max = self.get_last_pkey(table_name = table_name)
+            if(curr_max.tzinfo):
+                curr_max = curr_max.astimezone(pytz.utc)
             else:
-                sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " > \'" + last + "\'::timestamp AND " + self.curr_mapping['bookmark_creation'] + " <= \'" + curr + "\'::timestamp"
+                curr_max = self.tz_info.localize(curr_max)
+            if(last_rec):
+                last = pytz.utc.localize(last['record_id']).astimezone(self.tz_info)
+            sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) > Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp) AND Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + curr_max.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
+        else:
+            IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 1)
         
         ## NOW INSERTION IS COMPLETE, LET'S FOCUS ON UPDATING OLD DATA
         sql_stmt = "SELECT * FROM " + table_name
+
+        if('primary_key_datatype' == 'int'):
+            last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
+            last = -2147483648
+            if(last_rec):
+                last = int(last['record_id'])
+            last = str(last)
+            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " <= " + last
+        elif('primary_key_datatype' == 'str'):
+            last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
+            last = ""
+            if(last_rec):
+                last = str(last['record_id'])
+            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " <= \'" + last + "\'"
+        elif('primary_key_datatype' == 'datetime'):
+            last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
+            last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
+            if(last_rec):
+                last = pytz.utc.localize(last['record_id']).astimezone(self.tz_info)
+            sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
+        else:
+            IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
+        
         curr = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
         last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
-        if('bookmark_creation' in self.curr_mapping.keys() and self.curr_mapping['bookmark_creation']):
+        if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
             if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
-                sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark_creation'] + " as timestamp) <= CAST(\'" + last + "\' as timestamp)"
+                sql_stmt += " AND Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)"
             else:
-                sql_stmt += " WHERE " + self.curr_mapping['bookmark_creation'] + " <= \'" + last + "\'::timestamp"
-            if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
-                if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
-                    sql_stmt += " AND Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)"
-                else:
-                    sql_stmt += " AND " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp"
-        else:
-            if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
-                if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
-                    sql_stmt += " WHERE Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)"
-                else:
-                    sql_stmt += " WHERE " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp"
+                sql_stmt += " AND " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp"
+        print(sql_stmt)
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
 
 
-
     def process(self) -> None:
+        if(self.curr_mapping['mode'] != 'dumping' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):
+            raise IncorrectMapping('Need to specify a primary_key (strictly increasing and unique - int|string|datetime) inside the table for syncing or logging mode.')
+        elif(self.curr_mapping['mode'] != 'dumping'):
+            raise IncorrectMapping('primary_key_datatype not specified. Please specify primary_key_datatype as either str or int or datetime.')
+
         if('username' not in self.db['source'].keys()):
             self.db['source']['username'] = ''
         if('password' not in self.db['source'].keys()):
@@ -456,4 +548,4 @@ class PGSQLMigrate:
         self.inform(message="Post processing completed.", save=True)
 
         self.saver.close()
-        self.inform("Hope to see you again :')")
+        self.inform(message="Hope to see you again :')")
