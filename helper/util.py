@@ -285,7 +285,7 @@ def transformTs(ts: str):
     second = int(value[12:14])
     return datetime.datetime(year, month, day, hour, minute, second, 0).isoformat()
 
-def extract_value_from_nested_obj(obj: Dict[str: Any] = {}, key: str = ''):
+def extract_value_from_nested_obj(obj: Dict[str, Any] = {}, key: str = ''):
     keys = key.split('.')
     value = None
     for k in keys:
