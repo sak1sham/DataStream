@@ -146,14 +146,14 @@ class ClevertapManager(EventsAPIManager):
         if dst_saver.type=='redshift':
             try:
                 cur = dst_saver.saver.conn.cursor()
-                delete_query = "delete from {0}.{1} where DATE(timestamp) = '{4}-{5}-{6}' and event_name='{2}'".format(
+                delete_query = "delete from {0}.{1} where DATE(timestamp) = '{3}-{4}-{5}' and event_name='{2}'".format(
                     dst_saver.saver.schema,
                     curr_mapping['api_name'],
                     event_name,
                     year, 
                     month, 
                     day
-                    )
+                )
                 cur.execute(delete_query)
                 dst_saver.saver.conn.commit()
                 cur.close()
