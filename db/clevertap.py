@@ -3,7 +3,7 @@ import requests
 import json
 from slugify import slugify
 from dst.main import DMS_exporter
-from helper.util import get_yyyymmdd_from_date, transformTs, validate_or_convert, typecast_df_to_schema
+from helper.util import get_yyyymmdd_from_date, transformTs, validate_or_convert, typecast_df_to_schema, extract_value_from_nested_obj
 import pytz
 import pandas as pd
 import os
@@ -73,36 +73,11 @@ class ClevertapManager(EventsAPIManager):
         for record in records:
             tf_record = {
                 "event_name": event_name,
-                "ct_ts": record.get("ts"),
                 "timestamp": transformTs(record.get("ts", "")),
-                "name": record["profile"].get("name", ""),
-                "phone": record["profile"].get("phone", ""),
-                "cx_city": record["profile"].get("profileData", {}).get("cx_city", ""),
-                "city": record["profile"].get("profileData", {}).get("city", ""),
-                "user_id": record["profile"].get("profileData", {}).get("user_id"),
-                "whatsapp_opted_in":record["profile"].get("profileData", {}).get("whatsapp_opted_in", ""),
-
-                "leader_id": record["profile"].get("profileData", {}).get("leaderid", ""),
-                "leader_name": record["profile"].get("profileData", {}).get("leadername", ""),
-                "leader_user_id": record["profile"].get("profileData", {}).get("leaderuserid", 0),
-                "leader_lat": record["profile"].get("profileData", {}).get("leaderlat", 0.0),
-                "leader_lng": record["profile"].get("profileData", {}).get("leaderlng", 0.0),
-                "catalogue_name": record["profile"].get("profileData", {}).get("catalogue_name", ""),
-                "platform": record["profile"].get("platform", ""),
-
-                "ct_object_id": record["profile"].get("objectId", ""),
-                "ct_session_id": record.get("event_props", {}).get("CT Session Id", ""),
-                "screen_name": record.get("event_props", {}).get("screen_name", ""),
-
-                "os_version": record["profile"].get("os_version", ""),
-                "app_version": record["profile"].get("app_version", ""),
-                "make": record["profile"].get("make", ""),
-                "model": record["profile"].get("model", ""),
-                "cplabel": record["profile"].get("profileData", {}).get("cplabel", ""),
-
-                "tags": record["profile"].get("profileData", {}).get("tags", ""),
-                "event_props": record.get("event_props", "")
             }
+            for key, value in curr_mapping['api_to_field_mapping'].items():
+                tf_record[key] = extract_value_from_nested_obj(record, value)
+                
             tf_record = validate_or_convert(tf_record, curr_mapping['fields'], self.tz_info)
             tf_records.append(tf_record)
         return tf_records

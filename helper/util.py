@@ -275,7 +275,7 @@ def get_yyyymmdd_from_date(days=0):
         sync_date = datetime.date.today() + datetime.timedelta(days=int(days))
         return int(sync_date.strftime('%Y%m%d'))
 
-def transformTs(ts):
+def transformTs(ts: str):
     value = str(ts)
     year = int(value[0:4])
     month = int(value[4:6])
@@ -284,3 +284,15 @@ def transformTs(ts):
     minute = int(value[10:12])
     second = int(value[12:14])
     return datetime.datetime(year, month, day, hour, minute, second, 0).isoformat()
+
+def extract_value_from_nested_obj(obj: Dict[str: Any], key: str):
+    keys = key.split('.')
+    value = None
+    for k in keys:
+        try:
+            value = obj[k]
+            obj = obj[k]
+        except KeyError:
+            logger.warn("Can't get value for key, returning None")
+            return None
+    return value
