@@ -599,6 +599,47 @@ mapping = {
                     "event_props": 4096
                 },
                 'cron': 'self-managed',
+            },
+            {
+                'api_name':'cl_app_events',
+                'project_name': 'cl_app',
+                'event_names': ['Address Submit'],
+                'bookmark_key_type': 'date',
+                'bookmark_key_format': 'YYYYMMDD',
+                'bookmark_key': '-1',
+                'fields': {
+                    "event_name": 'str',
+                    "ct_ts": 'int',
+                    "timestamp": 'datetime',
+                    "name": 'str',
+                    "phone": 'str',
+                    "cx_city": 'str',
+                    "city": 'str',
+                    "user_id": 'str',
+                    "whatsapp_opted_in": 'str',
+                    "leader_id": 'str',
+                    "leader_name": 'str',
+                    "leader_user_id": 'str',
+                    "leader_lat":'str',
+                    "leader_lng": 'str',
+                    "catalogue_name": 'str',
+                    "platform": 'str',
+                    "ct_object_id": 'str',
+                    "ct_session_id": 'str',
+                    "screen_name": 'str',
+                    "os_version": 'str',
+                    "app_version": 'str',
+                    "make": 'str',
+                    "model": 'str',
+                    "cplabel": 'str',
+                    "tags": 'str',
+                    "event_props": 'str'
+                },
+                'lob_fields': {
+                    "tags": 4096,
+                    "event_props": 4096
+                },
+                'cron': 'self-managed',
             }
         ]
     }
