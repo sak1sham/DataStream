@@ -7,6 +7,7 @@ import pytz
 import pandas as pd
 import os
 from typing import Dict, Any, List
+from helper.logging import logger
 
 class EventsAPIManager:
     CLEVERTAP_API_BASE_URL = os.getenv('CLEVERTAP_BASE_URL')
@@ -112,13 +113,18 @@ class ClevertapManager(EventsAPIManager):
         start_cursor = self.get_event_cursor(event_name, sync_date, sync_date)
         cursor_data = self.get_records_for_cursor(start_cursor)
         transformed_records = []
+        total_records = 0
         if cursor_data["status"] == "success":
             if "records" in cursor_data:
+                total_records += len(cursor_data['records'])
                 transformed_records += self.transform_api_data(cursor_data['records'], event_name, curr_mapping)
                 while "next_cursor" in cursor_data:
                     cursor_data = self.get_records_for_cursor(cursor_data["next_cursor"])
                     if "records" in cursor_data:
+                        total_records += len(cursor_data['records'])
                         transformed_records += self.transform_api_data(cursor_data['records'], event_name, curr_mapping)
+        logger.inform("Total Clevertap events: " + str(len(total_records)))
+        logger.inform("Tatal Clevertap events after transformation: " + str(len(transformed_records)))
         return {
             'name': curr_mapping['api_name'],
             'df_insert': typecast_df_to_schema(pd.DataFrame(transformed_records), curr_mapping['fields']),
@@ -137,7 +143,7 @@ class ClevertapManager(EventsAPIManager):
         if dst_saver.type=='redshift':
             try:
                 cur = dst_saver.saver.conn.cursor()
-                delete_query = "delete from {0}.{1} where DATE(timestamp AT TIME ZONE 'Asia/Kolkata') = '{4}-{5}-{6}' and event_name='{2}'".format(
+                delete_query = "delete from {0}.{1} where DATE(timestamp) = '{4}-{5}-{6}' and event_name='{2}'".format(
                     dst_saver.saver.schema,
                     curr_mapping['api_name'],
                     event_name,

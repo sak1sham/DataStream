@@ -283,4 +283,4 @@ def transformTs(ts):
     hour = int(value[8:10])
     minute = int(value[10:12])
     second = int(value[12:14])
-    return datetime.datetime(year, month, day, hour, minute, second, 0, pytz.timezone('Asia/Kolkata')).isoformat()
+    return datetime.datetime(year, month, day, hour, minute, second, 0).isoformat()
