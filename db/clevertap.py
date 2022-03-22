@@ -76,8 +76,14 @@ class ClevertapManager(EventsAPIManager):
                 "timestamp": transformTs(record.get("ts", "")),
             }
             for key, value in curr_mapping['api_to_field_mapping'].items():
-                tf_record[key] = extract_value_from_nested_obj(record, value)
-                
+                result  = extract_value_from_nested_obj(record, value)
+                if not result:
+                    if curr_mapping['fields'][key]=='str':
+                        result = ''
+                    if curr_mapping['fields'][key]=='int':
+                        result = 0
+                tf_record[key] = result
+
             tf_record = validate_or_convert(tf_record, curr_mapping['fields'], self.tz_info)
             tf_records.append(tf_record)
         return tf_records
