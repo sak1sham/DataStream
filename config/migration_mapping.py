@@ -151,7 +151,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod',
+            's3_bucket_name': 'data-migration-server',
         },
         'collections': [
             {
@@ -168,10 +168,10 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 10 42 0',
+                'cron': '* * * * * 16 8 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': True
+                'improper_bookmarks': False
             },
             {
                 'collection_name': 'support_tickets',
@@ -195,14 +195,14 @@ mapping = {
                     'resolved_at':'datetime',
                     'status_updated_at':'datetime',
                     'created_ts': 'datetime',
-                    'updated_ts': 'datetime'
+                    'updated_ts': 'datetime',
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 10 42 0',
+                'cron': '* * * * * 16 8 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': True
+                'improper_bookmarks': False
             }
         ]
     },
@@ -592,7 +592,7 @@ mapping = {
 '''
 
 settings = {
-    'fastapi_server': False,
+    'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
     'notify': False,
     'encryption_store': {

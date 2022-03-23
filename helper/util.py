@@ -134,7 +134,7 @@ def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] =
                 except Exception as e:
                     docu[key] = None
         elif(isinstance(docu[key], datetime.datetime)):
-            docu[key] = utc_to_local(docu[key], tz_info)
+            docu[key] = convert_to_datetime(docu[key], tz_info)
             docu[key] = docu[key].strftime(std_datetime_format)
         else:
             try:

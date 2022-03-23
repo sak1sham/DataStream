@@ -209,7 +209,7 @@ class MongoMigrate:
             document['migration_snapshot_date'] = self.curr_run_cron_job
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
                 document = self.add_partitions(document=document, insertion_time=insertion_time)        
-            document = validate_or_convert(document, self.curr_mapping['fields'], self.tz_info)
+            document = validate_or_convert(document, self.curr_mapping['fields'], pytz.utc)
             docu_insert.append(document)
         ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.curr_mapping['fields'])
         dtypes = get_athena_dtypes(self.curr_mapping['fields'])
@@ -270,7 +270,7 @@ class MongoMigrate:
                 }
                 collection_encr.insert_one(encr)
             ## All pre-requisite processing has been done. Next step is to convert all documents (dictionaries) into destined data-types.
-            document = validate_or_convert(document, self.curr_mapping['fields'], self.tz_info)
+            document = validate_or_convert(document, self.curr_mapping['fields'], pytz.utc)
             docu_insert.append(document)
         ## All fields in the document have been individually converted to destined data-types.
         ## Next and final processing step is to convert the documents into a dataframe, and type-cast the dataframe as a whole to destined data-types (as a double-check)
@@ -367,7 +367,7 @@ class MongoMigrate:
                 else:
                     collection_encr.insert_one(encr)
             
-            document = validate_or_convert(document, self.curr_mapping['fields'], self.tz_info)
+            document = validate_or_convert(document, self.curr_mapping['fields'], pytz.utc)
             docu_update.append(document)
         ret_df_update = typecast_df_to_schema(pd.DataFrame(docu_update), self.curr_mapping['fields'])
         dtypes = get_athena_dtypes(self.curr_mapping['fields'])

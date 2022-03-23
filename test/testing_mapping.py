@@ -50,19 +50,7 @@ mapping = {
                 'bookmark': 'updated_at',
                 'archive': False,
                 'to_partition': True,
-            },
-            {
-                'collection_name': 'support_tickets_rating',
-                'fields': {
-                    'rating': 'int',
-                    '__v': 'int',
-                    'updatedAt': 'datetime',
-                    'createdAt': 'datetime',
-                },
-                'bookmark': 'updatedAt',
-                'archive': False,
-                'to_partition': True,
-            },
+            }
         ]
     },
 }
@@ -106,44 +94,9 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod',
+            's3_bucket_name': 'data-migration-server',
         },
         'collections': [
-            {
-                'collection_name': 'support_form_items',
-                'fields': {
-                    'created_ts': 'datetime',
-                    'updated_ts': 'datetime'
-                },
-                'bookmark': 'updated_ts',
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': True
-            },
-            {
-                'collection_name': 'support_items',
-                'fields': {
-                    'priority': 'int',
-                },
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': True
-            },
-            {
-                'collection_name': 'support_list',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': True
-            },
             {
                 'collection_name': 'support_ticket_conversations',
                 'fields': {
@@ -188,29 +141,10 @@ mapping = {
                     'updated_ts': 'datetime'
                 },
                 'bookmark': 'updated_ts',
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
-            },
-            {
-                'collection_name': 'support_tickets_rating',
-                'fields': {
-                    'rating': 'int',
-                    '__v': 'int',
-                    'updatedAt': 'datetime',
-                    'createdAt': 'datetime',
-                    'created_ts': 'datetime',
-                    'updated_ts': 'datetime'
-                },
-                'bookmark': 'updated_ts',
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': True
-            },
+            }
         ]
     },
 }
@@ -218,7 +152,7 @@ mapping = {
 settings = {
     'encryption_store': {
         'url': 'mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-        'db_name': 'migration_update_check',
-        'collection_name': 'migration_update_check'
+        'db_name': 'test',
+        'collection_name': 'test'
     }
 }
