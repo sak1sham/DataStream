@@ -182,7 +182,7 @@ class MongoMigrate:
             elif(col_form == 'float'):
                 document[parq_col] = float(document[col])
             elif(col_form == 'datetime'):
-                document[col] = convert_to_datetime(document[col], self.tz_info)
+                document[col] = convert_to_datetime(document[col], pytz.utc)
                 document[parq_col + "_year"] = document[col].year
                 document[parq_col + "_month"] = document[col].month
                 document[parq_col + "_day"] = document[col].day
@@ -343,7 +343,7 @@ class MongoMigrate:
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and improper_bookmarks):
                 if(self.curr_mapping['bookmark'] not in document.keys()):
                     document[self.curr_mapping['bookmark']] = None
-                docu_bookmark_date = convert_to_datetime(document[self.curr_mapping['bookmark']], self.tz_info)
+                docu_bookmark_date = convert_to_datetime(document[self.curr_mapping['bookmark']], pytz.utc)
                 ## if docu_bookmark_date is None, that means the document was never updated
                 if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date < self.last_run_cron_job):
                     continue

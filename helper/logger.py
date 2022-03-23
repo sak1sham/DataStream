@@ -7,19 +7,17 @@ from pymongo import MongoClient
 import certifi
 from helper.exceptions import ConnectionError
 
-
-
 from typing import NewType, Any
 datetype = NewType("datetype", datetime)
 
-encryption_store = settings['encryption_store']
+logging_store = settings['logging_store']
 
-def get_data_from_encr_db():
+def get_data_from_log_db():
     try:
-        client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
-        db_encr = client_encr[encryption_store['db_name']]
-        collection_encr = db_encr[encryption_store['collection_name']]
-        return collection_encr
+        client_log = MongoClient(logging_store['url'], tlsCAFile=certifi.where())
+        db_log = client_log[logging_store['db_name']]
+        collection_log = db_log[logging_store['collection_name']]
+        return collection_log
     except:
         raise ConnectionError("Unable to connect to Encryption DB.")
 
@@ -31,7 +29,7 @@ def write_logs(job_id: str = None, log: str = None, timing: datetype = datetime.
         'timing': timing,
         'type_of_log': type_of_log
     }
-    db = get_data_from_encr_db()
+    db = get_data_from_log_db()
     db.insert_one(rec)
 
 

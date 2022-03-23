@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-'''
+#'''
 mapping = {
     "dms_iswq_ll_cciv": {
         'source': {
@@ -155,51 +155,6 @@ mapping = {
         },
         'collections': [
             {
-                'collection_name': 'leader_kyc',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': True
-            },
-            {
-                'collection_name': 'support_form_items',
-                'fields': {
-                    'created_ts': 'datetime',
-                    'updated_ts': 'datetime'
-                },
-                'bookmark': 'updated_ts',
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': True
-            },
-            {
-                'collection_name': 'support_items',
-                'fields': {
-                    'priority': 'int',
-                },
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': True
-            },
-            {
-                'collection_name': 'support_list',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': True
-            },
-            {
                 'collection_name': 'support_ticket_conversations',
                 'fields': {
                     'incoming': 'bool',
@@ -248,38 +203,11 @@ mapping = {
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': True
-            },
-            {
-                'collection_name': 'support_tickets_rating',
-                'fields': {
-                    'rating': 'int',
-                    '__v': 'int',
-                    'updatedAt': 'datetime',
-                    'createdAt': 'datetime',
-                    'created_ts': 'datetime',
-                    'updated_ts': 'datetime'
-                },
-                'bookmark': 'updated_ts',
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': True
-            },
-            {
-                'collection_name': 'webhook_error_logs',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 10 42 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': True
-            },
+            }
         ]
     },
 }
-'''
+#'''
 '''
 mapping = {
     "order_actions_cmdb_s3": {
@@ -575,7 +503,7 @@ mapping = {
 }
 '''
 
-
+'''
 mapping = {
     "test_modes_pgsql": {
         'source': {
@@ -600,7 +528,7 @@ mapping = {
         ]
     },
 }
-
+'''
 '''
 mapping = {
     'testing_only': {
@@ -671,6 +599,11 @@ settings = {
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),
         'collection_name': os.getenv('COLLECTION_NAME')
+    },
+    'logging_store': {
+        'url': os.getenv('LOG_MONGO_URL'),
+        'db_name': os.getenv('LOG_DB_NAME'),
+        'collection_name': os.getenv('LOG_COLLECTION_NAME')
     },
     'slack_notif': {
         'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
