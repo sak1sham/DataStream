@@ -91,7 +91,7 @@ mapping = {
             'source_type': 'mongo',
             'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
             'db_name': 'support-service'
-        },
+        }, 
         'destination': {
             'destination_type': 's3',
             's3_bucket_name': 'data-migration-server',

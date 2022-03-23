@@ -88,6 +88,7 @@ class MongoTester(unittest.TestCase):
                         assert convert_to_str(record[key]) == athena_record[athena_key]
                 except:
                     print(key)
+                    print("\n\n\n\n\n\n\n\n")
                     raise
             return True
         except Exception as e:
@@ -128,7 +129,8 @@ if __name__ == "__main__":
         id = sys.argv.pop()
     if('collections' not in mapping[id].keys()):
         mapping[id]['collections'] = []
-    for i in range(1):
+    for i in range(100):
+        print('Testing iteration:', i)
         for col in mapping[id]['collections']:
             print("Testing", col['collection_name'])
             MongoTester.url = mapping[id]['source']['url']
