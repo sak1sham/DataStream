@@ -1,3 +1,6 @@
+'''
+list of events to be dump from clevertap to target resourse.
+'''
 cx_app_event_names = [
     'Notification Clicked', 
     'Notification Delivered', 

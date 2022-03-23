@@ -25,7 +25,7 @@ services:
       - CLEVERTAP_CX_WEB_ACCOUNT_ID=4RW-KZK-995Z
       - CLEVERTAP_CX_WEB_PASSCODE=AOW-ROB-WXKL
       - CLEVERTAP_BASE_URL=https://in1.api.clevertap.com/1/
-      - CLEVERTAP_BATCHH_SIZE=ss10000
+      - CLEVERTAP_BATCH_SIZE=10000
     deploy:
       resources:
         limits:
