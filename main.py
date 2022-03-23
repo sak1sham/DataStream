@@ -32,17 +32,17 @@ tz__ = 'Asia/Kolkata'
 
 @app.on_event("startup")
 def scheduled_migration():
-    logger.inform(s='Started the scheduler.', save=True)
+    logger.inform(s='Started the scheduler.')
     scheduler.start()
 
 @app.on_event("shutdown")
 def end_migration():
-    logger.inform(s='Shutting down the scheduler.', save=True)
+    logger.inform(s='Shutting down the scheduler.')
     scheduler.shutdown(wait=False)
 
 @app.get("/health", status_code = 200)
 def healthcheck():
-    logger.inform(s='Health check done.', save=True)
+    logger.inform(s='Health check done.')
     pass
 
 def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
@@ -104,6 +104,6 @@ if __name__ == "__main__":
             if(s_type not in group_key.keys()):
                 raise SourceNotFound("Un-identified Source Type " + str(db['source']['source_type']) + " found in migration-mapping.")
             use_mapping(db, group_key[s_type], is_fastapi)
-    logger.inform(s='Added all jobs.', save=True)
+    logger.inform(s='Added all jobs.')
     if(is_fastapi):
         uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))

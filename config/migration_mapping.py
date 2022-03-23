@@ -168,7 +168,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 16 10 0',
+                'cron': '* * * * * 17 28 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -199,7 +199,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 16 10 0',
+                'cron': '* * * * * 17 28 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -208,6 +208,7 @@ mapping = {
     },
 }
 #'''
+
 '''
 mapping = {
     "order_actions_cmdb_s3": {
@@ -349,9 +350,12 @@ mapping = {
             }
         ]
     },
-}'''
+}
 
-'''mapping = {
+#'''
+
+'''
+mapping = {
     "Rohan_audit_logs": {
         'source': {
             'source_type': 'mongo',
@@ -423,9 +427,11 @@ mapping = {
             }
         ]
     },
-}'''
+}
+#'''
 
-'''mapping = {
+'''
+mapping = {
     "impression_service": {
         'source': {
             'source_type': 's3',
@@ -473,10 +479,12 @@ mapping = {
             }
         ]
     }
-}'''
+}
+#'''
 
 
-'''mapping = {
+'''
+mapping = {
     "dispatch_or_received_shipments_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
@@ -501,7 +509,7 @@ mapping = {
         ]
     },
 }
-'''
+#'''
 
 '''
 mapping = {
@@ -519,16 +527,16 @@ mapping = {
             {
                 'table_name': 'accounts',
                 'cron': 'self-managed',
-                'mode': 'syncing',
-                'primary_key': 'created_on',
-                'primary_key_datatype': 'datetime',
+                'mode': 'logging',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
                 'to_partition': True,
-                'partition_col': 'name'
             }
         ]
     },
 }
-'''
+#'''
+
 '''
 mapping = {
     'testing_only': {
@@ -560,7 +568,8 @@ mapping = {
         ]
     }
 }
-'''
+#'''
+
 '''
 mapping = {
     'testing_only': {
@@ -589,7 +598,7 @@ mapping = {
         ]
     }
 }
-'''
+#'''
 
 settings = {
     'fastapi_server': True,

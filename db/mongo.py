@@ -537,4 +537,4 @@ class MongoMigrate:
         self.inform(message="Post processing completed.", save=True)
 
         self.saver.close()
-        self.inform(message="Hope to see you again :')\n")
+        self.inform(message="Hope to see you again :')")

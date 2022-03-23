@@ -156,7 +156,7 @@ class PGSQLMigrate:
         return {'name': table_name, 'df_insert': df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
 
-    def inserting_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
+    def inserting_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}, mode: str = None) -> Dict[str, Any]:
         '''
             Function that takes in dataframe and processes it assuming only insertion is to be performed, and no updations need to be checked
                 1. Add partitions if required
@@ -166,6 +166,8 @@ class PGSQLMigrate:
                 5. one-on-one mapping of datatypes with athena datatypes
                 6. return a processed_data object
         '''
+        if(not mode):
+            raise Exception('mode of inserting records not specified. mode can either be syncing or logging')
         collection_encr = get_data_from_encr_db()
         
         ## Adding partition if required
@@ -177,7 +179,7 @@ class PGSQLMigrate:
         df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
  
         ## If the bookmarks are not present in records, then save the hashes of records in order to check for updations when job is run again
-        if('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark']):
+        if(mode == 'syncing' and ('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark'])):
             df, _ = self.distribute_records(collection_encr, df, mode='insert')
 
         ## Convert to required data types and return
@@ -345,7 +347,7 @@ class PGSQLMigrate:
                                 ## In Logging mode, we first process and save the data of the batch
                                 ## After saving every batch, we save the record_id of the last migrated record
                                 ## resume mode is thus supported.
-                                processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
+                                processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes, mode = 'logging')
                                 self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                                 if(processed_data['df_insert'].shape[0]):
                                     pkey = self.curr_mapping['primary_key']
@@ -366,7 +368,7 @@ class PGSQLMigrate:
                                     ## In syncing-insertion mode, we first process and save the data of the batch
                                     ## After saving every batch, we save the record_id of the last migrated record
                                     ## resume mode is thus supported.
-                                    processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
+                                    processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes, mode = 'syncing')
                                     self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                                     if(processed_data['df_insert'].shape[0]):
                                         pkey = self.curr_mapping['primary_key']
@@ -400,7 +402,7 @@ class PGSQLMigrate:
                                         updated_in_destination = True
                                     else:
                                         updated_in_destination = False                            
-                self.inform(message="Completed processing of table " + table_name + ".\n", save=True)
+                self.inform(message="Completed processing of table " + table_name + ".", save=True)
             except Exception as e:
                 self.err(error=e)
                 raise ProcessingError("Caught some exception while processing records.")
