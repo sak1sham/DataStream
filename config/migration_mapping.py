@@ -168,7 +168,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 16 8 0',
+                'cron': '* * * * * 16 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -199,7 +199,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 16 8 0',
+                'cron': '* * * * * 16 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
