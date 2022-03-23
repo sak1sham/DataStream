@@ -53,7 +53,7 @@ class DMS_importer:
                 msg += "*. :warning:"
                 try:
                     slack_token = settings['slack_notif']['slack_token']
-                    channel = channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                     send_message(msg = msg, channel = channel, slack_token = slack_token)
                     logger.inform("Notification sent successfully.")
                 except:
