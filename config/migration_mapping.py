@@ -91,7 +91,7 @@ with all_products as (
 
 '''
 
-#'''
+'''
 mapping = {
     "dms_iswq_ll_cciv": {
         'source': {
@@ -207,7 +207,7 @@ mapping = {
         ]
     },
 }
-#'''
+'''
 
 '''
 mapping = {
@@ -599,6 +599,806 @@ mapping = {
     }
 }
 #'''
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'tbl_user',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'user_id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'user_created',
+                'partition_col_format': 'datetime',
+                'bookmark': 'user_updated',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+'''
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [          
+            {
+                'table_name': 'user_addresses',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'team_leader_users',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'team_leaders',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'str',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'products',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'user_cashbacks',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'str',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'product_categories',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                # 'to_partition': True,
+                # 'partition_col': 'created_at',
+                # 'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'cms_list_items',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'cms_list_item_id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'cms_items',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'cms_item_id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'pincodes',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                # 'to_partition': True,
+                # 'partition_col': 'created_at',
+                # 'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'categories',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'category_id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'tbl_admin',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'admin_id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'admin_created',
+                'partition_col_format': 'datetime',
+                'bookmark': 'admin_updated',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'batch_process_table',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'csv_batch_uploads',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'batch_id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [
+            {
+                'table_name': 'team_leader_sessions',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'str',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'rm_numbers',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'commission_errors',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                # 'bookmark': 'updated_at',
+                # 'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'idfas_to_ban_usage',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                # 'bookmark': 'updated_at',
+                # 'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'db_cash_transition_ledger',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'spoke_cash_transition_ledger',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'analytics.cl_idfas',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'cl_id',
+                'primary_key_datatype': 'str',
+                # 'to_partition': True,
+                # 'partition_col': 'created_at',
+                # 'partition_col_format': 'datetime',
+                # 'bookmark': 'updated_at',
+                # 'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'analytics.cl_funnel',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'cl_id',
+                'primary_key_datatype': 'str',
+                'to_partition': True,
+                'partition_col': 'cl_signup_date',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'order_item_fulfillment_model',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'order_items',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    }
+}
+
+
+
+mapping = {
+    "from_cmdb_to_s3": {
+        'source': {
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
+        },
+        'destination': {
+            'destination_type': 's3',
+            's3_bucket_name': 'migration-service-temp'
+        },
+        'tables': [            
+            {
+                'table_name': 'orders',
+                'cron': 'self-managed',
+                'mode': 'syncing',
+                'primary_key': 'order_id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'created_at',
+                'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False
+            },
+        ]
+    },
+}
+'''
 
 settings = {
     'fastapi_server': True,
