@@ -58,20 +58,20 @@ pipeline_format is a dictionary with following properties:
 7. schema : str, name of the schema to upload the data to
 
 ### Data structuring (tables or collections or apis)
-If source is SQL, we need to provide a field ```tables```, which is a list of table_specifications. Table_specifications shall be in following format:
+If source is PGSQL, we need to provide a field ```tables```, which is a list of table_specifications. Table_specifications shall be in following format:
 ```
 {
     'table_name': str,
-    'bookmark_creation': False or 'field_name' (optional, Default=False, for example - 'created_at'),
     'bookmark': False or 'field_name' (optional, Default=False, for example - 'updated_at'),
-    'primary_keys': string or list of unique specifiers for records (Optional),
-    'exclude_tables': [] (List[str] or str, list of table names to exclude from entire database),
-    'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
+    'primary_key': string of records (Required),
+    'primary_key_datatype': 'str' or 'int' or 'datetime' (Required),
+    'exclude_tables': [] (Optional, List[str] or str, list of table names to exclude from entire database),
+    'cron': '* * * * * 7-19 */1 0' or 'self-managed' (Refer Notes 1),
     'to_partition': True or False (Default),
-    'partition_col': False or '' name of the column (str or list of str),
+    'partition_col': False or 'column-name' (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 3),
     'mode': 'syncing' or 'logging' or 'dumping',
-    'improper_bookmarks': true/false
+    'improper_bookmarks': True/False (default = True)
     'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True)
 }
 ```
