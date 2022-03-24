@@ -283,71 +283,8 @@ mapping = {
             {
                 'table_name': 'analytics.habitual_users',
                 'cron': 'self-managed',
-                'is_dump': True,
-            }
-        ]
-    },
-}
-
-mapping = {
-    "entire_cmdb_to_s3": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
-        },
-        'tables': [
-            {
-                'table_name': '*',
-                'exclude_tables': ['public.inventory_snapshot_record', 'public.inventory_snapshot_wms', 'public.bd_leader_mapping_change_logs', 'public.events_staging_queue', 'public.stream_follows', 'public.user_segment_tags', 'public.notifications', 'public.order_actions', 'public.order_items', 'public.orders', 'public.team_leaders', 'public.products', 'public.product_master', 'public.regions', 'public.removed_from_cart_logs', 'public.refund_payout_links', 'public.refresh_ticket_details'],
-                'cron': 'self-managed',
-                'to_partition': True,
-                'partition_col': 'migration_snapshot_date',
-                'partition_col_format': 'datetime',
-                'is_dump': True,
-            }
-        ]
-    },
-}
-
-mapping = {
-    "cmdb_inventory_snapshot_wms_support_tickets_ratings": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod'
-        },
-        'tables': [
-            {
-                'table_name': 'inventory_snapshot_wms',
-                'cron': '2022 3 3 * * 23 20 0',
-                'to_partition': True,
-                'partition_col': 'created_at',
-                'partition_col_format': 'datetime',
-                'bookmark_creation': 'created_at',
-                'bookmark': 'created_at'
+                'to_partition': True
             },
-            {
-                'table_name': 'support_tickets_rating',
-                'cron': '2022 3 3 * * 23 20 0',
-                'to_partition': True,
-                'partition_col': 'created_at',
-                'partition_col_format': 'datetime',
-                'bookmark_creation': 'created_at',
-                'bookmark': 'updated_at',
-            }
         ]
     },
 }
