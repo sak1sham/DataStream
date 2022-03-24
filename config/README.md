@@ -58,19 +58,20 @@ pipeline_format is a dictionary with following properties:
 7. schema : str, name of the schema to upload the data to
 
 ### Data structuring (tables or collections or apis)
-If source is SQL, we need to provide a field ```tables```, which is a list of table_specifications. Table_specifications shall be in following format:
+If source is PGSQL, we need to provide a field ```tables```, which is a list of table_specifications. Table_specifications shall be in following format:
 ```
 {
     'table_name': str,
-    'bookmark_creation': False or 'field_name' (optional, Default=False, for example - 'created_at'),
     'bookmark': False or 'field_name' (optional, Default=False, for example - 'updated_at'),
-    'primary_keys': string or list of unique specifiers for records (Optional),
-    'exclude_tables': [] (List[str] or str, list of table names to exclude from entire database),
-    'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
+    'primary_key': string of records (Required),
+    'primary_key_datatype': 'str' or 'int' or 'datetime' (Required),
+    'exclude_tables': [] (Optional, List[str] or str, list of table names to exclude from entire database),
+    'cron': '* * * * * 7-19 */1 0' or 'self-managed' (Refer Notes 1),
     'to_partition': True or False (Default),
-    'partition_col': False or '' name of the column (str or list of str),
+    'partition_col': False or 'column-name' (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 3),
-    'is_dump': False (Optional, Default=False, Refer Notes 4),
+    'mode': 'syncing' or 'logging' or 'dumping',
+    'improper_bookmarks': True/False (default = True)
     'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True)
 }
 ```
@@ -91,7 +92,9 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
     'partition_col': False or '' name of the field (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 3),
     'is_dump': False,
-    'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True)
+    'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True),
+    'mode': 'syncing' or 'logging' or 'dumping',
+    'improper_bookmarks': true/false
 }
 ```
 
@@ -136,6 +139,14 @@ Other standard types are taken care of. Lists and dictionaries are stringified. 
 
 True or False. If set to true, it adds a column 'migration_snapshot_date' to data, which stores the datetime of migration. Without updation checks, it simply dumps the data into destination. If set to true, one can also partition data based on 'migration_snapshot_date'.
 
+## 5. What are Bookmarks?
+However, to maintain that sync, we need to have bookmarks. There are 2 types of bookmarks: for creation and for updation of record. Bookmark for creation specify the timestamp of when the record was created and bookmark for updation specifies the updation time for the record. That's how we can be able to sync the tables.
+The updation and creation bookmark can be the same in case updation is never performed in the tables, and the records are just added.
+
+## 6. What are the three modes of operation?
+1. Dumping: When we are dumping data, snapshots of the datastore are captured at regular intervals. We maintain multiple copies of the tables
+2. Logging: Logging is the mode where the data is only being added to the source table, and we assume no updations are ever performed. Only new records are migrated.
+3. Syncing: Where all new records is migrated, and all updations are also mapped to destination. If a record is deleted at source, it's NOT deleted at destination
 
 ## Notes:
 1. If fastapi server is started, then data can migrated on scheduled basis, as well as immediate basis (i.e., migrating data just once).
