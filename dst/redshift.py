@@ -1,7 +1,8 @@
+from re import T
 import awswrangler as wr
 import redshift_connector
 
-from helper.logging import logger
+from helper.logger import logger
 
 from typing import List, Dict, Any
 import datetime
@@ -23,11 +24,11 @@ class RedshiftSaver:
         self.name_ = ""
         self.table_list = []
 
-    def inform(self, message: str = "") -> None:
-        logger.inform(self.unique_id + ": " + message)
+    def inform(self, message: str = "", save: bool = False) -> None:
+        logger.inform(job_id=self.unique_id, s= (self.unique_id + ": " + message), save=save)
     
     def warn(self, message: str = "") -> None:
-        logger.warn(self.unique_id + ": " + message)
+        logger.warn(job_id= self.unique_id, s=(self.unique_id + ": " + message))
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
@@ -36,7 +37,7 @@ class RedshiftSaver:
         file_name = self.s3_location + self.name_ + "/"
         varchar_lengths = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
-            self.inform("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes.")
+            self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."), save=True)
             if(self.is_small_data):
                 wr.redshift.to_sql(
                     df = processed_data['df_insert'],
@@ -60,9 +61,9 @@ class RedshiftSaver:
                     varchar_lengths = varchar_lengths,
                     varchar_lengths_default = 512
                 )
-            self.inform("Inserted " + str(processed_data['df_insert'].shape[0]) + " records.")    
+            self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."), save=True)    
         if('df_update' in processed_data and processed_data['df_update'].shape[0] > 0):
-            self.inform("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes.")
+            self.inform(message=("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."), save=True)
             # is_dump = False, and primary_keys will be present.
             if(self.is_small_data):
                 wr.redshift.to_sql(
@@ -87,7 +88,7 @@ class RedshiftSaver:
                     varchar_lengths = varchar_lengths,
                     varchar_lengths_default = 512
                 )
-            self.inform(str(processed_data['df_update'].shape[0]) + " updations done.")
+            self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."), save=True)
     
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()
@@ -100,7 +101,7 @@ class RedshiftSaver:
         if('hours' in expiry.keys()):
             hours = expiry['hours']
         delete_before_date = today_ - datetime.timedelta(days=days, hours=hours)
-        self.inform("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d'))
+        self.inform(message=("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d')), save=True)
         ## Expire function is called only when is_dump = True
         ## i.e. the saved data will have a migration_snapshot_date column
         ## We just have to query using that column to delete old data
