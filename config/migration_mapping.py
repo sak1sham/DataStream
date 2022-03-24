@@ -19,7 +19,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 17 30 0',
+                'cron': '* * * * * 17 36 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -32,7 +32,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 17 30 0',
+                'cron': '* * * * * 17 36 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
