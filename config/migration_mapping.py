@@ -19,24 +19,123 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 17 36 0',
+                'cron': '* * * * * 1 0 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': False
+                'improper_bookmarks': True
             },
             {
                 'collection_name': 'support_form_items',
                 'fields': {
                     'created_ts': 'datetime',
-                    'updated_ts': 'datetime',
+                    'updated_ts': 'datetime'
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 17 36 0',
+                'cron': '* * * * * 1 5 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': False
-            }
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_items',
+                'fields': {
+                    'priority': 'int',
+                },
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 1 10 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_list',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 1 15 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_ticket_conversations',
+                'fields': {
+                    'incoming': 'bool',
+                    'private': 'bool',
+                    'freshdesk_user_id': 'int',
+                    '__v': 'int',
+                    'created_at': 'datetime',
+                    'updated_at': 'datetime',
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
+                },
+                'bookmark': 'updated_ts',
+                'archive': False,
+                'cron': '* * * * * 1 20 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_tickets',
+                'fields': {
+                    'created_at': 'datetime',
+                    'spam': 'bool',
+                    'priority': 'int',
+                    'source': 'int',
+                    'status': 'int',
+                    'is_escalated': 'bool',
+                    'updated_at': 'datetime',
+                    'nr_escalated': 'bool',
+                    'fr_escalated': 'bool',
+                    '__v': 'int',
+                    'agent_responded_at': 'datetime',
+                    'cancelled_at':'datetime',
+                    'closed_at':'datetime',
+                    'due_by':'datetime',
+                    'first_responded_at':'datetime',
+                    'fr_due_by':'datetime',
+                    'resolved_at':'datetime',
+                    'status_updated_at':'datetime',
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
+                },
+                'bookmark': 'updated_ts',
+                'archive': False,
+                'cron': '* * * * * 1 25 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_tickets_rating',
+                'fields': {
+                    'rating': 'int',
+                    '__v': 'int',
+                    'updatedAt': 'datetime',
+                    'createdAt': 'datetime',
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
+                },
+                'bookmark': 'updated_ts',
+                'archive': False,
+                'cron': '* * * * * 1 30 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'webhook_error_logs',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 1 35 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
         ]
     },
 }
