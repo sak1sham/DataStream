@@ -1,3 +1,4 @@
+from re import T
 from fastapi import FastAPI
 import uvicorn
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -7,9 +8,10 @@ from typing import Tuple, Dict, Any
 
 from config.migration_mapping import mapping, settings
 from db.main import DMS_importer
-from helper.logging import logger
+from helper.logger import logger
 from helper.util import evaluate_cron
 from helper.exceptions import InvalidArguments, SourceNotFound
+from routes.routes import router
 
 import os
 from dotenv import load_dotenv
@@ -18,28 +20,31 @@ load_dotenv()
 print(os.environ)
 
 app = FastAPI(title="Migration service")
+app.include_router(router=router)
 scheduler = BackgroundScheduler()
 group_key = {
     'sql': 'tables',
     'mongo': 'collections',
     'api': 'apis',
-    's3': 'tables'
+    's3': 'tables',
+    'kafka': 'topics'
 }
+
 tz__ = 'Asia/Kolkata'
 
 @app.on_event("startup")
 def scheduled_migration():
-    logger.inform('Started the scheduler.')
+    logger.inform(s='Started the scheduler.')
     scheduler.start()
 
 @app.on_event("shutdown")
 def end_migration():
-    logger.inform('Shutting down the scheduler.')
+    logger.inform(s='Shutting down the scheduler.')
     scheduler.shutdown(wait=False)
 
 @app.get("/health", status_code = 200)
 def healthcheck():
-    logger.inform('Health check done.')
+    logger.inform(s='Health check done.')
     pass
 
 def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
@@ -55,9 +60,9 @@ def create_new_job(db, list_specs, uid, is_fastapi):
         migration_service_of_job(db, list_specs, tz__)
     elif(is_fastapi):
         year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(list_specs['cron'])
-        scheduler.add_job(migration_service_of_job, 'cron', args=[db, list_specs, tz__], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone(tz__))
+        scheduler.add_job(migration_service_of_job, 'cron', args=[db, list_specs, tz__], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone(tz__), misfire_grace_time=None)
     else:
-        logger.warn("Jobs can be scheduled only if fastapi_server is enabled. Skipping " + str(uid) + ".")
+        logger.warn(s="Jobs can be scheduled only if fastapi_server is enabled. Skipping " + str(uid) + ".")
 
 def use_mapping(db, key, is_fastapi):
     if(key not in db.keys()):
@@ -104,6 +109,6 @@ if __name__ == "__main__":
             if(s_type not in group_key.keys()):
                 raise SourceNotFound("Un-identified Source Type " + str(db['source']['source_type']) + " found in migration-mapping.")
             use_mapping(db, group_key[s_type], is_fastapi)
-    logger.inform('Added all jobs.')
+    logger.inform(s='Added all jobs.')
     if(is_fastapi):
         uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))
