@@ -537,7 +537,7 @@ mapping = {
 }
 #'''
 
-
+'''
 mapping = {
     "from_cmdb_to_s3": {
         'source': {
@@ -549,7 +549,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -567,7 +567,7 @@ mapping = {
         ]
     }
 }
-
+'''
 
 '''
 mapping = {
@@ -581,7 +581,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [          
             {
@@ -613,7 +613,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -645,7 +645,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -677,7 +677,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -709,7 +709,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -741,7 +741,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -773,7 +773,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -805,7 +805,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -837,7 +837,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -869,7 +869,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -887,8 +887,7 @@ mapping = {
         ]
     }
 }
-
-
+'''
 
 mapping = {
     "from_cmdb_to_s3": {
@@ -901,7 +900,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -921,7 +920,7 @@ mapping = {
 }
 
 
-
+'''
 mapping = {
     "from_cmdb_to_s3": {
         'source': {
@@ -933,7 +932,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -965,7 +964,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -997,7 +996,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [
             {
@@ -1029,7 +1028,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -1061,7 +1060,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -1093,7 +1092,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -1125,7 +1124,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -1157,7 +1156,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -1189,7 +1188,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -1221,7 +1220,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -1253,7 +1252,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -1285,7 +1284,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -1317,7 +1316,7 @@ mapping = {
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'migration-service-temp'
+            's3_bucket_name': 'database-migration-service-prod'
         },
         'tables': [            
             {
@@ -1340,7 +1339,7 @@ mapping = {
 settings = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-    'notify': False,
+    'notify': True,
     'encryption_store': {
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),
