@@ -3,33 +3,141 @@ from dotenv import load_dotenv
 load_dotenv()
 
 mapping = {
-    "tbl_user_cmdb_to_s3": {
+    "mongo_s3_support": {
         'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
+            'source_type': 'mongo',
+            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+            'db_name': 'support-service'
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod'
+            's3_bucket_name': 'database-migration-service-prod',
         },
-        'tables': [
+        'collections': [
             {
-                'table_name': 'tbl_user',
-                'cron': 'self-managed',
-                'mode': 'syncing',
-                'primary_key': 'user_id',
-                'primary_key_datatype': 'int',
+                'collection_name': 'leader_kyc',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 1 0 0',
                 'to_partition': True,
-                'partition_col': 'user_created',
-                'partition_col_format': 'datetime',
-                'bookmark': 'user_updated',
-                'improper_bookmarks': False
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_form_items',
+                'fields': {
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
+                },
+                'bookmark': 'updated_ts',
+                'archive': False,
+                'cron': '* * * * * 1 5 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_items',
+                'fields': {
+                    'priority': 'int',
+                },
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 1 10 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_list',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 1 15 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_ticket_conversations',
+                'fields': {
+                    'incoming': 'bool',
+                    'private': 'bool',
+                    'freshdesk_user_id': 'int',
+                    '__v': 'int',
+                    'created_at': 'datetime',
+                    'updated_at': 'datetime',
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
+                },
+                'bookmark': 'updated_ts',
+                'archive': False,
+                'cron': '* * * * * 1 20 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_tickets',
+                'fields': {
+                    'created_at': 'datetime',
+                    'spam': 'bool',
+                    'priority': 'int',
+                    'source': 'int',
+                    'status': 'int',
+                    'is_escalated': 'bool',
+                    'updated_at': 'datetime',
+                    'nr_escalated': 'bool',
+                    'fr_escalated': 'bool',
+                    '__v': 'int',
+                    'agent_responded_at': 'datetime',
+                    'cancelled_at':'datetime',
+                    'closed_at':'datetime',
+                    'due_by':'datetime',
+                    'first_responded_at':'datetime',
+                    'fr_due_by':'datetime',
+                    'resolved_at':'datetime',
+                    'status_updated_at':'datetime',
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
+                },
+                'bookmark': 'updated_ts',
+                'archive': False,
+                'cron': '* * * * * 1 25 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'support_tickets_rating',
+                'fields': {
+                    'rating': 'int',
+                    '__v': 'int',
+                    'updatedAt': 'datetime',
+                    'createdAt': 'datetime',
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime'
+                },
+                'bookmark': 'updated_ts',
+                'archive': False,
+                'cron': '* * * * * 1 30 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
+            },
+            {
+                'collection_name': 'webhook_error_logs',
+                'fields': {},
+                'bookmark': False,
+                'archive': False,
+                'cron': '* * * * * 1 35 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': True
             },
         ]
-    }
+    },
 }
 
 settings = {
