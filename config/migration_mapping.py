@@ -3,29 +3,33 @@ from dotenv import load_dotenv
 load_dotenv()
 
 mapping = {
-    "mongo_s3_support": {
+    "tbl_user_cmdb_to_s3": {
         'source': {
-            'source_type': 'mongo',
-            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
-            'db_name': 'support-service'
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod',
+            's3_bucket_name': 'migration-service-temp'
         },
-        'collections': [
+        'tables': [
             {
-                'collection_name': 'leader_kyc',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
+                'table_name': 'tbl_user',
                 'cron': 'self-managed',
-                'to_partition': True,
                 'mode': 'syncing',
+                'primary_key': 'user_id',
+                'primary_key_datatype': 'int',
+                'to_partition': True,
+                'partition_col': 'user_created',
+                'partition_col_format': 'datetime',
+                'bookmark': 'user_updated',
                 'improper_bookmarks': False
-            }
+            },
         ]
-    },
+    }
 }
 
 settings = {
