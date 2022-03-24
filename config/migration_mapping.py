@@ -537,7 +537,7 @@ mapping = {
 }
 #'''
 
-
+'''
 mapping = {
     "from_cmdb_to_s3": {
         'source': {
@@ -567,7 +567,7 @@ mapping = {
         ]
     }
 }
-
+'''
 
 '''
 mapping = {
@@ -887,8 +887,7 @@ mapping = {
         ]
     }
 }
-
-
+'''
 
 mapping = {
     "from_cmdb_to_s3": {
@@ -921,7 +920,7 @@ mapping = {
 }
 
 
-
+'''
 mapping = {
     "from_cmdb_to_s3": {
         'source': {
