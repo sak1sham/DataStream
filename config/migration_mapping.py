@@ -1340,7 +1340,7 @@ mapping = {
 settings = {
     'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
-    'notify': False,
+    'notify': True,
     'encryption_store': {
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),
