@@ -19,7 +19,20 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 17 30 0',
+                'to_partition': True,
+                'mode': 'syncing',
+                'improper_bookmarks': False
+            },
+            {
+                'collection_name': 'support_form_items',
+                'fields': {
+                    'created_ts': 'datetime',
+                    'updated_ts': 'datetime',
+                },
+                'bookmark': 'updated_ts',
+                'archive': False,
+                'cron': '* * * * * 17 30 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
