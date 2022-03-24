@@ -544,7 +544,7 @@ mapping = {
 }'''
 
 mapping = {
-    "ct-events-to-redshift": {
+    "ct-cx-app-events-to-redshift": {
         "source": {
             "source_type": "api",
             "db_name": "clevertap"
@@ -626,7 +626,24 @@ mapping = {
                     "event_props": 'event_props'
                 },
                 'cron': 'self-managed',
-            },
+            }
+        ]
+    },
+    "ct-cl-app-events-to-redshift": {
+        "source": {
+            "source_type": "api",
+            "db_name": "clevertap"
+        },
+        "destination": {
+            'destination_type': 'redshift',
+            'host': 'redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+            'database': 'dev',
+            'user': 'admin-redshift',
+            'password': 'CitymallDevAdmin123',
+            'schema': 'cm_clevertap',
+            's3_bucket_name': 'database-migration-service-prod',
+        },
+        "apis": [
             {
                 'api_name':'cl_app_events',
                 'project_name': 'cl_app',
@@ -694,7 +711,24 @@ mapping = {
                     "event_props": 'event_props'
                 },
                 'cron': 'self-managed',
-            },
+            }
+        ]
+    },
+    "ct-cx-web-events-to-redshift": {
+        "source": {
+            "source_type": "api",
+            "db_name": "clevertap"
+        },
+        "destination": {
+            'destination_type': 'redshift',
+            'host': 'redshift-cluster-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+            'database': 'dev',
+            'user': 'admin-redshift',
+            'password': 'CitymallDevAdmin123',
+            'schema': 'cm_clevertap',
+            's3_bucket_name': 'database-migration-service-prod',
+        },
+        "apis": [
             {
                 'api_name':'cx_web_events',
                 'project_name': 'cx_web',
