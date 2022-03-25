@@ -15,10 +15,10 @@ mapping = {
             'destination_type': 's3',
             's3_bucket_name': 'database-migration-service-prod'
         },
-        'tables': [          
+        'tables': [
             {
-                'table_name': 'user_addresses',
-                'cron': 'self-managed',
+                'table_name': 'team_leader_users',
+                'cron': '* * * * * 22 0 0',
                 'mode': 'syncing',
                 'primary_key': 'id',
                 'primary_key_datatype': 'int',
