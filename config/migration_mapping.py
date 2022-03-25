@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 mapping = {
-    "user_addresses_cmdb_to_s3": {
+    "team_leader_users_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
