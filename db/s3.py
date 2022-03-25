@@ -171,7 +171,7 @@ class S3Migrate:
             raise ConnectionError("Unable to connect to source.")
         else:
             N = len(list_files)
-            self.inform(message=("Found " + str(N) + "files."), save=True)
+            self.inform(message=("Found " + str(N) + "files."))
             try:
                 for file in list_files:
                     self.inform(message=("Migrating file " + str(n+1) + "/" + str(N)))
@@ -193,4 +193,4 @@ class S3Migrate:
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform(message="Expired data removed.", save=True)
         self.saver.close()
-        self.inform(message="Hope to see you again :')", save=True)
+        self.inform(message="Hope to see you again :')")

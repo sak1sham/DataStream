@@ -35,7 +35,7 @@ class RedshiftSaver:
             self.table_list.extend(processed_data['name']) 
         self.name_ = processed_data['name']
         file_name = self.s3_location + self.name_ + "/"
-        self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."), save=True)
+        self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
         if(processed_data['df_insert'].shape[0] > 0):
             if(self.is_small_data):
                 wr.redshift.to_sql(
@@ -56,8 +56,8 @@ class RedshiftSaver:
                     mode = "append",
                     primary_keys = primary_keys
                 )
-        self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."), save=True)
-        self.inform(message=("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."), save=True)
+        self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))
+        self.inform(message=("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."))
         if(processed_data['df_update'].shape[0] > 0):
             # is_dump = False, and primary_keys will be present.
             if(self.is_small_data):
@@ -79,7 +79,7 @@ class RedshiftSaver:
                     mode = "upsert",
                     primary_keys = primary_keys
                 )
-        self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."), save=True)
+        self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
     
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()
@@ -92,7 +92,7 @@ class RedshiftSaver:
         if('hours' in expiry.keys()):
             hours = expiry['hours']
         delete_before_date = today_ - datetime.timedelta(days=days, hours=hours)
-        self.inform(message=("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d')), save=True)
+        self.inform(message=("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d')))
         ## Expire function is called only when is_dump = True
         ## i.e. the saved data will have a migration_snapshot_date column
         ## We just have to query using that column to delete old data
