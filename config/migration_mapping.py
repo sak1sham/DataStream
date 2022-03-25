@@ -15,9 +15,9 @@ mapping = {
             'destination_type': 's3',
             's3_bucket_name': 'database-migration-service-prod'
         },
-        'tables': [          
+        'tables': [
             {
-                'table_name': 'user_addresses',
+                'table_name': 'team_leader_users',
                 'cron': 'self-managed',
                 'mode': 'syncing',
                 'primary_key': 'id',
