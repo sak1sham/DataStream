@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 mapping = {
-    "notifications_cmdb_to_s3": {
+    "user_addresses_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -15,16 +15,18 @@ mapping = {
             'destination_type': 's3',
             's3_bucket_name': 'database-migration-service-prod'
         },
-        'tables': [
+        'tables': [          
             {
-                'table_name': 'notifications',
+                'table_name': 'user_addresses',
                 'cron': 'self-managed',
-                'mode': 'logging',
+                'mode': 'syncing',
                 'primary_key': 'id',
                 'primary_key_datatype': 'int',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
+                'bookmark': 'updated_at',
+                'improper_bookmarks': False,
                 'batch_size': 10000,
             },
         ]
