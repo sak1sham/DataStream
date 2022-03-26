@@ -22,7 +22,7 @@ mapping = {
                 'cron': '* * * * * 1 0 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': True
+                'improper_bookmarks': False
             },
             {
                 'collection_name': 'support_form_items',
@@ -35,7 +35,7 @@ mapping = {
                 'cron': '* * * * * 1 5 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': True
+                'improper_bookmarks': False
             },
             {
                 'collection_name': 'support_items',
@@ -47,17 +47,17 @@ mapping = {
                 'cron': '* * * * * 1 10 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': True
+                'improper_bookmarks': False
             },
             {
                 'collection_name': 'support_list',
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 15 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': True
+                'improper_bookmarks': False
             },
             {
                 'collection_name': 'support_ticket_conversations',
@@ -76,7 +76,7 @@ mapping = {
                 'cron': '* * * * * 1 20 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': True
+                'improper_bookmarks': False
             },
             {
                 'collection_name': 'support_tickets',
@@ -107,7 +107,7 @@ mapping = {
                 'cron': '* * * * * 1 25 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': True
+                'improper_bookmarks': False
             },
             {
                 'collection_name': 'support_tickets_rating',
@@ -124,7 +124,7 @@ mapping = {
                 'cron': '* * * * * 1 30 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': True
+                'improper_bookmarks': False
             },
             {
                 'collection_name': 'webhook_error_logs',
@@ -134,7 +134,7 @@ mapping = {
                 'cron': '* * * * * 1 35 0',
                 'to_partition': True,
                 'mode': 'syncing',
-                'improper_bookmarks': True
+                'improper_bookmarks': False
             },
         ]
     },

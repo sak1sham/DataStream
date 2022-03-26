@@ -124,13 +124,14 @@ class MongoTester(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    N = 200
     id = ''
     if (len(sys.argv) > 1):
         id = sys.argv.pop()
     if('collections' not in mapping[id].keys()):
         mapping[id]['collections'] = []
-    for i in range(100):
-        print('Testing iteration:', i)
+    for i in range(N):
+        print('Testing iteration:', str(i+1) + "/" + str(N))
         for col in mapping[id]['collections']:
             print("Testing", col['collection_name'])
             MongoTester.url = mapping[id]['source']['url']
