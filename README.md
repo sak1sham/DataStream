@@ -34,3 +34,10 @@ docker-compose up
 ```
 
 This system can convert common datetime string columns to datetime columns.
+
+## DEPLOYMENT ON KUBERNETES
+
+1. create a new docker file in deployment/dockerfiles
+2. update the path of the new docker file created in github workflows
+3. create a new workflow file with different name and app name in the file
+4. update the environment variables in the deployment/env/prod/config.production.yaml

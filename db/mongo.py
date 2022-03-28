@@ -484,7 +484,7 @@ class MongoMigrate:
                     ## Still not saved the updates, will update together a large number of records...will save time
             time.sleep(self.time_delay)
             start += self.batch_size
-        self.inform(message="Syncing operation complete (Both - Insertion and Deletion).", save=True)
+        self.inform(message="Syncing operation complete (Both - Insertion and Updation).", save=True)
 
 
     def save_data(self, processed_collection: Dict[str, Any] = None) -> None:
