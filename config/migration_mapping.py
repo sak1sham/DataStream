@@ -122,6 +122,14 @@ mapping = {
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
+            },
+            {
+                'collection_name': 'support_kafka_log',
+                'fields': {},
+                'archive': False,
+                'cron': 'self-managed',
+                'to_partition': True,
+                'mode': 'syncing',
             }
         ]
     },

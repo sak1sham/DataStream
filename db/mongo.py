@@ -54,18 +54,21 @@ class MongoMigrate:
         logger.err(job_id=self.curr_mapping['unique_id'], s=error)
 
 
-    def get_connectivity(self) -> int:
+    def get_connectivity(self) -> None:
         '''
             Makes the connection to the MongoDb database and returns the number of documents present inside the collection
         '''
         try:
             certificate = certifi.where()
             if('certificate_file' in self.db['source'].keys() and self.db['source']['certificate_file']):
-                certificate = "../config/" + self.db['source']['certificate_file']
+                certificate = "config/" + self.db['source']['certificate_file']
+            print(certificate, end='\n\n\n\n')
             client = MongoClient(self.db['source']['url'], tlsCAFile=certificate)
+            print("I am here.")
             database_ = client[self.db['source']['db_name']]
+            print("I am here.")
             self.db_collection = database_[self.curr_mapping['collection_name']]
-            return self.db_collection.count_documents({})
+            print("I am here.")
         except Exception as e:
             self.err(error = e)
             self.db_collection = None
