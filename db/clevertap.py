@@ -1,7 +1,6 @@
 from config.clevertap import *
 import requests
 import json
-from slugify import slugify
 from dst.main import DMS_exporter
 from helper.util import get_yyyymmdd_from_date, transformTs, validate_or_convert, typecast_df_to_schema, extract_value_from_nested_obj
 import pytz
