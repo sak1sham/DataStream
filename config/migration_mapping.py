@@ -6,7 +6,7 @@ mapping = {
     "mongo_s3_support": {
         'source': {
             'source_type': 'mongo',
-            'url': 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',
+            'url': 'mongodb://manish:ACVVCH7t7rqd8kB8@supportv2.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false',
             'db_name': 'support-service'
         },
         'destination': {
@@ -15,27 +15,23 @@ mapping = {
         },
         'collections': [
             {
-                'collection_name': 'leader_kyc',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 1 0 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': False
-            },
-            {
                 'collection_name': 'support_form_items',
                 'fields': {
                     'created_ts': 'datetime',
                     'updated_ts': 'datetime'
                 },
                 'bookmark': 'updated_ts',
-                'archive': False,
-                'cron': '* * * * * 1 5 0',
+                'cron': '* * * * * 17 25 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
+            },
+            {
+                'collection_name': 'support_forms',
+                'fields': {},
+                'cron': '* * * * * 17 25 0',
+                'to_partition': True,
+                'mode': 'syncing',
             },
             {
                 'collection_name': 'support_items',
@@ -44,7 +40,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 1 10 0',
+                'cron': '* * * * * 17 25 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -54,7 +50,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 17 25 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -73,7 +69,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 1 20 0',
+                'cron': '* * * * * 17 28 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -104,7 +100,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 1 25 0',
+                'cron': '* * * * * 17 28 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -121,21 +117,11 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 1 30 0',
+                'cron': '* * * * * 17 25 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
-            },
-            {
-                'collection_name': 'webhook_error_logs',
-                'fields': {},
-                'bookmark': False,
-                'archive': False,
-                'cron': '* * * * * 1 35 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': False
-            },
+            }
         ]
     },
 }
