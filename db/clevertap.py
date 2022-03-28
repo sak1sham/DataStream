@@ -8,7 +8,7 @@ import pytz
 import pandas as pd
 import os
 from typing import Dict, Any, List
-from helper.logging import logger
+from helper.logger import logger
 import traceback
 
 class EventsAPIManager:

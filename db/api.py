@@ -1,5 +1,5 @@
 from db.clevertap import ClevertapManager
-from helper.logging import logger
+from helper.logger import logger
 from typing import Dict, Any
 import pytz
 from dst.main import DMS_exporter
