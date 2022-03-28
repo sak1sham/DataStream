@@ -59,7 +59,10 @@ class MongoMigrate:
             Makes the connection to the MongoDb database and returns the number of documents present inside the collection
         '''
         try:
-            client = MongoClient(self.db['source']['url'], tlsCAFile=certifi.where())
+            certificate = certifi.where()
+            if('certificate_file' in self.db['source'].keys() and self.db['source']['certificate_file']):
+                certificate = self.db['source']['certificate_file']
+            client = MongoClient(self.db['source']['url'], tlsCAFile=certificate)
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
             return self.db_collection.count_documents({})
