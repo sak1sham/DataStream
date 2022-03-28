@@ -61,7 +61,7 @@ class MongoMigrate:
         try:
             certificate = certifi.where()
             if('certificate_file' in self.db['source'].keys() and self.db['source']['certificate_file']):
-                certificate = self.db['source']['certificate_file']
+                certificate = "../config/" + self.db['source']['certificate_file']
             client = MongoClient(self.db['source']['url'], tlsCAFile=certificate)
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
