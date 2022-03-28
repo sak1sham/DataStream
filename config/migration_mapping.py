@@ -6,7 +6,7 @@ mapping = {
     "mongo_s3_support": {
         'source': {
             'source_type': 'mongo',
-            'url': 'mongodb://manish:ACVVCH7t7rqd8kB8@supportv2.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false',
+            'url': 'mongodb://manish:ACVVCH7t7rqd8kB8@docdb-2022-03-25-15-31-13.cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false',
             'db_name': 'support-service',
             'certificate_file': 'rds-combined-ca-bundle.pem'
         },
@@ -22,7 +22,7 @@ mapping = {
                     'updated_ts': 'datetime'
                 },
                 'bookmark': 'updated_ts',
-                'cron': '* * * * * 17 25 0',
+                'cron': '* * * * * 20 30 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -30,7 +30,7 @@ mapping = {
             {
                 'collection_name': 'support_forms',
                 'fields': {},
-                'cron': '* * * * * 17 25 0',
+                'cron': '* * * * * 20 30 0',
                 'to_partition': True,
                 'mode': 'syncing',
             },
@@ -41,7 +41,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 17 25 0',
+                'cron': '* * * * * 20 30 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -51,7 +51,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 17 25 0',
+                'cron': '* * * * * 20 30 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -70,7 +70,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 17 28 0',
+                'cron': '* * * * * 20 35 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -101,7 +101,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 17 28 0',
+                'cron': '* * * * * 20 35 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -118,7 +118,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 17 25 0',
+                'cron': '* * * * * 20 30 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -127,7 +127,7 @@ mapping = {
                 'collection_name': 'support_kafka_log',
                 'fields': {},
                 'archive': False,
-                'cron': 'self-managed',
+                'cron': '* * * * * 20 30 0',
                 'to_partition': True,
                 'mode': 'syncing',
             }

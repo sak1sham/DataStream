@@ -62,13 +62,9 @@ class MongoMigrate:
             certificate = certifi.where()
             if('certificate_file' in self.db['source'].keys() and self.db['source']['certificate_file']):
                 certificate = "config/" + self.db['source']['certificate_file']
-            print(certificate, end='\n\n\n\n')
             client = MongoClient(self.db['source']['url'], tlsCAFile=certificate)
-            print("I am here.")
             database_ = client[self.db['source']['db_name']]
-            print("I am here.")
             self.db_collection = database_[self.curr_mapping['collection_name']]
-            print("I am here.")
         except Exception as e:
             self.err(error = e)
             self.db_collection = None
