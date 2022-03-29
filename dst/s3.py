@@ -72,9 +72,8 @@ class s3Saver:
                 if(self.partition_cols):
                     for x in self.partition_cols:
                         file_name_u = file_name_u + "/" + x + "=" + str(df_u.iloc[0][x])
-                ## Now, all records within df_u are found within this same location
-                if(self.partition_cols):
                     df_u.drop(self.partition_cols, axis=1, inplace=True)
+                ## Now, all records within df_u are found within this same location
                 prev_files = wr.s3.list_objects(file_name_u)
                 self.inform(message=("Found " + str(len(prev_files)) +  " files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations)))
                 for file_ in prev_files:
@@ -92,7 +91,7 @@ class s3Saver:
                             ## This partition-batch is complete now. Go and handle the next set of partition-batches to be updated
                             break
                 if(df_u.shape[0] > 0):
-                    self.warn("Not all records could be updated")
+                    self.warn("Not all records could be updated, because some records could not be found.")
             self.inform(message=(str(n_updations) + " updations done."), save=True)
 
 
