@@ -70,7 +70,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': '* * * * * 20 8 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -101,7 +101,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 22 0 0',
+                'cron': '* * * * * 20 8 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
