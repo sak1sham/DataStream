@@ -29,6 +29,7 @@ def get_last_run_cron_job(job_id: str) -> datetype:
     '''
         Function to find and return the time when the job with id job_id was last run.
         If the job was never run before, it returns an old date (Jan 1, 1999)
+        Datetime is returned in UTC timezone
     '''
     db = get_data_from_encr_db()
     prev = db.find_one({'last_run_cron_job_for_id': job_id})

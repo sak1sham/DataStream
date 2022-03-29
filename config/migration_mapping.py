@@ -6,13 +6,13 @@ mapping = {
     "mongo_s3_support": {
         'source': {
             'source_type': 'mongo',
-            'url': 'mongodb://manish:ACVVCH7t7rqd8kB8@docdb-2022-03-25-15-31-13.cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false',
+            'url': 'mongodb://manish:ACVVCH7t7rqd8kB8@supportv2.cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false',
             'db_name': 'support-service',
             'certificate_file': 'rds-combined-ca-bundle.pem'
         },
         'destination': {
             'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod',
+            's3_bucket_name': 'data-migration-server',
         },
         'collections': [
             {
@@ -101,7 +101,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 9 52 0',
+                'cron': 'self-managed',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
