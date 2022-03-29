@@ -22,7 +22,7 @@ mapping = {
                     'updated_ts': 'datetime'
                 },
                 'bookmark': 'updated_ts',
-                'cron': '* * * * * 20 0 0',
+                'cron': '* * * * * 1 0 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -30,7 +30,7 @@ mapping = {
             {
                 'collection_name': 'support_forms',
                 'fields': {},
-                'cron': '* * * * * 20 0 0',
+                'cron': '* * * * * 1 0 0',
                 'to_partition': True,
                 'mode': 'syncing',
             },
@@ -41,7 +41,7 @@ mapping = {
                 },
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 20 0 0',
+                'cron': '* * * * * 1 0 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -51,7 +51,7 @@ mapping = {
                 'fields': {},
                 'bookmark': False,
                 'archive': False,
-                'cron': '* * * * * 20 0 0',
+                'cron': '* * * * * 1 0 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -70,7 +70,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 20 8 0',
+                'cron': '* * * * * 1 5 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -101,7 +101,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 20 8 0',
+                'cron': '* * * * * 1 5 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -118,7 +118,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 20 0 0',
+                'cron': '* * * * * 1 0 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
@@ -127,7 +127,7 @@ mapping = {
                 'collection_name': 'support_kafka_log',
                 'fields': {},
                 'archive': False,
-                'cron': '* * * * * 20 0 0',
+                'cron': '* * * * * 1 0 0',
                 'to_partition': True,
                 'mode': 'syncing',
             }
