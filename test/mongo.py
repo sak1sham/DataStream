@@ -39,7 +39,7 @@ class MongoTester(unittest.TestCase):
     url = ''
     db = ''
     col = ''
-    test_N = 1000
+    test_N = 500
     col_map = {}
     tz_info = pytz.timezone('Asia/Kolkata')
     N_mongo = -1
