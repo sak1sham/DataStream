@@ -30,7 +30,7 @@ mapping = {
             {
                 'collection_name': 'support_forms',
                 'fields': {},
-                'cron': '* * * * * 9 22 0',
+                'cron': '* * * * * 21 30 0',
                 'to_partition': True,
                 'mode': 'syncing',
             },
@@ -101,7 +101,7 @@ mapping = {
                 },
                 'bookmark': 'updated_ts',
                 'archive': False,
-                'cron': '* * * * * 9 25 0',
+                'cron': '* * * * * 21 30 0',
                 'to_partition': True,
                 'mode': 'syncing',
                 'improper_bookmarks': False
