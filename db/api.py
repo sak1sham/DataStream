@@ -7,6 +7,7 @@ import traceback
 from helper.util import convert_to_datetime
 from db.encr_db import get_last_run_cron_job
 import datetime
+import time
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -35,14 +36,13 @@ class APIMigrate:
         if('fields' not in self.curr_mapping.keys()):
             self.curr_mapping['fields'] = {}
 
-        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
-
     def process(self) -> None:
         self.presetup()
         if (self.db['source']['db_name']=='clevertap'):
             self.client = ClevertapManager(self.curr_mapping['project_name'])
             event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
             for event_name in event_names:
+                self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
                 try:
                     processed_data = self.client.get_processed_data(event_name, self.curr_mapping)
                     self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
@@ -51,4 +51,5 @@ class APIMigrate:
                     self.err(traceback.format_exc())
                     self.err(event_name + " - " + "caught some error while migrating event data.")
 
-        self.saver.close()
+                self.saver.close()
+                time.sleep(1)
