@@ -427,7 +427,7 @@ mapping = {
         },
         "destination": {
             'destination_type': 'redshift',
-            'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com:5439/cmwh',
+            'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
             'database': 'cmwh',
             'user': 'cmadmin',
             'password': 'kgDzH6Zy5xZ6HHx',
@@ -512,7 +512,7 @@ mapping = {
         },
         "destination": {
             'destination_type': 'redshift',
-            'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com:5439/cmwh',
+            'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
             'database': 'cmwh',
             'user': 'cmadmin',
             'password': 'kgDzH6Zy5xZ6HHx',
@@ -597,7 +597,7 @@ mapping = {
         },
         "destination": {
             'destination_type': 'redshift',
-            'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com:5439/cmwh',
+            'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
             'database': 'cmwh',
             'user': 'cmadmin',
             'password': 'kgDzH6Zy5xZ6HHx',
