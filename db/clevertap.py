@@ -92,7 +92,7 @@ class ClevertapManager(EventsAPIManager):
         if not bookmark_key:
             raise Exception("please provide bookmark key")
         sync_date = get_yyyymmdd_from_date(days=bookmark_key)
-        logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id']+": Started CX app event {0} sync for date: {1}".format(event_name, str(sync_date)))
+        logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id']+": started {2} event {0} sync for date: {1}".format(event_name, str(sync_date), self.project_name))
         start_cursor = self.get_event_cursor(event_name, sync_date, sync_date)
         cursor_data = self.get_records_for_cursor(start_cursor)
         transformed_records = []
