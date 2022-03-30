@@ -26,8 +26,6 @@ class APIMigrate:
         if('fields' not in self.curr_mapping.keys()):
             self.curr_mapping['fields'] = {}
 
-        self.last_run_cron_job = convert_to_datetime(get_last_run_cron_job(self.curr_mapping['unique_id']), self.tz_info)
-        self.curr_run_cron_job = convert_to_datetime(datetime.datetime.utcnow(), self.tz_info)
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
 
     def process(self) -> None:

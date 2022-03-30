@@ -1,4 +1,4 @@
-from config.clevertap import *
+from config.clevertap import cx_app_event_names, cl_app_event_names
 import requests
 import json
 from dst.main import DMS_exporter
