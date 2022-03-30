@@ -1,4 +1,4 @@
-from config.clevertap import cx_app_event_names, cl_app_event_names
+from config.clevertap import cx_app_event_names, cl_app_event_names, cx_web_event_names
 import requests
 import json
 from dst.main import DMS_exporter
@@ -22,7 +22,7 @@ class EventsAPIManager:
 
     @staticmethod
     def get_static_value(project_name: str):
-        return cx_app_event_names if project_name=='cx_app' else cl_app_event_names if project_name=='cl_app' else None
+        return cx_app_event_names if project_name=='cx_app' else cl_app_event_names if project_name=='cl_app' else cx_web_event_names if project_name=='cx_web' else None
 
     def get_event_cursor(self, event_name: str, from_date: str, to_date: str):
         params = {
