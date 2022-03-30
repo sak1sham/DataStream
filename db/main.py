@@ -47,12 +47,12 @@ class DMS_importer:
                     slack_token = settings['slack_notif']['slack_token']
                     channel = settings['slack_notif']['channel']
                     send_message(msg = msg, channel = channel, slack_token = slack_token)
-                    logger.inform(s="Notification sent successfully.", save=True)
+                    logger.inform(s="Notification sent successfully.")
                 except:
                     logger.err(s=("Unable to connect to slack and send the notification."))
         except Exception as e:
             logger.err(s=traceback.format_exc())
-            logger.inform(s=(self.curr_mapping['unique_id'] + ": Migration stopped.\n"), save=True)
+            logger.inform(s=(self.curr_mapping['unique_id'] + ": Migration stopped.\n"))
             if('notify' in settings.keys() and settings['notify']):
                 msg = "Migration unexpectedly stopped for *"
                 msg += str(self.name)
@@ -63,7 +63,7 @@ class DMS_importer:
                     slack_token = settings['slack_notif']['slack_token']
                     channel = settings['slack_notif']['channel']
                     send_message(msg = msg, channel = channel, slack_token = slack_token)
-                    logger.inform(s="Notification sent successfully.", save=True)
+                    logger.inform(s="Notification sent successfully.")
                 except:
                     logger.err(s=("Unable to connect to slack and send the notification."))
             

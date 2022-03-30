@@ -153,14 +153,14 @@ class KafkaMigrate:
                     reads the data in the messages being consumed
                 '''
                 try:
-                    self.inform(message="Recieved data", save=True)
+                    self.inform(message="Recieved data")
                     df = pd.DataFrame(message.value)
                     print(df)
                     processed_data = self.process_table(df=df)
                     print(processed_data)
-                    self.inform(message='Processed data', save=True)
+                    self.inform(message='Processed data')
                     self.save_data(processed_data=processed_data)
-                    self.inform(message="Data saved", save=True)
+                    self.inform(message="Data saved")
                 except Exception as e:
                     # self.err(e)
                     self.err(error=('Consumer exception', e))
