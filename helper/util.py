@@ -291,7 +291,7 @@ def transformTs(ts: str):
     hour = int(value[8:10])
     minute = int(value[10:12])
     second = int(value[12:14])
-    return datetime.datetime(year, month, day, hour, minute, second, 0).isoformat()
+    return datetime.datetime(year, month, day, hour, minute, second).isoformat()
 
 def extract_value_from_nested_obj(obj: Dict[str, Any] = {}, key: str = ''):
     keys = key.split('.')
