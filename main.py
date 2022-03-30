@@ -17,8 +17,6 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-print(os.environ)
-
 app = FastAPI(title="Migration service")
 app.include_router(router=router)
 scheduler = BackgroundScheduler()
@@ -53,8 +51,6 @@ def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, An
 
 def create_new_job(db, list_specs, uid, is_fastapi):
     specs_name_type = group_key[db['source']['source_type']][:-1] + "_name"
-    print(specs_name_type)
-    print(list_specs)
     list_specs['unique_id'] = uid + "_DMS_" + list_specs[specs_name_type]
     if(list_specs['cron'] == 'self-managed'):
         migration_service_of_job(db, list_specs, tz__)
@@ -67,7 +63,6 @@ def create_new_job(db, list_specs, uid, is_fastapi):
 def use_mapping(db, key, is_fastapi):
     if(key not in db.keys()):
         db[key] = []
-    print(db)
     for curr_mapping in db[key]:
         create_new_job(db, curr_mapping, unique_id, is_fastapi)
 

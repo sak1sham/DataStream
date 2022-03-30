@@ -172,7 +172,7 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
         elif(tp == 'complex'):
             df[col] = df[col].astype('|S')
         elif(tp == 'datetime'):
-            df[col] = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
+            df[col] = df[col].apply(lambda x: convert_to_datetime(x, pytz.utc))
         elif(tp == 'bool'):
             df[col] = df[col].astype(bool)
         else:
@@ -250,20 +250,28 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
 
 def df_update_records(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame({}), primary_key: str = None) -> Tuple[dftype, bool]:
     '''
-        While upserting the data, we will be having only one record in df_u, as we are upserting record by record in s3
+        Check for common records between df_u and df. If there are any common records, overwrites the df_u record on df.
+        Identifies uniqueness of records with help of primary_key
+        Returns a tuple of 
+        1. final_df (pd.DataFrame): The final dataframe after updations are done in df
+        2. is_updated (bool): True if updations are performed in dataframe df, or when some common records were found
+        3. uncommon (pd.DataFrame): The records in df_u which were not present in df
     '''
-    intersection = pd.merge(df, df_u, how='inner', on=primary_key)
-    if(intersection.shape[0]):
-        common = df_u[df_u[primary_key].isin(intersection[primary_key])]
-        uncommon = df_u[~df_u[primary_key].isin(intersection[primary_key])]
+    common = df_u[df_u[primary_key].isin(df[primary_key])]
+    if(common.shape[0]):
+        uncommon = df_u[~df_u[primary_key].isin(df[primary_key])]
         final_df = pd.concat([df, common]).drop_duplicates(subset=[primary_key], keep='last')
         final_df.reset_index(drop=True, inplace=True)
         return final_df, True, uncommon
     else:
         return df, False, df_u
-
+    
 
 def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
+    '''
+        Takes a column-datatype mapping with mongodb/pgsql datatypes
+        Returns a column-datatype mapping with datatypes recognized by Athena
+    '''
     athena_types = {}
     for key, dtype in maps.items():
         if(dtype == 'str' or dtype == 'string' or dtype == 'jsonb' or dtype == 'json' or dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml' or 'range' in dtype or 'interval' in dtype):
