@@ -15,6 +15,15 @@ class APIMigrate:
         self.db = db
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
+    
+    def inform(self, message: str = None, save: bool = False) -> None:
+        logger.inform(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message), save=save)
+
+    def warn(self, message: str = None) -> None:
+        logger.warn(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message))
+
+    def err(self, error: Any = None) -> None:
+        logger.err(job_id= self.curr_mapping['unique_id'], s=error)
 
     def save_data_to_destination(self, processed_data: Dict[str, Any]):
         if(not processed_data):
@@ -39,7 +48,7 @@ class APIMigrate:
                     self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
                     self.save_data_to_destination(processed_data=processed_data)
                 except:
-                    logger.err(traceback.format_exc())
-                    logger.err(self.curr_mapping['unique_id'] + " - "+ event_name + ": " + "caught some error while migrating event data.")
+                    self.err(traceback.format_exc())
+                    self.err(event_name + " - " + "caught some error while migrating event data.")
 
         self.saver.close()

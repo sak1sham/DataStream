@@ -92,7 +92,7 @@ class ClevertapManager(EventsAPIManager):
         if not bookmark_key:
             raise Exception("please provide bookmark key")
         sync_date = get_yyyymmdd_from_date(days=bookmark_key)
-        logger.inform("Started CX app event {0} sync for date: {1}".format(event_name, str(sync_date)))
+        logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id']+": Started CX app event {0} sync for date: {1}".format(event_name, str(sync_date)))
         start_cursor = self.get_event_cursor(event_name, sync_date, sync_date)
         cursor_data = self.get_records_for_cursor(start_cursor)
         transformed_records = []
@@ -106,8 +106,8 @@ class ClevertapManager(EventsAPIManager):
                     if "records" in cursor_data:
                         total_records += len(cursor_data['records'])
                         transformed_records += self.transform_api_data(cursor_data['records'], event_name, curr_mapping)
-        logger.inform("Total Clevertap events: " + str(total_records))
-        logger.inform("Tatal Clevertap events after transformation: " + str(len(transformed_records)))
+        logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id'] + ": Total Clevertap events - " + str(total_records))
+        logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id'] + ": Tatal Clevertap events after transformation - " + str(len(transformed_records)))
         return {
             'name': curr_mapping['api_name'],
             'df_insert': typecast_df_to_schema(pd.DataFrame(transformed_records), curr_mapping['fields']),
@@ -141,7 +141,7 @@ class ClevertapManager(EventsAPIManager):
                 dst_saver.saver.conn.commit()
                 cur.close()
             except Exception as e:
-                logger.err(traceback.format_exc())
-                logger.err("Error in deleting existing event - {0} for date {1} in redshift. Exception: {2}".format(event_name, sync_date, str(e)))
+                logger.err(curr_mapping['unique_id'], traceback.format_exc())
+                logger.err(curr_mapping['unique_id'], curr_mapping['unique_id']+ ": Error in deleting existing event - {0} for date {1} in redshift. Exception: {2}".format(event_name, sync_date, str(e)))
 
 
