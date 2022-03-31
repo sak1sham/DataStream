@@ -63,13 +63,13 @@ class APIMigrate:
                     have_more_data = True if processed_data and processed_data['event_cursor'] else False
                     time.sleep(1)
             except APIRequestError as e:
-                msg = 'Error while fetching data for event: {0} for app {1} from source. '.format(event_name, self.curr_mapping['project_name'])
+                msg = 'Error while fetching data for event: {0} for app {1} from source. Exception: {2}'.format(event_name, self.curr_mapping['project_name'], str(e))
                 send_message(msg = msg, channel = channel, slack_token = slack_token)
-                self.err(msg + str(e))
-            except:
-                msg = "Something went wrong! Could not process event {} for project {}. ".format(event_name, self.curr_mapping['project_name'])
+                self.err(msg)
+            except Exception as e:
+                msg = "Something went wrong! Could not process event {} for project {}. Exception: {2}".format(event_name, self.curr_mapping['project_name'], str(e))
                 send_message(msg = msg, channel = channel, slack_token = slack_token)
-                self.err(msg + str(e))
+                self.err(msg)
 
     def process(self) -> None:
         self.presetup()
