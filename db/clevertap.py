@@ -8,7 +8,7 @@ import os
 from typing import Dict, Any, List
 from helper.logger import logger
 import traceback
-from helper.exceptions import MissingData, ProcessingError, IncorrectMapping
+from helper.exceptions import MissingData, APIRequestError, IncorrectMapping
 
 class EventsAPIManager:
     CLEVERTAP_API_BASE_URL = os.getenv('CLEVERTAP_BASE_URL')
@@ -38,7 +38,7 @@ class EventsAPIManager:
         if data["status"] == "success":
             return data["cursor"]
         else:
-            raise ProcessingError("Get cursor API did not return success status")
+            raise APIRequestError("Get cursor API did not return success status")
 
     def get_records_for_cursor(self, cursor):
         data = self.make_request("events.json?cursor={}".format(cursor), data="").json()
@@ -47,7 +47,7 @@ class EventsAPIManager:
     def make_request(self, endpoint: str, data: Dict[str, Any]=None, params: Dict[str, Any]=None):
         res = requests.post(self.CLEVERTAP_API_BASE_URL + endpoint, data=json.dumps(data), params=params, headers=self.CLEVERTAP_API_HEADERS)
         if res.status_code != 200:
-            raise ProcessingError("Request to {2} returned an error {0}:\n{1}".format(res.status_code, res.text, self.CLEVERTAP_API_BASE_URL + endpoint))    
+            raise APIRequestError("Request to {2} returned an error {0}:\n{1}".format(res.status_code, res.text, self.CLEVERTAP_API_BASE_URL + endpoint))    
         return res
 
 

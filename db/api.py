@@ -7,6 +7,7 @@ import traceback
 from helper.util import typecast_df_to_schema
 import time
 import pandas as pd
+from helper.exceptions import APIRequestError
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 
@@ -40,22 +41,27 @@ class APIMigrate:
         self.client = ClevertapManager(self.curr_mapping['project_name'])
         event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
         for event_name in event_names:
-            self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
-            have_more_data = True
-            event_cursor = None    
-            while have_more_data:
-                processed_data = self.client.get_processed_data(event_name, self.curr_mapping, event_cursor)
-                if processed_data:
-                    processed_data_df = typecast_df_to_schema(pd.DataFrame(processed_data['records']), self.curr_mapping['fields'])
-                    self.inform('migrating {0} event for {1}'.format(event_name, self.curr_mapping['project_name']))
-                    self.save_data_to_destination(processed_data={
-                        'name': self.curr_mapping['api_name'],
-                        'df_insert': processed_data_df,
-                        'lob_fields_length': self.curr_mapping['lob_fields']
-                    })
-                    event_cursor = processed_data['event_cursor']
-                have_more_data = True if processed_data and processed_data['event_cursor'] else False
-                time.sleep(1)
+            try:
+                self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
+                have_more_data = True
+                event_cursor = None    
+                while have_more_data:
+                    processed_data = self.client.get_processed_data(event_name, self.curr_mapping, event_cursor)
+                    if processed_data:
+                        processed_data_df = typecast_df_to_schema(pd.DataFrame(processed_data['records']), self.curr_mapping['fields'])
+                        self.inform('migrating {0} event for {1}'.format(event_name, self.curr_mapping['project_name']))
+                        self.save_data_to_destination(processed_data={
+                            'name': self.curr_mapping['api_name'],
+                            'df_insert': processed_data_df,
+                            'lob_fields_length': self.curr_mapping['lob_fields']
+                        })
+                        event_cursor = processed_data['event_cursor']
+                    have_more_data = True if processed_data and processed_data['event_cursor'] else False
+                    time.sleep(1)
+            except APIRequestError as e:
+                self.err('Error while fetching data for event: {0} for app {1} from source. '.format(event_name, self.curr_mapping['project_name']) + str(e))
+            except:
+                self.err("Something went wrong! Could not process event {} for project {}. ".format(event_name, self.curr_mapping['project_name']) + str(e))
 
     def process(self) -> None:
         self.presetup()
