@@ -96,7 +96,7 @@ mapping = {
             },
             'bookmark': 'updated_ts',
             'archive': False,
-            'cron': 'self-managed',
+            'cron': '* * * * * 1 5 0',
             'to_partition': True,
             'mode': 'syncing',
             'improper_bookmarks': False

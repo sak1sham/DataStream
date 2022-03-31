@@ -63,8 +63,8 @@ If source is PGSQL, we need to provide a field ```tables```, which is a list of 
 {
     'table_name': str,
     'bookmark': False or 'field_name' (optional, Default=False, for example - 'updated_at'),
-    'primary_key': string of records (Required),
-    'primary_key_datatype': 'str' or 'int' or 'datetime' (Required),
+    'primary_key': string of records (Required, if logging or syncing mode),
+    'primary_key_datatype': 'str' or 'int' or 'datetime' (Required, if logging or syncing mode),
     'exclude_tables': [] (Optional, List[str] or str, list of table names to exclude from entire database),
     'cron': '* * * * * 7-19 */1 0' or 'self-managed' (Refer Notes 1),
     'to_partition': True or False (Default),
@@ -91,10 +91,11 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
     'to_partition': True or False (Default),
     'partition_col': False or '' name of the field (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 3),
-    'is_dump': False,
     'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True),
     'mode': 'syncing' or 'logging' or 'dumping',
-    'improper_bookmarks': true/false
+    'improper_bookmarks': true/false,
+    'batch_size': int,
+    'time_delay': int (delay between each batch migration)
 }
 ```
 

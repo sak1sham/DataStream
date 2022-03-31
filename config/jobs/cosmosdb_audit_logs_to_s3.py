@@ -17,13 +17,13 @@ mapping = {
                 'lat': 'float',
                 'long': 'float'
             },
-            'cron': '2022 3 8 * * 0 6 0',
+            'mode': 'logging',
+            'cron': '* * * * * 0 6 0',
             'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'bookmark': 'created_at',
-            'bookmark_creation': 'created_at',
-            'batch_size': 200,
+            'batch_size': 150,
             'time_delay': 0.5,
         },
         {
@@ -34,13 +34,13 @@ mapping = {
                 'lat': 'float',
                 'long': 'float'
             },
-            'cron': '2022 3 8 * * 0 6 0',
+            'mode': 'logging',
+            'cron': '* * * * * 0 6 0',
             'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'bookmark': 'created_at',
-            'bookmark_creation': 'created_at',
-            'batch_size': 200,
+            'batch_size': 150,
             'time_delay': 0.5,
         }
     ]
