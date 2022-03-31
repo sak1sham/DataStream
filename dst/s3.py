@@ -80,7 +80,7 @@ class s3Saver:
                 prev_files = wr.s3.list_objects(file_name_u)
                 self.inform(message=("Found " + str(len(prev_files)) +  " files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations)))
                 for file_ in prev_files:
-                    print(file_)
+                    self.inform(file_)
                     s3 = boto3.client('s3') 
                     file_o = urlparse(file_, allow_fragments=False)
                     bucket_name_read = file_o.netloc
