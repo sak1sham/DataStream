@@ -47,6 +47,7 @@ class APIMigrate:
                 processed_data = self.client.get_processed_data(event_name, self.curr_mapping, event_cursor)
                 if processed_data:
                     processed_data_df = typecast_df_to_schema(pd.DataFrame(processed_data['records']), self.curr_mapping['fields'])
+                    self.inform('migrating {0} event for {1}'.format(event_name, self.curr_mapping['project_name']))
                     self.save_data_to_destination(processed_data={
                         'name': self.curr_mapping['api_name'],
                         'df_insert': processed_data_df,
