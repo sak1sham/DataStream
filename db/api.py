@@ -8,8 +8,11 @@ from helper.util import typecast_df_to_schema
 import time
 import pandas as pd
 from helper.exceptions import APIRequestError
+from notifications.slack_notify import send_message
+from config.migration_mapping import settings
 
 IST_tz = pytz.timezone('Asia/Kolkata')
+slack_token = settings['slack_notif']['slack_token']
 
 class APIMigrate:
     def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, tz_str: str = 'Asia/Kolkata') -> None:
@@ -40,6 +43,7 @@ class APIMigrate:
     def process_clevertap_events(self):
         self.client = ClevertapManager(self.curr_mapping['project_name'])
         event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
+        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
         for event_name in event_names:
             try:
                 self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
@@ -59,9 +63,13 @@ class APIMigrate:
                     have_more_data = True if processed_data and processed_data['event_cursor'] else False
                     time.sleep(1)
             except APIRequestError as e:
-                self.err('Error while fetching data for event: {0} for app {1} from source. '.format(event_name, self.curr_mapping['project_name']) + str(e))
+                msg = 'Error while fetching data for event: {0} for app {1} from source. '.format(event_name, self.curr_mapping['project_name'])
+                send_message(msg = msg, channel = channel, slack_token = slack_token)
+                self.err(msg + str(e))
             except:
-                self.err("Something went wrong! Could not process event {} for project {}. ".format(event_name, self.curr_mapping['project_name']) + str(e))
+                msg = "Something went wrong! Could not process event {} for project {}. ".format(event_name, self.curr_mapping['project_name'])
+                send_message(msg = msg, channel = channel, slack_token = slack_token)
+                self.err(msg + str(e))
 
     def process(self) -> None:
         self.presetup()
