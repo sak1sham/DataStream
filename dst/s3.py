@@ -1,4 +1,8 @@
 import awswrangler as wr
+import boto3
+import pandas as pd
+import io
+from urllib.parse import urlparse
 
 from helper.logger import logger
 from helper.util import convert_heads_to_lowercase
@@ -18,7 +22,6 @@ class s3Saver:
         self.table_list = []
         self.database = (db_source["source_type"] + "_" + db_source["db_name"]).replace(".", "_").replace("-", "_")
         self.description = "Data migrated from " + self.database
-
 
 
     def inform(self, message: str = "", save: bool = False) -> None:
@@ -77,9 +80,13 @@ class s3Saver:
                 prev_files = wr.s3.list_objects(file_name_u)
                 self.inform(message=("Found " + str(len(prev_files)) +  " files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations)))
                 for file_ in prev_files:
-                    df_to_be_updated = wr.s3.read_parquet(
-                        path = [file_],
-                    )
+                    self.inform(file_)
+                    s3 = boto3.client('s3') 
+                    file_o = urlparse(file_, allow_fragments=False)
+                    bucket_name_read = file_o.netloc
+                    file_name_read = file_o.path[1:]
+                    obj_read = s3.get_object(Bucket=bucket_name_read, Key=file_name_read)
+                    df_to_be_updated = pd.read_parquet(io.BytesIO(obj_read['Body'].read()))
                     df_to_be_updated, modified, df_u = df_update_records(df=df_to_be_updated, df_u=df_u, primary_key=primary_keys[0])
                     if(modified):
                         wr.s3.to_parquet(
