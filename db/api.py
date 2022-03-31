@@ -1,6 +1,6 @@
 from db.clevertap import ClevertapManager
 from helper.logger import logger
-from typing import Dict, Any
+from typing import Dict, Any, List
 import pytz
 from dst.main import DMS_exporter
 import traceback
@@ -40,10 +40,18 @@ class APIMigrate:
             self.curr_mapping['fields'] = {}
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
     
-    def process_clevertap_events(self):
-        self.client = ClevertapManager(self.curr_mapping['project_name'])
-        event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
-        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+    def process_clevertap_events(self, event_names: List[Any]=[], max_attempts: int=3):
+        if not event_names:
+            return
+        if max_attempts==0:
+            channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+            msg = 'Unable to process following events: \n'
+            for event_name in event_names:
+                msg += event_name + '\n'
+            msg += 'for {0}.'.format(self.curr_mapping['project_name'])
+            send_message(msg = msg, channel = channel, slack_token = slack_token)
+            return
+        failed_events = []
         for event_name in event_names:
             try:
                 self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
@@ -64,15 +72,17 @@ class APIMigrate:
                     time.sleep(1)
             except APIRequestError as e:
                 msg = 'Error while fetching data for event: {0} for app {1} from source. Exception: {2}'.format(event_name, self.curr_mapping['project_name'], str(e))
-                send_message(msg = msg, channel = channel, slack_token = slack_token)
                 self.err(msg)
+                failed_events.append(event_name)
             except Exception as e:
                 msg = "Something went wrong! Could not process event {} for project {}. Exception: {2}".format(event_name, self.curr_mapping['project_name'], str(e))
-                send_message(msg = msg, channel = channel, slack_token = slack_token)
                 self.err(msg)
+        self.process_clevertap_events(failed_events, max_attempts-1)
 
     def process(self) -> None:
         self.presetup()
         if (self.db['source']['db_name']=='clevertap'):
-            self.process_clevertap_events()
+            self.client = ClevertapManager(self.curr_mapping['project_name'])
+            event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
+            self.process_clevertap_events( event_names, 3)
         self.saver.close()
