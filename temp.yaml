@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: "job2"
+  namespace: dms
+  annotations:
+    jobname: "job2"
+    schedule: "*/5 * * * *"
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cron-container
+            image: "414085459896.dkr.ecr.ap-south-1.amazonaws.com/dms/adminroles:df7c74"
+            imagePullPolicy: Always
+            
+            command: ["python", "--version"]
+            args:
+              - cd /;
+              - sleep 500;
+          terminationGracePeriodSeconds: 60
+          restartPolicy: "OnFailure"
+      parallelism: 3
+      completions: 2
+  concurrencyPolicy: "Allow"

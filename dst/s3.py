@@ -77,6 +77,7 @@ class s3Saver:
                 prev_files = wr.s3.list_objects(file_name_u)
                 self.inform(message=("Found " + str(len(prev_files)) +  " files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations)))
                 for file_ in prev_files:
+                    print(file_)
                     df_to_be_updated = wr.s3.read_parquet(
                         path = [file_],
                     )
