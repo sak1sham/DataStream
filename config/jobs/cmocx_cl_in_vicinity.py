@@ -12,15 +12,12 @@ mapping = {
     },
     'tables': [
         {
-            'table_name': 'notifications',
-            'cron': '* * * * * 22 0 0',
-            'mode': 'logging',
-            'primary_key': 'id',
-            'primary_key_datatype': 'int',
+            'table_name': 'cmocx_cl_in_vicinity',
+            'cron': '* * * * * 22 10 0',
+            'mode': 'dumping',
             'to_partition': True,
-            'partition_col': 'created_at',
+            'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
-            'batch_size': 10000,
         },
     ]
 }
