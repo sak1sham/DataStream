@@ -3,58 +3,32 @@ from dotenv import load_dotenv
 load_dotenv()
 
 mapping = {
-    "team_leader_users_cmdb_to_s3": {
+    "notifications_cmdb_to_s3": {
         'source': {
-            'source_type': 'mongo',
-            'url': 'mongodb://manish:ACVVCH7t7rqd8kB8@supportv2.cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false',
-            'db_name': 'support-service',
-            'certificate_file': 'rds-combined-ca-bundle.pem'
+            'source_type': 'sql',
+            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+            'db_name': 'cmdb',
+            'username': 'saksham_garg',
+            'password': '3y5HMs^2qy%&Kma'
         },
         'destination': {
             'destination_type': 's3',
             's3_bucket_name': 'database-migration-service-prod'
         },
-        'collections': [
+        'tables': [
             {
-                'table_name': 'team_leader_users',
-                'cron': 'self-managed',
-                'mode': 'syncing',
+                'table_name': 'notifications',
+                'cron': '* * * * * 22 0 0',
+                'mode': 'logging',
                 'primary_key': 'id',
                 'primary_key_datatype': 'int',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
-                'bookmark': 'updated_at',
-                'improper_bookmarks': False,
                 'batch_size': 10000,
             },
-            {
-                'collection_name': 'support_tickets_rating',
-                'fields': {
-                    'rating': 'int',
-                    '__v': 'int',
-                    'updatedAt': 'datetime',
-                    'createdAt': 'datetime',
-                    'created_ts': 'datetime',
-                    'updated_ts': 'datetime'
-                },
-                'bookmark': 'updated_ts',
-                'archive': False,
-                'cron': '* * * * * 1 0 0',
-                'to_partition': True,
-                'mode': 'syncing',
-                'improper_bookmarks': False
-            },
-            {
-                'collection_name': 'support_kafka_log',
-                'fields': {},
-                'archive': False,
-                'cron': '* * * * * 1 0 0',
-                'to_partition': True,
-                'mode': 'syncing',
-            }
         ]
-    },
+    }
 }
 
 settings = {
