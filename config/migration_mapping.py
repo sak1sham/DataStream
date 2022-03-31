@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 mapping = {
-    "notifications_cmdb_to_s3": {
+    "cmocx_cl_in_vicinity_cmdb_to_s3": {
         'source': {
             'source_type': 'sql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
@@ -17,15 +17,14 @@ mapping = {
         },
         'tables': [
             {
-                'table_name': 'notifications',
-                'cron': '* * * * * 22 0 0',
-                'mode': 'logging',
+                'table_name': 'cmocx_cl_in_vicinity',
+                'cron': '* * * * * 22 10 0',
+                'mode': 'dumping',
                 'primary_key': 'id',
                 'primary_key_datatype': 'int',
                 'to_partition': True,
                 'partition_col': 'created_at',
                 'partition_col_format': 'datetime',
-                'batch_size': 10000,
             },
         ]
     }
