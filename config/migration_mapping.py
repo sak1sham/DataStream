@@ -442,7 +442,7 @@ mapping = {
                 'bookmark_key_type': 'date',
                 'bookmark_key_format': 'YYYYMMDD',
                 'bookmark_key': '-1',
-                'slack_channel':'C025PTAUUFP',
+                'slack_channel':'C035WQHD291',
                 'fields': {
                     "event_name": 'str',
                     "ct_ts": 'int',
@@ -531,7 +531,7 @@ mapping = {
                 'bookmark_key_type': 'date',
                 'bookmark_key_format': 'YYYYMMDD',
                 'bookmark_key': '-1',
-                'slack_channel':'C025PTAUUFP',
+                'slack_channel':'C035WQHD291',
                 'fields': {
                     "event_name": 'str',
                     "ct_ts": 'int',
@@ -616,7 +616,7 @@ mapping = {
                 'bookmark_key_type': 'date',
                 'bookmark_key_format': 'YYYYMMDD',
                 'bookmark_key': '-1',
-                'slack_channel':'C025PTAUUFP',
+                'slack_channel':'C035WQHD291',
                 'fields': {
                     "event_name": 'str',
                     "ct_ts": 'int',
