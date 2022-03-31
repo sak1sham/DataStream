@@ -29,16 +29,17 @@ def get_last_run_cron_job(job_id: str) -> datetype:
     '''
         Function to find and return the time when the job with id job_id was last run.
         If the job was never run before, it returns an old date (Jan 1, 1999)
+        Datetime is returned in UTC timezone
     '''
     db = get_data_from_encr_db()
     prev = db.find_one({'last_run_cron_job_for_id': job_id})
     if(prev):
         timing = prev['timing']
-        logger.inform(job_id=job_id, s=(job_id + ": Glad to see this database again!"), save=True)
+        logger.inform(job_id=job_id, s=(job_id + ": Glad to see this database again!"))
         return pytz.utc.localize(timing)
     else:
         timing = datetime.datetime(1999, 1, 1, 0, 0, 0, 0, tzinfo=pytz.utc)
-        logger.inform(job_id=job_id, s=(job_id + ": Never seen it before. Taking previously run cron job time as on January 1, 1999."), save=True)
+        logger.inform(job_id=job_id, s=(job_id + ": Never seen it before. Taking previously run cron job time as on January 1, 1999."))
         return timing
 
 

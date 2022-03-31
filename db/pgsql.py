@@ -402,7 +402,7 @@ class PGSQLMigrate:
                                         updated_in_destination = True
                                     else:
                                         updated_in_destination = False                            
-                self.inform(message="Completed processing of table " + table_name + ".", save=True)
+                self.inform(message="Completed processing of table " + table_name + ".")
             except Exception as e:
                 self.err(error=e)
                 raise ProcessingError("Caught some exception while processing records.")
@@ -589,7 +589,7 @@ class PGSQLMigrate:
         else:
             name_tables = [self.curr_mapping['table_name']]
         name_tables.sort()
-        self.inform(message="Found following " + str(len(name_tables)) + " tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables), save=True)
+        self.inform(message="Found following " + str(len(name_tables)) + " tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables))
         
         b_start = 0
         b_end = len(name_tables)
@@ -624,6 +624,7 @@ class PGSQLMigrate:
                 self.syncing_process(table_name)
             else:
                 raise IncorrectMapping("Wrong mode of operation: can be syncing, logging or dumping only.")
+            self.inform(message=("Migration completed for table " + str(table_name)), save=True)
                 
         self.inform(message="Overall migration complete.", save=True)
         if(self.curr_mapping['mode'] == 'dumping' and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):

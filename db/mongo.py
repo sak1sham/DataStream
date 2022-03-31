@@ -54,15 +54,17 @@ class MongoMigrate:
         logger.err(job_id=self.curr_mapping['unique_id'], s=error)
 
 
-    def get_connectivity(self) -> int:
+    def get_connectivity(self) -> None:
         '''
             Makes the connection to the MongoDb database and returns the number of documents present inside the collection
         '''
         try:
-            client = MongoClient(self.db['source']['url'], tlsCAFile=certifi.where())
+            certificate = certifi.where()
+            if('certificate_file' in self.db['source'].keys() and self.db['source']['certificate_file']):
+                certificate = "config/" + self.db['source']['certificate_file']
+            client = MongoClient(self.db['source']['url'], tlsCAFile=certificate)
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
-            return self.db_collection.count_documents({})
         except Exception as e:
             self.err(error = e)
             self.db_collection = None
@@ -205,7 +207,7 @@ class MongoMigrate:
         if(not all_documents or len(all_documents) == 0):
             return None
         for document in all_documents:
-            insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            insertion_time = document['_id'].generation_time
             document['migration_snapshot_date'] = self.curr_run_cron_job
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
                 document = self.add_partitions(document=document, insertion_time=insertion_time)        
@@ -256,7 +258,7 @@ class MongoMigrate:
         ## The documents are all sorted as per creation_date and belong to a particular batch (self.batch_size)
         
         for document in all_documents:
-            insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            insertion_time = document['_id'].generation_time
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
                 ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
                 document = self.add_partitions(document=document, insertion_time=insertion_time)
@@ -335,7 +337,7 @@ class MongoMigrate:
         ## The documents are all sorted as per creation_date and belong to a particular batch (self.batch_size)
 
         for document in all_documents:
-            insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            insertion_time = document['_id'].generation_time
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
                 ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
                 document = self.add_partitions(document=document, insertion_time=insertion_time)
@@ -416,7 +418,7 @@ class MongoMigrate:
                 self.save_data(processed_collection=processed_collection)
                 if(processed_collection['df_insert'].shape[0]):
                     last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
-                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time.replace(tzinfo=pytz.utc))
+                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
                 processed_collection = {}
             time.sleep(self.time_delay)
             
@@ -440,7 +442,7 @@ class MongoMigrate:
                 self.save_data(processed_collection=processed_collection)
                 if(processed_collection['df_insert'].shape[0]):
                     last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
-                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time.replace(tzinfo=pytz.utc))
+                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
                 processed_collection = {}
             time.sleep(self.time_delay)
         self.inform(message = "Insertions completed, starting to update records", save = True)
@@ -484,7 +486,8 @@ class MongoMigrate:
                     ## Still not saved the updates, will update together a large number of records...will save time
             time.sleep(self.time_delay)
             start += self.batch_size
-        self.inform(message="Syncing operation complete (Both - Insertion and Deletion).", save=True)
+        self.inform(message="Updation completed.")
+        self.inform(message="Syncing operation complete (Both - Insertion and Updation).", save=True)
 
 
     def save_data(self, processed_collection: Dict[str, Any] = None) -> None:
