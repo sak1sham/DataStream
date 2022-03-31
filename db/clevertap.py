@@ -2,13 +2,13 @@ from config.clevertap import cx_app_event_names, cl_app_event_names, cx_web_even
 import requests
 import json
 from dst.main import DMS_exporter
-from helper.util import get_yyyymmdd_from_date, transformTs, validate_or_convert, typecast_df_to_schema, extract_value_from_nested_obj
+from helper.util import get_yyyymmdd_from_date, transformTs, validate_or_convert, extract_value_from_nested_obj
 import pytz
-import pandas as pd
 import os
 from typing import Dict, Any, List
 from helper.logger import logger
 import traceback
+from helper.exceptions import MissingData, ProcessingError, IncorrectMapping
 
 class EventsAPIManager:
     CLEVERTAP_API_BASE_URL = os.getenv('CLEVERTAP_BASE_URL')
@@ -38,7 +38,7 @@ class EventsAPIManager:
         if data["status"] == "success":
             return data["cursor"]
         else:
-            raise Exception("Get cursor API did not return success status")
+            raise ProcessingError("Get cursor API did not return success status")
 
     def get_records_for_cursor(self, cursor):
         data = self.make_request("events.json?cursor={}".format(cursor), data="").json()
@@ -47,7 +47,7 @@ class EventsAPIManager:
     def make_request(self, endpoint: str, data: Dict[str, Any]=None, params: Dict[str, Any]=None):
         res = requests.post(self.CLEVERTAP_API_BASE_URL + endpoint, data=json.dumps(data), params=params, headers=self.CLEVERTAP_API_HEADERS)
         if res.status_code != 200:
-            raise Exception("Request to {2} returned an error {0}:\n{1}".format(res.status_code, res.text, self.CLEVERTAP_API_BASE_URL + endpoint))    
+            raise ProcessingError("Request to {2} returned an error {0}:\n{1}".format(res.status_code, res.text, self.CLEVERTAP_API_BASE_URL + endpoint))    
         return res
 
 
@@ -64,7 +64,7 @@ class ClevertapManager(EventsAPIManager):
         elif (isinstance(event_names, list)):
             self.event_names = event_names
         else:
-            raise Exception("invalid event names")
+            raise IncorrectMapping("invalid event names")
         return self.event_names
 
     def transform_api_data(self, records: List[Any], event_name: str, curr_mapping: Dict[str, Any]):
@@ -87,32 +87,22 @@ class ClevertapManager(EventsAPIManager):
             tf_records.append(tf_record)
         return tf_records
 
-    def get_processed_data(self, event_name: str, curr_mapping: Dict[str, Any]):
-        bookmark_key = curr_mapping.get('bookmark_key', '')
-        if not bookmark_key:
-            raise Exception("please provide bookmark key")
-        sync_date = get_yyyymmdd_from_date(days=bookmark_key)
-        logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id']+": started {2} event {0} sync for date: {1}".format(event_name, str(sync_date), self.project_name))
-        start_cursor = self.get_event_cursor(event_name, sync_date, sync_date)
-        cursor_data = self.get_records_for_cursor(start_cursor)
-        transformed_records = []
-        total_records = 0
+    def get_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], event_cursor: str = None):
+        if not event_cursor:
+            bookmark_key = curr_mapping.get('bookmark_key', '')
+            if not bookmark_key:
+                raise MissingData("please provide bookmark key in mapping")
+            sync_date = get_yyyymmdd_from_date(days=bookmark_key)
+            logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id']+": started {2} event {0} sync for date: {1}".format(event_name, str(sync_date), self.project_name))
+            event_cursor = self.get_event_cursor(event_name, sync_date, sync_date)
+        cursor_data = self.get_records_for_cursor(event_cursor)
         if cursor_data["status"] == "success":
             if "records" in cursor_data:
-                total_records += len(cursor_data['records'])
-                transformed_records += self.transform_api_data(cursor_data['records'], event_name, curr_mapping)
-                while "next_cursor" in cursor_data:
-                    cursor_data = self.get_records_for_cursor(cursor_data["next_cursor"])
-                    if "records" in cursor_data:
-                        total_records += len(cursor_data['records'])
-                        transformed_records += self.transform_api_data(cursor_data['records'], event_name, curr_mapping)
-        logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id'] + ": Total Clevertap events - " + str(total_records))
-        logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id'] + ": Tatal Clevertap events after transformation - " + str(len(transformed_records)))
-        return {
-            'name': curr_mapping['api_name'],
-            'df_insert': typecast_df_to_schema(pd.DataFrame(transformed_records), curr_mapping['fields']),
-            "lob_fields_length": curr_mapping['lob_fields']
-        }
+                return {
+                    'records': self.transform_api_data(cursor_data['records'], event_name, curr_mapping),
+                    'event_cursor': cursor_data['next_cursor'] if 'next_cursor' in cursor_data else None
+                }
+        return None
     
     def cleaned_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], dst_saver: DMS_exporter):
         bookmark_key = curr_mapping.get('bookmark_key', '')
