@@ -86,8 +86,6 @@ if __name__ == "__main__":
         while(i < n):
             unique_id = args[i]
             db = get_mapping(unique_id)
-            print(db)
-            break
             s_type = db['source']['source_type']
             if(s_type not in group_key.keys()):
                 raise SourceNotFound("Un-identified Source Type " + str(db['source']['source_type']) + " found in migration-mapping.")
