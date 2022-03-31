@@ -54,7 +54,7 @@ class APIMigrate:
                     })
                     event_cursor = processed_data['event_cursor']
                     have_more_data = True if processed_data['event_cursor'] else False
-            time.sleep(1)
+                time.sleep(1)
 
     def process(self) -> None:
         self.presetup()
