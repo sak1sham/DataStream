@@ -14,3 +14,5 @@ dnspython==2.2.0
 redshift-connector==2.0.904
 slackclient==2.9.3
 kafka-python==2.0.2
+s3fs==2022.2.0
+pyarrow==7.0.0

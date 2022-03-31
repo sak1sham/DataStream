@@ -1,4 +1,6 @@
 import awswrangler as wr
+import pyarrow.parquet as pq
+import s3fs
 
 from helper.logger import logger
 from helper.util import convert_heads_to_lowercase
@@ -18,7 +20,7 @@ class s3Saver:
         self.table_list = []
         self.database = (db_source["source_type"] + "_" + db_source["db_name"]).replace(".", "_").replace("-", "_")
         self.description = "Data migrated from " + self.database
-
+        self.s3 = s3fs.S3FileSystem()
 
 
     def inform(self, message: str = "", save: bool = False) -> None:
@@ -78,9 +80,7 @@ class s3Saver:
                 self.inform(message=("Found " + str(len(prev_files)) +  " files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations)))
                 for file_ in prev_files:
                     print(file_)
-                    df_to_be_updated = wr.s3.read_parquet(
-                        path = [file_],
-                    )
+                    df_to_be_updated = pq.ParquetDataset(file_, filesystem=self.s3).read_pandas().to_pandas()
                     df_to_be_updated, modified, df_u = df_update_records(df=df_to_be_updated, df_u=df_u, primary_key=primary_keys[0])
                     if(modified):
                         wr.s3.to_parquet(
