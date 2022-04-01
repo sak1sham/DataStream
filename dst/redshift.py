@@ -7,6 +7,7 @@ from helper.logger import logger
 from typing import List, Dict, Any
 import datetime
 from helper.util import utc_to_local
+from helper.sigterm import GracefulKiller
 
 class RedshiftSaver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, unique_id: str = "", is_small_data: bool = False) -> None:
@@ -37,25 +38,28 @@ class RedshiftSaver:
         file_name = self.s3_location + self.name_ + "/"
         self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
         if(processed_data['df_insert'].shape[0] > 0):
-            if(self.is_small_data):
-                wr.redshift.to_sql(
-                    df = processed_data['df_insert'],
-                    con = self.conn,
-                    schema = self.schema,
-                    table = self.name_,
-                    mode = "append",
-                    primary_keys = primary_keys
-                )
-            else:
-                wr.redshift.copy(
-                    df = processed_data['df_insert'],
-                    con = self.conn,
-                    path = file_name,
-                    schema = self.schema,
-                    table = self.name_,
-                    mode = "append",
-                    primary_keys = primary_keys
-                )
+            killer = GracefulKiller()
+            while not killer.kill_now:
+                if(self.is_small_data):
+                    wr.redshift.to_sql(
+                        df = processed_data['df_insert'],
+                        con = self.conn,
+                        schema = self.schema,
+                        table = self.name_,
+                        mode = "append",
+                        primary_keys = primary_keys
+                    )
+                else:
+                    wr.redshift.copy(
+                        df = processed_data['df_insert'],
+                        con = self.conn,
+                        path = file_name,
+                        schema = self.schema,
+                        table = self.name_,
+                        mode = "append",
+                        primary_keys = primary_keys
+                    )
+                break
         self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))
         self.inform(message=("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."))
         if(processed_data['df_update'].shape[0] > 0):
