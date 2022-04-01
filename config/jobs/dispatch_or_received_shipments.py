@@ -14,12 +14,12 @@ mapping = {
         {
             'table_name': 'dispatch_or_received_shipments',
             'cron': '* * * * * 22 10 0',
-            'primary_key': 'id',
-            'primary_key_datatype': 'int',
+            'primary_key': 'scanned_at',
+            'primary_key_datatype': 'datetime',
             'to_partition': True,
-            'partition_col': 'created_at',
+            'partition_col': 'scanned_at',
             'partition_col_format': 'datetime',
-            'mode': 'syncing',
+            'mode': 'logging',
             'batch_size': 10000,
         }
     ]
