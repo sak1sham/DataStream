@@ -14,7 +14,7 @@ import hashlib
 import pytz
 from typing import List, Dict, Any
 import time
-
+from helper.sigterm import GracefulKiller
 
 '''
     Dictionary returned after processing data contains following fields:
@@ -415,11 +415,14 @@ class MongoMigrate:
                 self.inform(message = "Processing complete.")
                 break
             else:
-                self.save_data(processed_collection=processed_collection)
-                if(processed_collection['df_insert'].shape[0]):
-                    last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
-                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
-                processed_collection = {}
+                killer = GracefulKiller()
+                while not killer.kill_now:
+                    self.save_data(processed_collection=processed_collection)
+                    if(processed_collection['df_insert'].shape[0]):
+                        last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
+                        set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
+                    processed_collection = {}
+                    break
             time.sleep(self.time_delay)
             
         self.inform(messsage = "Logging operation complete.", save=True)
@@ -439,13 +442,17 @@ class MongoMigrate:
                 self.inform(message="Insertions complete.")
                 break
             else:
-                self.save_data(processed_collection=processed_collection)
-                if(processed_collection['df_insert'].shape[0]):
-                    last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
-                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
-                processed_collection = {}
+                killer = GracefulKiller()
+                while not killer.kill_now:
+                    self.save_data(processed_collection=processed_collection)
+                    if(processed_collection['df_insert'].shape[0]):
+                        last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
+                        set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
+                    processed_collection = {}
+                    break
             time.sleep(self.time_delay)
         self.inform(message = "Insertions completed, starting to update records", save = True)
+
         ## NOW, DO ALL REQUIRED UPDATIONS
         self.inform(message="Starting to migrate updations in records.")
         start = 0
