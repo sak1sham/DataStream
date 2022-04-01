@@ -18,7 +18,8 @@ mapping = {
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',
-            'improper_bookmarks': False
+            'improper_bookmarks': False,
+            'batch_size': 10000,
         },
     ]
 }

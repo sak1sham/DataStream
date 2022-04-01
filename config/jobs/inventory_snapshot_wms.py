@@ -19,7 +19,8 @@ mapping = {
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'bookmark_creation': 'created_at',
-            'bookmark': 'created_at'
+            'bookmark': 'created_at',
+            'batch_size': 10000,
         }
     ]
 }

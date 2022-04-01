@@ -116,7 +116,8 @@ mapping = {
                 'blocked_quantity': 'int',
                 'cost_price': 'float',
                 'inventory_value': 'float',
-            }
+            },
+            'batch_size': 10000,
         },
     ]
 }

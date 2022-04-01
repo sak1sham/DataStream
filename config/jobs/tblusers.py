@@ -21,7 +21,8 @@ mapping = {
             'partition_col': 'user_created',
             'partition_col_format': 'datetime',
             'bookmark': 'user_updated',
-            'improper_bookmarks': False
+            'improper_bookmarks': False,
+            'batch_size': 10000,
         },
     ]
 }

@@ -20,6 +20,7 @@ mapping = {
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'mode': 'syncing',
+            'batch_size': 10000,
         }
     ]
 }

@@ -22,6 +22,7 @@ mapping = {
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False
+            'batch_size': 10000,
         },
     ]
 }

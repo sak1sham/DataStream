@@ -18,6 +18,7 @@ mapping = {
             'to_partition': True,
             'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
+            'batch_size': 10000,
         },
     ]
 }
