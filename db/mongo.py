@@ -423,9 +423,10 @@ class MongoMigrate:
                         set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
                     processed_collection = {}
                     break
+                if(killer.kill_now):
+                    raise KeyboardInterrupt("Ending gracefully.")
             time.sleep(self.time_delay)
-            
-        self.inform(messsage = "Logging operation complete.", save=True)
+        self.inform(message = "Logging operation complete.", save=True)
 
 
     def syncing_process(self) -> None:
@@ -450,6 +451,8 @@ class MongoMigrate:
                         set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
                     processed_collection = {}
                     break
+                if(killer.kill_now):
+                    raise KeyboardInterrupt("Ending gracefully.")
             time.sleep(self.time_delay)
         self.inform(message = "Insertions completed, starting to update records", save = True)
 

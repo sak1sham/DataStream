@@ -367,6 +367,8 @@ class PGSQLMigrate:
                                         set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = datetime.datetime.utcnow())
                                     processed_data = {}
                                     break
+                                if(killer.kill_now):
+                                        raise KeyboardInterrupt("Ending gracefully.")
 
                             elif(mode == "syncing"):
                                 if(sync_mode == 1):
@@ -392,6 +394,8 @@ class PGSQLMigrate:
                                             set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = datetime.datetime.utcnow())
                                         processed_data = {}
                                         break
+                                    if(killer.kill_now):
+                                        raise KeyboardInterrupt("Ending gracefully.")
                                 else:
                                     ## UPDATION MODE
                                     ## In syncing-update mode, we iterate through multiple batches until we find atleast (batch_size) number of records to be updates

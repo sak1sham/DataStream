@@ -8,3 +8,4 @@ temp
 credentials.py
 AWSCLIV2.pkg
 .env
+metadata_deletion.py
