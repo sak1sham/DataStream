@@ -9,6 +9,7 @@ from helper.util import convert_heads_to_lowercase
 from typing import List, Dict, Any
 import datetime
 from helper.util import utc_to_local, df_update_records
+from helper.sigterm import GracefulKiller
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -46,19 +47,22 @@ class s3Saver:
             self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
             processed_data['df_insert'] = convert_heads_to_lowercase(processed_data['df_insert'])
             processed_data['dtypes'] = convert_heads_to_lowercase(processed_data["dtypes"])
-            wr.s3.to_parquet(
-                df = processed_data['df_insert'],
-                path = file_name,
-                compression='snappy',
-                mode = 'append',
-                database = self.database,
-                table = self.name_,
-                dtype = processed_data['dtypes'],
-                description = self.description,
-                dataset = True,
-                partition_cols = self.partition_cols,
-                schema_evolution = True,
-            )
+            killer = GracefulKiller()
+            while not killer.kill_now:
+                wr.s3.to_parquet(
+                    df = processed_data['df_insert'],
+                    path = file_name,
+                    compression='snappy',
+                    mode = 'append',
+                    database = self.database,
+                    table = self.name_,
+                    dtype = processed_data['dtypes'],
+                    description = self.description,
+                    dataset = True,
+                    partition_cols = self.partition_cols,
+                    schema_evolution = True,
+                )
+                break
             self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))
 
         n_updations = processed_data['df_update'].shape[0]
