@@ -21,7 +21,7 @@ mapping = {
             'partition_col': 'cl_signup_date',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
-            'improper_bookmarks': False
+            'improper_bookmarks': False,
             'batch_size': 10000,
         },
     ]
