@@ -75,7 +75,7 @@ class APIMigrate:
                 self.err(msg)
                 failed_events.append(event_name)
             except Exception as e:
-                msg = "Something went wrong! Could not process event {} for project {}. Exception: {2}".format(event_name, self.curr_mapping['project_name'], str(e))
+                msg = "Something went wrong! Could not process event {0} for project {1}. Exception: {2}".format(event_name, self.curr_mapping['project_name'], str(e))
                 self.err(msg)
         self.process_clevertap_events(failed_events, max_attempts-1)
 
