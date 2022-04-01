@@ -1,52 +1,12 @@
-import os
-from dotenv import load_dotenv
-load_dotenv()
+from typing import Dict
+from config.settings import settings
 
-mapping = {
-    "cmocx_cl_in_vicinity_cmdb_to_s3": {
-        'source': {
-            'source_type': 'sql',
-            'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-            'db_name': 'cmdb',
-            'username': 'saksham_garg',
-            'password': '3y5HMs^2qy%&Kma'
-        },
-        'destination': {
-            'destination_type': 's3',
-            's3_bucket_name': 'database-migration-service-prod'
-        },
-        'tables': [
-            {
-                'table_name': 'cmocx_cl_in_vicinity',
-                'cron': '* * * * * 22 10 0',
-                'mode': 'dumping',
-                'primary_key': 'id',
-                'primary_key_datatype': 'int',
-                'to_partition': True,
-                'partition_col': 'created_at',
-                'partition_col_format': 'datetime',
-            },
-        ]
-    }
-}
+import importlib.util
 
-settings = {
-    'fastapi_server': True,
-    'timezone': 'Asia/Kolkata',
-    'notify': True,
-    'encryption_store': {
-        'url': os.getenv('ENCR_MONGO_URL'),
-        'db_name': os.getenv('DB_NAME'),
-        'collection_name': os.getenv('COLLECTION_NAME')
-    },
-    'logging_store': {
-        'url': os.getenv('LOG_MONGO_URL'),
-        'db_name': os.getenv('LOG_DB_NAME'),
-        'collection_name': os.getenv('LOG_COLLECTION_NAME')
-    },
-    'slack_notif': {
-        'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C035WQHD291"
-    },
-    'save_logs': False
-}
+def get_mapping(id: str) -> Dict:
+    f_name = "config/jobs/" + id + ".py"
+    mod_name = id + "./py"
+    spec = importlib.util.spec_from_file_location(mod_name, f_name)
+    foo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(foo)
+    return foo.mapping    

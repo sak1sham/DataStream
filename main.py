@@ -1,4 +1,3 @@
-from re import T
 from fastapi import FastAPI
 import uvicorn
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -6,7 +5,7 @@ import pytz
 import sys
 from typing import Tuple, Dict, Any
 
-from config.migration_mapping import mapping, settings
+from config.migration_mapping import get_mapping, settings
 from db.main import DMS_importer
 from helper.logger import logger
 from helper.util import evaluate_cron
@@ -86,7 +85,7 @@ if __name__ == "__main__":
         i = 0
         while(i < n):
             unique_id = args[i]
-            db = mapping[unique_id]
+            db = get_mapping(unique_id)
             s_type = db['source']['source_type']
             if(s_type not in group_key.keys()):
                 raise SourceNotFound("Un-identified Source Type " + str(db['source']['source_type']) + " found in migration-mapping.")
@@ -98,12 +97,8 @@ if __name__ == "__main__":
                 i += 2
             use_mapping(db, group_key[s_type], is_fastapi)
             i += 1
+        logger.inform(s='Added all jobs.')
     else:
-        for unique_id, db in mapping.items():
-            s_type = db['source']['source_type']
-            if(s_type not in group_key.keys()):
-                raise SourceNotFound("Un-identified Source Type " + str(db['source']['source_type']) + " found in migration-mapping.")
-            use_mapping(db, group_key[s_type], is_fastapi)
-    logger.inform(s='Added all jobs.')
+        logger.inform("Please provide the job_id as arguments to migrate")
     if(is_fastapi):
         uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))
