@@ -42,6 +42,8 @@ class MongoMigrate:
         self.db = db
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
+        self.n_insertions = 0
+        self.n_updations = 0
 
 
     def inform(self, message: str = None, save: bool = False) -> None:
@@ -162,6 +164,8 @@ class MongoMigrate:
         '''
             After all migration has been performed, we save the datetime of this job. This helps in finding all records updated after this datetime, and before next job is running.
         '''
+        self.inform(message = "Inserted " + str(self.n_insertions) + " records")
+        self.inform(message = "Updated " + str(self.n_updations) + " records")
         set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
 
 
@@ -519,6 +523,8 @@ class MongoMigrate:
             if(self.curr_mapping['mode'] != 'dumping'):
                 ## If mode is dumping, then there can't be any primary key. Otherwise, set _id as primary_key
                 primary_keys = ['_id']
+            self.n_insertions += processed_collection['df_insert'].shape[0]
+            self.n_updations += processed_collection['df_update'].shape[0]
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
 
 

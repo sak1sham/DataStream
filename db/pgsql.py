@@ -27,6 +27,8 @@ class PGSQLMigrate:
             self.batch_size = batch_size
         self.tz_info = pytz.timezone(tz_str)
         self.last_run_cron_job = pd.Timestamp(None)
+        self.n_insertions = 0
+        self.n_updations = 0
     
 
     def inform(self, message: str = None, save: bool = False) -> None:
@@ -56,6 +58,8 @@ class PGSQLMigrate:
             After completing the job, save the time when the job started (doesn't process the records that were created after the job started).
             Save the last migrated record
         '''
+        self.inform(message = "Inserted " + str(self.n_insertions) + " records")
+        self.inform(message = "Updated " + str(self.n_updations) + " records")
         last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
         if(last_rec):
             set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job, last_record_id = last_rec['record_id'])
@@ -236,6 +240,8 @@ class PGSQLMigrate:
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping'):
                 primary_keys = ['unique_migration_record_id']
+            self.n_insertions += processed_data['df_insert'].shape[0]
+            self.n_updations += processed_data['df_update'].shape[0]
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
 
@@ -311,6 +317,7 @@ class PGSQLMigrate:
             sync_mode = 2 means updation has to be performed
             mode = 'syncing', 'dumping' or 'logging'
         '''
+        self.inform(message = str(sql_stmt))
         processed_data = {}
         processed_data_u = {}
         updated_in_destination = True
