@@ -1,7 +1,0 @@
-notifications
-
-Max id
-cmdb: 81464018, athena: 81464018
-
-duplicate records in athena (not in cmdb):
-for every id between 63944870 and 81464018
