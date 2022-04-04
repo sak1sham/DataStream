@@ -14,7 +14,7 @@ import hashlib
 import pytz
 from typing import List, Dict, Any
 import time
-
+from helper.sigterm import GracefulKiller
 
 '''
     Dictionary returned after processing data contains following fields:
@@ -42,6 +42,8 @@ class MongoMigrate:
         self.db = db
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
+        self.n_insertions = 0
+        self.n_updations = 0
 
 
     def inform(self, message: str = None, save: bool = False) -> None:
@@ -162,6 +164,8 @@ class MongoMigrate:
         '''
             After all migration has been performed, we save the datetime of this job. This helps in finding all records updated after this datetime, and before next job is running.
         '''
+        self.inform(message = "Inserted " + str(self.n_insertions) + " records")
+        self.inform(message = "Updated " + str(self.n_updations) + " records")
         set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
 
 
@@ -415,14 +419,18 @@ class MongoMigrate:
                 self.inform(message = "Processing complete.")
                 break
             else:
-                self.save_data(processed_collection=processed_collection)
-                if(processed_collection['df_insert'].shape[0]):
-                    last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
-                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
-                processed_collection = {}
+                killer = GracefulKiller()
+                while not killer.kill_now:
+                    self.save_data(processed_collection=processed_collection)
+                    if(processed_collection['df_insert'].shape[0]):
+                        last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
+                        set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
+                    processed_collection = {}
+                    break
+                if(killer.kill_now):
+                    raise KeyboardInterrupt("Ending gracefully.")
             time.sleep(self.time_delay)
-            
-        self.inform(messsage = "Logging operation complete.", save=True)
+        self.inform(message = "Logging operation complete.", save=True)
 
 
     def syncing_process(self) -> None:
@@ -439,13 +447,19 @@ class MongoMigrate:
                 self.inform(message="Insertions complete.")
                 break
             else:
-                self.save_data(processed_collection=processed_collection)
-                if(processed_collection['df_insert'].shape[0]):
-                    last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
-                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
-                processed_collection = {}
+                killer = GracefulKiller()
+                while not killer.kill_now:
+                    self.save_data(processed_collection=processed_collection)
+                    if(processed_collection['df_insert'].shape[0]):
+                        last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
+                        set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
+                    processed_collection = {}
+                    break
+                if(killer.kill_now):
+                    raise KeyboardInterrupt("Ending gracefully.")
             time.sleep(self.time_delay)
         self.inform(message = "Insertions completed, starting to update records", save = True)
+
         ## NOW, DO ALL REQUIRED UPDATIONS
         self.inform(message="Starting to migrate updations in records.")
         start = 0
@@ -509,6 +523,8 @@ class MongoMigrate:
             if(self.curr_mapping['mode'] != 'dumping'):
                 ## If mode is dumping, then there can't be any primary key. Otherwise, set _id as primary_key
                 primary_keys = ['_id']
+            self.n_insertions += processed_collection['df_insert'].shape[0]
+            self.n_updations += processed_collection['df_update'].shape[0]
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
 
 
