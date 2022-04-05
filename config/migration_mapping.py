@@ -527,7 +527,7 @@ mapping = {
             {
                 'api_name':'cx_app_events',
                 'project_name': 'cx_app',
-                'event_names': '*',
+                'event_names': ['App Launched Custom', 'Push Impressions'],
                 'bookmark_key_type': 'date',
                 'bookmark_key_format': 'YYYYMMDD',
                 'bookmark_key': '-1',

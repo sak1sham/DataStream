@@ -43,20 +43,29 @@ class APIMigrate:
     def process_clevertap_events(self, event_names: List[Any]=[], max_attempts: int=3):
         if not event_names:
             return
+        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
         if max_attempts==0:
-            channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
             msg = 'Unable to process following events: \n'
             for event_name in event_names:
                 msg += event_name + '\n'
             msg += 'for {0}.'.format(self.curr_mapping['project_name'])
             send_message(msg = msg, channel = channel, slack_token = slack_token)
             return
+        if max_attempts < 3:
+            msg = 'Error while processing following events: \n'
+            for event_name in event_names:
+                msg += event_name + '\n'
+            msg += 'for {0}. Will remigrate these events automatically'.format(self.curr_mapping['project_name'])
+            send_message(msg = msg, channel = channel, slack_token = slack_token)
+
         failed_events = []
         for event_name in event_names:
             try:
                 self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
                 have_more_data = True
-                event_cursor = None    
+                event_cursor = None
+                total_fetch_events = 0
+                transformed_total_events = 0    
                 while have_more_data:
                     processed_data = self.client.get_processed_data(event_name, self.curr_mapping, event_cursor)
                     if processed_data:
@@ -68,8 +77,12 @@ class APIMigrate:
                             'lob_fields_length': self.curr_mapping['lob_fields']
                         })
                         event_cursor = processed_data['event_cursor']
+                        total_fetch_events += int(processed_data['total_records'])
+                        transformed_total_events += int(processed_data_df.shape[0])
                     have_more_data = True if processed_data and processed_data['event_cursor'] else False
-                    time.sleep(1)
+                    # time.sleep(1)
+                msg = '{0} out of {1} records saved for event: {2} for project: {3}.'.format(transformed_total_events, total_fetch_events, event_name, self.curr_mapping['project_name'])
+                send_message(msg = msg, channel = channel, slack_token = slack_token)
             except APIRequestError as e:
                 msg = 'Error while fetching data for event: {0} for app {1} from source. Exception: {2}'.format(event_name, self.curr_mapping['project_name'], str(e))
                 self.err(msg)

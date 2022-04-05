@@ -100,7 +100,8 @@ class ClevertapManager(EventsAPIManager):
             if "records" in cursor_data:
                 return {
                     'records': self.transform_api_data(cursor_data['records'], event_name, curr_mapping),
-                    'event_cursor': cursor_data['next_cursor'] if 'next_cursor' in cursor_data else None
+                    'event_cursor': cursor_data['next_cursor'] if 'next_cursor' in cursor_data else None,
+                    'total_records': len(cursor_data['records'])
                 }
         return None
     
