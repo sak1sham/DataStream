@@ -495,6 +495,7 @@ class PGSQLMigrate:
             sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) > Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp) AND Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + curr.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
+        sql_stmt += " ORDER BY " + self.curr_mapping['primary_key'] 
         self.process_sql_query(table_name, sql_stmt, mode='logging')
 
 
@@ -537,6 +538,7 @@ class PGSQLMigrate:
             sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) > Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp) AND Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + curr_max.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
+        sql_stmt += " ORDER BY " + self.curr_mapping['primary_key'] 
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 1)
         
         ## NOW INSERTION IS COMPLETE, LET'S FOCUS ON UPDATING OLD DATA
