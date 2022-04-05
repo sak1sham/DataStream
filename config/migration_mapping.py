@@ -562,7 +562,8 @@ mapping = {
                 },
                 'lob_fields': {
                     "tags": 4096,
-                    "event_props": 4096
+                    "event_props": 4096,
+                    "name": 1024
                 },
                 'api_to_field_mapping': {
                     "ct_ts": 'ts',
