@@ -1,8 +1,8 @@
 import pandas as pd
+import os
 import json
 import datetime
 from typing import NewType, Any, Dict
-from kafka import KafkaConsumer
 
 from helper.util import *
 from helper.logger import logger
@@ -12,7 +12,9 @@ from dst.main import DMS_exporter
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
 
-kafka_group = 'dms_kafka'
+# kafka_group = 'audit_logs_consumer'
+
+enable_auto_commit = True
 
 
 class KafkaMigrate:
@@ -143,8 +145,7 @@ class KafkaMigrate:
             '''
                 Consumes the data in kafka
             '''
-            consumer = KafkaConsumer(self.curr_mapping['topic_name'], bootstrap_servers = [self.db['source']['kafka_server']], 
-            enable_auto_commit = True, group_id = 'dms_kafka_group', value_deserializer = self.value_deserializer)
+            consumer = get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=[self.db['source']['kafka_server']], KafkaUsername=[self.db['source']['kafka_username']], KafkaPassword=[self.db['source']['kafka_password']], enable_auto_commit=True)
             self.inform(message='Started consuming messages.', save=True)
             self.preprocess()
             self.inform(message="Preprocessing done.", save=True)
