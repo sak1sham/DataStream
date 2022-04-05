@@ -7,6 +7,7 @@ from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_ru
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
+from helper.sigterm import GracefulKiller
 
 import datetime
 import hashlib
@@ -26,6 +27,8 @@ class PGSQLMigrate:
             self.batch_size = batch_size
         self.tz_info = pytz.timezone(tz_str)
         self.last_run_cron_job = pd.Timestamp(None)
+        self.n_insertions = 0
+        self.n_updations = 0
     
 
     def inform(self, message: str = None, save: bool = False) -> None:
@@ -55,6 +58,8 @@ class PGSQLMigrate:
             After completing the job, save the time when the job started (doesn't process the records that were created after the job started).
             Save the last migrated record
         '''
+        self.inform(message = "Inserted " + str(self.n_insertions) + " records")
+        self.inform(message = "Updated " + str(self.n_updations) + " records")
         last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
         if(last_rec):
             set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job, last_record_id = last_rec['record_id'])
@@ -235,6 +240,8 @@ class PGSQLMigrate:
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping'):
                 primary_keys = ['unique_migration_record_id']
+            self.n_insertions += processed_data['df_insert'].shape[0]
+            self.n_updations += processed_data['df_update'].shape[0]
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
 
@@ -310,6 +317,7 @@ class PGSQLMigrate:
             sync_mode = 2 means updation has to be performed
             mode = 'syncing', 'dumping' or 'logging'
         '''
+        self.inform(message = str(sql_stmt))
         processed_data = {}
         processed_data_u = {}
         updated_in_destination = True
@@ -343,32 +351,14 @@ class PGSQLMigrate:
                                 processed_data = self.dumping_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
                                 self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                                 processed_data = {}
+
                             elif(mode == "logging"):
                                 ## In Logging mode, we first process and save the data of the batch
                                 ## After saving every batch, we save the record_id of the last migrated record
                                 ## resume mode is thus supported.
                                 processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes, mode = 'logging')
-                                self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
-                                if(processed_data['df_insert'].shape[0]):
-                                    pkey = self.curr_mapping['primary_key']
-                                    last_record_id = processed_data['df_insert'][pkey].iloc[-1]
-                                    if(self.curr_mapping['primary_key_datatype'] == 'int'):
-                                        last_record_id = int(last_record_id)
-                                    elif(self.curr_mapping['primary_key_datatype'] == 'str'):
-                                        last_record_id = str(last_record_id)
-                                    elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
-                                        if(not last_record_id.tzinfo):
-                                            last_record_id = self.tz_info.localize(last_record_id)
-                                        last_record_id = last_record_id.astimezone(pytz.utc)
-                                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = datetime.datetime.utcnow())
-                                processed_data = {}
-                            elif(mode == "syncing"):
-                                if(sync_mode == 1):
-                                    ## INSERTION MODE
-                                    ## In syncing-insertion mode, we first process and save the data of the batch
-                                    ## After saving every batch, we save the record_id of the last migrated record
-                                    ## resume mode is thus supported.
-                                    processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes, mode = 'syncing')
+                                killer = GracefulKiller()
+                                while not killer.kill_now:
                                     self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                                     if(processed_data['df_insert'].shape[0]):
                                         pkey = self.curr_mapping['primary_key']
@@ -383,6 +373,36 @@ class PGSQLMigrate:
                                             last_record_id = last_record_id.astimezone(pytz.utc)
                                         set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = datetime.datetime.utcnow())
                                     processed_data = {}
+                                    break
+                                if(killer.kill_now):
+                                        raise KeyboardInterrupt("Ending gracefully.")
+
+                            elif(mode == "syncing"):
+                                if(sync_mode == 1):
+                                    ## INSERTION MODE
+                                    ## In syncing-insertion mode, we first process and save the data of the batch
+                                    ## After saving every batch, we save the record_id of the last migrated record
+                                    ## resume mode is thus supported.
+                                    processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes, mode = 'syncing')
+                                    killer = GracefulKiller()
+                                    while not killer.kill_now:
+                                        self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
+                                        if(processed_data['df_insert'].shape[0]):
+                                            pkey = self.curr_mapping['primary_key']
+                                            last_record_id = processed_data['df_insert'][pkey].iloc[-1]
+                                            if(self.curr_mapping['primary_key_datatype'] == 'int'):
+                                                last_record_id = int(last_record_id)
+                                            elif(self.curr_mapping['primary_key_datatype'] == 'str'):
+                                                last_record_id = str(last_record_id)
+                                            elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
+                                                if(not last_record_id.tzinfo):
+                                                    last_record_id = self.tz_info.localize(last_record_id)
+                                                last_record_id = last_record_id.astimezone(pytz.utc)
+                                            set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = datetime.datetime.utcnow())
+                                        processed_data = {}
+                                        break
+                                    if(killer.kill_now):
+                                        raise KeyboardInterrupt("Ending gracefully.")
                                 else:
                                     ## UPDATION MODE
                                     ## In syncing-update mode, we iterate through multiple batches until we find atleast (batch_size) number of records to be updates
