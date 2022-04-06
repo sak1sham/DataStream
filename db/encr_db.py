@@ -17,6 +17,7 @@ def get_data_from_encr_db():
         Function to get connection to the encryption database/collection
     '''
     try:
+        print(encryption_store)
         client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
         db_encr = client_encr[encryption_store['db_name']]
         collection_encr = db_encr[encryption_store['collection_name']]
