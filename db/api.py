@@ -81,8 +81,8 @@ class APIMigrate:
                         transformed_total_events += int(processed_data_df.shape[0])
                     have_more_data = True if processed_data and processed_data['event_cursor'] else False
                     # time.sleep(1)
-                msg = '{0} out of {1} records saved for event: {2} for project: {3}.'.format(transformed_total_events, total_fetch_events, event_name, self.curr_mapping['project_name'])
-                send_message(msg = msg, channel = channel, slack_token = slack_token)
+                # msg = '{0} out of {1} records saved for event: {2} for project: {3}.'.format(transformed_total_events, total_fetch_events, event_name, self.curr_mapping['project_name'])
+                # send_message(msg = msg, channel = channel, slack_token = slack_token)
             except APIRequestError as e:
                 msg = 'Error while fetching data for event: {0} for app {1} from source. Exception: {2}'.format(event_name, self.curr_mapping['project_name'], str(e))
                 self.err(msg)
