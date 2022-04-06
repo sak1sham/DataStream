@@ -2,7 +2,6 @@ from pymongo import MongoClient
 import certifi
 import awswrangler as wr
 import unittest
-import sys
 import math
 import random
 import datetime
@@ -17,8 +16,7 @@ datetype = NewType("datetype", datetime.datetime)
 from dotenv import load_dotenv
 load_dotenv()
 
-from testing_mapping import mapping
-from test_util import *
+from testing.test_util import *
 
 def convert_to_str(x) -> str:
     if(isinstance(x, list)):
@@ -120,7 +118,6 @@ class MongoTester(unittest.TestCase):
         }
         curs = collection.find(query).limit(self.test_N).skip(math.floor(random.random()*N))
         curs = list(curs)
-        # curs = List[Dict[str, Any]]
         
         str_id = ""
         for records in curs:
@@ -142,27 +139,3 @@ class MongoTester(unittest.TestCase):
                             continue
                 athena_record = df.loc[df['_id'] == str(record['_id'])].to_dict(orient='records')
                 assert self.check_match(record, athena_record[0])
-
-if __name__ == "__main__":
-    N = 200
-    id = ''
-    if (len(sys.argv) > 1):
-        id = sys.argv.pop()
-    if('collections' not in mapping[id].keys()):
-        mapping[id]['collections'] = []
-    for i in range(N):
-        print('Testing iteration:', str(i+1) + "/" + str(N))
-        for col in mapping[id]['collections']:
-            print("Testing", col['collection_name'])
-            MongoTester.url = mapping[id]['source']['url']
-            MongoTester.db = mapping[id]['source']['db_name']
-            MongoTester.id_ = id + "_DMS_" + col['collection_name']
-            MongoTester.col = col['collection_name']
-            MongoTester.col_map = col
-            unittest.main(exit=False, warnings='ignore')
-
-'''
-
-python accuracy.py mongo_support_service_to_s3_DMS_support_form_items 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority' support_service support_form_items
-
-'''

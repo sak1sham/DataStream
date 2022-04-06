@@ -14,7 +14,7 @@ import hashlib
 import pytz
 from typing import List, Dict, Any
 import time
-from helper.sigterm import GracefulKiller
+from helper.sigterm import GracefulKiller, NormalKiller
 
 '''
     Dictionary returned after processing data contains following fields:
@@ -252,7 +252,7 @@ class MongoMigrate:
         query = {
             "_id": {
                 "$gt": migration_prev_id, 
-                "$lt": migration_start_id
+                "$lte": migration_start_id
             }
         }
         all_documents = self.fetch_data(query=query)
@@ -315,12 +315,12 @@ class MongoMigrate:
                 "$and":[
                     {
                         self.curr_mapping['bookmark']: {
-                            "$gte": self.last_run_cron_job,
-                            "$lt": self.curr_run_cron_job,
+                            "$gt": self.last_run_cron_job,
+                            "$lte": self.curr_run_cron_job,
                         }
                     },
                     {   "_id": {
-                            "$lt": migration_prev_id,
+                            "$lte": migration_prev_id,
                         }
                     }
                 ]
@@ -331,7 +331,7 @@ class MongoMigrate:
             ## we fetch all documents migrated until the last job, and filter them in further processing steps
             query = {
                 "_id": {
-                    "$lt": migration_prev_id,
+                    "$lte": migration_prev_id,
                 }
             }
             all_documents = self.fetch_data(start=start, end=end, query=query)
@@ -351,7 +351,7 @@ class MongoMigrate:
                     document[self.curr_mapping['bookmark']] = None
                 docu_bookmark_date = convert_to_datetime(document[self.curr_mapping['bookmark']], pytz.utc)
                 ## if docu_bookmark_date is None, that means the document was never updated
-                if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date < self.last_run_cron_job):
+                if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date <= self.last_run_cron_job):
                     continue
             elif('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark']):
                 ## if bookmark is not present, we need to do the encryption of the document
@@ -419,7 +419,9 @@ class MongoMigrate:
                 self.inform(message = "Processing complete.")
                 break
             else:
-                killer = GracefulKiller()
+                killer = NormalKiller()
+                if(self.curr_mapping['cron'] == 'self-managed'):
+                    killer = GracefulKiller()
                 while not killer.kill_now:
                     self.save_data(processed_collection=processed_collection)
                     if(processed_collection['df_insert'].shape[0]):
@@ -447,7 +449,9 @@ class MongoMigrate:
                 self.inform(message="Insertions complete.")
                 break
             else:
-                killer = GracefulKiller()
+                killer = NormalKiller()
+                if(self.curr_mapping['cron'] == 'self-managed'):
+                    killer = GracefulKiller()
                 while not killer.kill_now:
                     self.save_data(processed_collection=processed_collection)
                     if(processed_collection['df_insert'].shape[0]):

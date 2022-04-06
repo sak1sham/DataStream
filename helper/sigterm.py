@@ -10,8 +10,11 @@ class GracefulKiller:
     def exit_gracefully(self, *args):
         self.kill_now = True
 
+class NormalKiller:
+    kill_now = False
+
 if __name__ == '__main__':
-    killer = GracefulKiller()
+    killer = NormalKiller()
     while not killer.kill_now:
         print("hi")
         time.sleep(10)
