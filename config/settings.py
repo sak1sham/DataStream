@@ -22,3 +22,5 @@ settings = {
     },
     'save_logs': False
 }
+
+print(settings)

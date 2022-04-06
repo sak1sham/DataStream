@@ -5,7 +5,8 @@ import pytz
 import sys
 from typing import Tuple, Dict, Any
 
-from config.migration_mapping import get_mapping, settings
+from config.migration_mapping import get_mapping
+from config.settings import settings
 from db.main import DMS_importer
 from helper.logger import logger
 from helper.util import evaluate_cron

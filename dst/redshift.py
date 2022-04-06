@@ -1,4 +1,3 @@
-from re import T
 import awswrangler as wr
 import redshift_connector
 
