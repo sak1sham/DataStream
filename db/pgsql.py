@@ -598,7 +598,7 @@ class PGSQLMigrate:
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
 
 
-    def process(self) -> None:
+    def process(self) -> Tuple[int]:
         if(self.curr_mapping['mode'] != 'dumping' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):
             raise IncorrectMapping('Need to specify a primary_key (strictly increasing and unique - int|string|datetime) inside the table for syncing or logging mode.')
         elif(self.curr_mapping['mode'] != 'dumping' and 'primary_key_datatype' not in self.curr_mapping.keys()):
@@ -662,3 +662,5 @@ class PGSQLMigrate:
 
         self.saver.close()
         self.inform(message="Hope to see you again :')")
+
+        return (self.n_insertions, self.n_updations)

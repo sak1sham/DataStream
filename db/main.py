@@ -36,13 +36,16 @@ class DMS_importer:
     
     def process(self):
         try:
-            self.obj.process()
+            result = self.obj.process()
             if('notify' in settings.keys() and settings['notify']):
                 msg = "Migration completed for *"
                 msg += str(self.name)
                 msg += "* from database "
                 msg += self.db['source']['source_type'] + " : *" + self.db['source']['db_name']
-                msg += "*. :tada:"
+                msg += "*. "
+                if(isinstance(result, tuple)):
+                    msg += "Inserted " + str(result[0]) + " records and updated " + str(result[1]) + " records."
+                msg += " :tada:"
                 try:
                     slack_token = settings['slack_notif']['slack_token']
                     channel = settings['slack_notif']['channel']
