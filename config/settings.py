@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+print(os.environ)
+
 settings = {
     'fastapi_server': False,
     'timezone': 'Asia/Kolkata',
