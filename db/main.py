@@ -8,7 +8,7 @@ from helper.exceptions import IncorrectMapping
 from helper.logger import logger
 import traceback
 from notifications.slack_notify import send_message
-from config.migration_mapping import settings
+from config.settings import settings
 
 class DMS_importer:
     def __init__(self, db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
