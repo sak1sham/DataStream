@@ -7,7 +7,7 @@ from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_ru
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
-from helper.sigterm import GracefulKiller
+from helper.sigterm import GracefulKiller, NormalKiller
 
 import datetime
 import hashlib
@@ -357,7 +357,9 @@ class PGSQLMigrate:
                                 ## After saving every batch, we save the record_id of the last migrated record
                                 ## resume mode is thus supported.
                                 processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes, mode = 'logging')
-                                killer = GracefulKiller()
+                                killer = NormalKiller()
+                                if(self.curr_mapping['cron'] == 'self-managed'):
+                                    killer = GracefulKiller()
                                 while not killer.kill_now:
                                     self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                                     if(processed_data['df_insert'].shape[0]):
@@ -384,7 +386,9 @@ class PGSQLMigrate:
                                     ## After saving every batch, we save the record_id of the last migrated record
                                     ## resume mode is thus supported.
                                     processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes, mode = 'syncing')
-                                    killer = GracefulKiller()
+                                    killer = NormalKiller()
+                                    if(self.curr_mapping['cron'] == 'self-managed'):
+                                        killer = GracefulKiller()
                                     while not killer.kill_now:
                                         self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                                         if(processed_data['df_insert'].shape[0]):

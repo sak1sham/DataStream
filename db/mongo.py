@@ -14,7 +14,7 @@ import hashlib
 import pytz
 from typing import List, Dict, Any
 import time
-from helper.sigterm import GracefulKiller
+from helper.sigterm import GracefulKiller, NormalKiller
 
 '''
     Dictionary returned after processing data contains following fields:
@@ -419,7 +419,9 @@ class MongoMigrate:
                 self.inform(message = "Processing complete.")
                 break
             else:
-                killer = GracefulKiller()
+                killer = NormalKiller()
+                if(self.curr_mapping['cron'] == 'self-managed'):
+                    killer = GracefulKiller()
                 while not killer.kill_now:
                     self.save_data(processed_collection=processed_collection)
                     if(processed_collection['df_insert'].shape[0]):
@@ -447,7 +449,9 @@ class MongoMigrate:
                 self.inform(message="Insertions complete.")
                 break
             else:
-                killer = GracefulKiller()
+                killer = NormalKiller()
+                if(self.curr_mapping['cron'] == 'self-managed'):
+                    killer = GracefulKiller()
                 while not killer.kill_now:
                     self.save_data(processed_collection=processed_collection)
                     if(processed_collection['df_insert'].shape[0]):
