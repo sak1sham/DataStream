@@ -36,7 +36,7 @@ class DMS_importer:
     
     def process(self):
         try:
-            #self.obj.process()
+            self.obj.process()
             if('notify' in settings.keys() and settings['notify']):
                 msg = "Migration completed for *"
                 msg += str(self.name)
