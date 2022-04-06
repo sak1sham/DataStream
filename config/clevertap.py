@@ -57,7 +57,6 @@ cx_app_event_names = [
     'Application Opened', 
     'Null Search', 
     'Banner clicked', 
-    'Push Impressions', 
     'UTM Visited', 
     'Address not serviceable', 
     'Successful Login', 
