@@ -105,6 +105,9 @@ class SqlTester(unittest.TestCase):
                         else:
                             athena_record[athena_key] = str(athena_record[athena_key])
                             record[key] = str(record[key])
+                    elif column_dtypes[key].startswith('double') or column_dtypes[key].startswith('float') or column_dtypes[key].startswith('real') or column_dtypes[key].startswith('decimal') or column_dtypes[key].startswith('numeric'):
+                        athena_record[athena_key] = int(athena_record[athena_key])
+                        record[key] = int(record[key])
                 else:
                     athena_record[athena_key] = str(athena_record[athena_key])
                     record[key] = str(record[key])
@@ -112,6 +115,8 @@ class SqlTester(unittest.TestCase):
             except Exception as e:
                 print(key)
                 print(record[self.primary_key])
+                print(record[key])
+                print(athena_record[athena_key])
                 raise
         return True
 
@@ -183,7 +188,6 @@ class SqlTester(unittest.TestCase):
                     athena_table = str(self.table).replace('.', '_').replace('-', '_')
                     data_df = data_df[data_df[self.primary_key] <= last_migrated_record]
                     prev_time = pytz.utc.localize(self.get_last_run_cron_job())
-                    
                     if(data_df.shape[0]):
                         if('bookmark' in self.table_map.keys() and self.table_map['bookmark']):
                             data_df = data_df[data_df[self.table_map['bookmark']].apply(lambda x: convert_to_datetime(x=x)) <=  prev_time]
