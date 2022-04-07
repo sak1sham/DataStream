@@ -1,10 +1,10 @@
 import pandas as pd
-import os
 import json
 import datetime
 from typing import NewType, Any, Dict
 from kafka import KafkaConsumer
 
+from config.migration_mapping import get_kafka_mapping_functions
 from helper.util import *
 from helper.logger import logger
 from helper.exceptions import *
@@ -12,9 +12,6 @@ from dst.main import DMS_exporter
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
-
-# kafka_group = 'audit_logs_consumer'
-
 
 class KafkaMigrate:
     def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, tz_str: str = 'Asia/Kolkata') -> None:
@@ -24,6 +21,8 @@ class KafkaMigrate:
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
         self.primary_key = 0
+        self.get_table_name, self.process_dict = get_kafka_mapping_functions(self.db['id'])
+        self.table_name = self.curr_mapping['topic_name']
 
     def get_kafka_connection(self, topic, kafka_group, kafka_server, KafkaPassword, KafkaUsername, enable_auto_commit = True):
         if "aws" in kafka_server:
@@ -124,14 +123,13 @@ class KafkaMigrate:
         return df
 
 
-    def process_table(self, df: dftype = pd.DataFrame({})) -> dftype:
+    def process_table(self, df: dftype) -> dftype:
         end = self.primary_key + len(df)
         df.insert(0, 'dms_pkey', range(self.primary_key, end))
         self.primary_key = end
         df = self.add_partitions(df)
-        print(df)
         df = convert_to_dtype(df, self.curr_mapping['fields'])
-        processed_data = {'name': self.curr_mapping['topic_name'], 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': self.athena_dtypes}
+        processed_data = {'name': self.table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': self.athena_dtypes}
         return processed_data
 
     def save_data(self, processed_data: dftype = None) -> None:
@@ -173,9 +171,10 @@ class KafkaMigrate:
                 '''
                 try:
                     self.inform(message="Recieved data")
-                    df = pd.DataFrame(message.value)
-                    processed_data = self.process_table(df=df)
-                    print(processed_data['df_insert'])
+                    self.table_name = self.get_table_name(message.value)
+                    ready_to_convert_df = self.process_dict(message.value)
+                    converted_df = pd.DataFrame([ready_to_convert_df])
+                    processed_data = self.process_table(df=converted_df)
                     self.inform(message='Processed data')
                     self.save_data(processed_data=processed_data)
                     self.inform(message="Data saved")

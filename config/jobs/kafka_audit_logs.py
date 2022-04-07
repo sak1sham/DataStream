@@ -1,3 +1,6 @@
+from typing import Dict
+import json
+
 mapping = {
     'source': {
         'source_type': 'kafka',
@@ -26,6 +29,7 @@ mapping = {
                 'lng': 'float',
                 'fingerprint': 'str',
                 'old_value': 'str',
+                'date': 'datetime',
             },
             'cron': 'self-managed',
             # 'cron': '* * * * * 22 0 0',
@@ -45,3 +49,33 @@ mapping = {
 }
 
 
+def get_table_name(record: Dict = {}) -> str:
+    if record['type'] == 'writeAudit':
+        return 'audit_logs'
+    else:
+        return 'product_audit_logs'
+
+
+def process_dict(record: Dict = {}) -> Dict:
+    record['user_type'] = None
+    record['user_id_text'] = None
+    record['user_id_bigint'] = None
+    record['entity'] = None
+    record['changes'] = None
+    record['action'] = None
+    if('payload' in record.keys()):
+        if(isinstance(record['payload'], dict)):
+            if('user_type' in record['payload'].keys()):
+                record['user_type'] = record['payload']['user_type']
+            if('user_id_text' in record['payload'].keys()):
+                record['user_id_text'] = record['payload']['user_id_text']
+            if('user_id_bigint' in record['payload'].keys()):
+                record['user_id_bigint'] = record['payload']['user_id_bigint']
+            if('entity' in record['payload'].keys()):
+                record['entity'] = record['payload']['entity']
+            if('changes' in record['payload'].keys()):
+                record['changes'] = record['payload']['changes']
+            if('action' in record['payload'].keys()):
+                record['action'] = record['payload']['action']
+        record['payload'] = json.dumps(record['payload'])
+    return record

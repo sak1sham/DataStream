@@ -243,7 +243,6 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                     df[col] = df[col].astype(str, copy=False, errors='ignore')
             else:
                 df[col] = df[col].astype(str, copy=False, errors='ignore')
-    if(df.shape[0]):
         df = df.reindex(sorted(df.columns), axis=1)
     return df
 
