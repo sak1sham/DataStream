@@ -43,3 +43,5 @@ mapping = {
         'table_name': 'audit_logs'
     },
 }
+
+

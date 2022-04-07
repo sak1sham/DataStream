@@ -3,6 +3,7 @@ import os
 import json
 import datetime
 from typing import NewType, Any, Dict
+from kafka import KafkaConsumer
 
 from helper.util import *
 from helper.logger import logger
@@ -23,6 +24,25 @@ class KafkaMigrate:
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
         self.primary_key = 0
+
+    def get_kafka_connection(self, topic, kafka_group, kafka_server, KafkaPassword, KafkaUsername, enable_auto_commit = True):
+        if "aws" in kafka_server:
+            return KafkaConsumer(topic,
+                                bootstrap_servers=kafka_server,
+                                security_protocol='SASL_SSL',
+                                sasl_mechanism='SCRAM-SHA-512',
+                                sasl_plain_username=KafkaUsername,
+                                sasl_plain_password=KafkaPassword,
+                                enable_auto_commit=enable_auto_commit,
+                                #  auto_offset_reset='earliest',
+                                group_id=kafka_group,
+                                value_deserializer=lambda m: json.loads(m.decode('utf-8')))
+        else:
+            return KafkaConsumer(topic,
+                                bootstrap_servers=kafka_server,
+                                enable_auto_commit=enable_auto_commit,
+                                group_id=kafka_group,
+                                value_deserializer=lambda m: json.loads(m.decode('utf-8')))
 
     def inform(self, message: str = None, save: bool = False) -> None:
         logger.inform(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message), save=save)
@@ -143,7 +163,7 @@ class KafkaMigrate:
             '''
                 Consumes the data in kafka
             '''
-            consumer = get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
+            consumer = self.get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
             self.inform(message='Started consuming messages.', save=True)
             self.preprocess()
             self.inform(message="Preprocessing done.", save=True)

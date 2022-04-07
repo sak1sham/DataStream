@@ -3,8 +3,7 @@ import datetime
 import pytz
 from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
-from kafka import KafkaConsumer
-from config.migration_mapping import settings
+from config.settings import settings
 
 from helper.logger import logger
 
@@ -306,22 +305,3 @@ def convert_heads_to_lowercase(x: Any) -> Any:
     elif(isinstance(x, str)):
         x = x.lower()
         return x
-
-def get_kafka_connection(topic, kafka_group, kafka_server, KafkaPassword, KafkaUsername, enable_auto_commit = True):
-    if "aws" in kafka_server:
-        return KafkaConsumer(topic,
-                             bootstrap_servers=kafka_server,
-                             security_protocol='SASL_SSL',
-                             sasl_mechanism='SCRAM-SHA-512',
-                             sasl_plain_username=KafkaUsername,
-                             sasl_plain_password=KafkaPassword,
-                             enable_auto_commit=enable_auto_commit,
-                            #  auto_offset_reset='earliest',
-                             group_id=kafka_group,
-                             value_deserializer=lambda m: json.loads(m.decode('utf-8')))
-    else:
-        return KafkaConsumer(topic,
-                             bootstrap_servers=kafka_server,
-                             enable_auto_commit=enable_auto_commit,
-                             group_id=kafka_group,
-                             value_deserializer=lambda m: json.loads(m.decode('utf-8')))
