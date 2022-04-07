@@ -13,7 +13,7 @@ mapping = {
     'tables': [            
         {
             'table_name': 'cms_list_items',
-            'cron': '* * * * * 22 10 0',
+            'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'cms_list_item_id',
             'primary_key_datatype': 'int',
