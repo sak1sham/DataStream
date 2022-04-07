@@ -230,9 +230,9 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 elif(dtype == 'boolean' or dtype == 'bool'):
                     df[col] = df[col].astype(bool, copy=False, errors='ignore')
                 elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype.startswith('serial') or dtype.startswith('int')):
-                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int, copy=False, errors='ignore')
+                    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype('int64', copy=False, errors='ignore')
                 elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
-                    df[col] = pd.to_numeric(df[col], errors='coerce').astype(float, copy=False, errors='ignore')
+                    df[col] = pd.to_numeric(df[col], errors='coerce').astype('float64', copy=False, errors='ignore')
                 elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
                     df[col] = df[col].astype(str, copy=False, errors='ignore')
                 elif('range' in dtype):
@@ -283,7 +283,7 @@ def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
         elif(dtype == 'int' or dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype == 'serial' or dtype.startswith('serial') or dtype.startswith('int')):
             athena_types[key] = 'bigint'
         elif(dtype == 'float' or dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
-            athena_types[key] = 'float'
+            athena_types[key] = 'double'
     return athena_types
 
 

@@ -10,7 +10,6 @@ from config.migration_mapping import get_mapping
 N = 200
 
 def pgsql_test(id, mapping):
-    from testing.pgsql import SqlTester
     if('tables' not in mapping.keys()):
         mapping['tables'] = []
     for table in mapping['tables']:
@@ -23,10 +22,8 @@ def pgsql_test(id, mapping):
         SqlTester.table_map = table
         if 'primary_key' in table.keys():
             SqlTester.primary_key = table['primary_key']
-        unittest.main(exit=False, warnings='ignore')   
 
 def mongo_test(id, mapping):
-    from testing.mongo import MongoTester
     if('collections' not in mapping.keys()):
         mapping['collections'] = []
     for col in mapping['collections']:
@@ -36,7 +33,6 @@ def mongo_test(id, mapping):
         MongoTester.id_ = id + "_DMS_" + col['collection_name']
         MongoTester.col = col['collection_name']
         MongoTester.col_map = col
-        unittest.main(exit=False, warnings='ignore')
 
 if __name__ == "__main__":
     id = ''
@@ -44,7 +40,9 @@ if __name__ == "__main__":
         id = sys.argv.pop()
     mapping = get_mapping(id)
     if(mapping['source']['source_type'] == 'sql'):
+        from testing.pgsql import SqlTester
         pgsql_test(id, mapping)
     elif(mapping['source']['source_type'] == 'mongo'):
-        mongo_test(id, mapping)
-    
+        from testing.mongo import MongoTester
+        mongo_test(id, mapping)    
+    unittest.main(exit=False, warnings='ignore')
