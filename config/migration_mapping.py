@@ -1,6 +1,4 @@
 from typing import Dict
-from config.settings import settings
-
 import importlib.util
 
 def get_mapping(id: str) -> Dict:

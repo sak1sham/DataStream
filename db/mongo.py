@@ -12,7 +12,7 @@ import datetime
 import json
 import hashlib
 import pytz
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 import time
 from helper.sigterm import GracefulKiller, NormalKiller
 
@@ -532,7 +532,7 @@ class MongoMigrate:
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
 
 
-    def process(self) -> None:
+    def process(self) -> Tuple[int]:
         '''
             This function handles the entire flow of preprocessing, processing, saving and postprocessing data.
         '''
@@ -561,3 +561,5 @@ class MongoMigrate:
 
         self.saver.close()
         self.inform(message="Hope to see you again :')")
+
+        return (self.n_insertions, self.n_updations)

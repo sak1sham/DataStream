@@ -3,7 +3,7 @@ import datetime
 import pytz
 from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
-from config.migration_mapping import settings
+from config.settings import settings
 
 from helper.logger import logger
 

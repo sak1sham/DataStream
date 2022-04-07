@@ -1,4 +1,4 @@
-from config.migration_mapping import settings
+from config.settings import settings
 from pymongo import MongoClient
 import certifi
 from helper.exceptions import ConnectionError
