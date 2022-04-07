@@ -2,7 +2,7 @@ from datetime import datetime
 import logging
 from typing import Any
 
-from config.migration_mapping import settings
+from config.settings import settings
 from pymongo import MongoClient
 import certifi
 from helper.exceptions import ConnectionError
