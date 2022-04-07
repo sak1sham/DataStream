@@ -155,7 +155,7 @@ class KafkaMigrate:
                     self.inform(message="Recieved data")
                     df = pd.DataFrame(message.value)
                     processed_data = self.process_table(df=df)
-                    print(processed_data)
+                    print(processed_data['df_insert'])
                     self.inform(message='Processed data')
                     self.save_data(processed_data=processed_data)
                     self.inform(message="Data saved")
