@@ -1,4 +1,3 @@
-from numpy import float64
 import psycopg2
 import awswrangler as wr
 import unittest
