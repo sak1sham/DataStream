@@ -14,8 +14,6 @@ dftype = NewType("dftype", pd.DataFrame)
 
 # kafka_group = 'audit_logs_consumer'
 
-enable_auto_commit = True
-
 
 class KafkaMigrate:
     def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, tz_str: str = 'Asia/Kolkata') -> None:
@@ -145,7 +143,7 @@ class KafkaMigrate:
             '''
                 Consumes the data in kafka
             '''
-            consumer = get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=[self.db['source']['kafka_server']], KafkaUsername=[self.db['source']['kafka_username']], KafkaPassword=[self.db['source']['kafka_password']], enable_auto_commit=True)
+            consumer = get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
             self.inform(message='Started consuming messages.', save=True)
             self.preprocess()
             self.inform(message="Preprocessing done.", save=True)
@@ -156,14 +154,12 @@ class KafkaMigrate:
                 try:
                     self.inform(message="Recieved data")
                     df = pd.DataFrame(message.value)
-                    print(df)
                     processed_data = self.process_table(df=df)
                     print(processed_data)
                     self.inform(message='Processed data')
                     self.save_data(processed_data=processed_data)
                     self.inform(message="Data saved")
                 except Exception as e:
-                    # self.err(e)
                     self.err(error=('Consumer exception', e))
                     continue
         except Exception as e:

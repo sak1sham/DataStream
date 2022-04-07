@@ -316,7 +316,7 @@ def get_kafka_connection(topic, kafka_group, kafka_server, KafkaPassword, KafkaU
                              sasl_plain_username=KafkaUsername,
                              sasl_plain_password=KafkaPassword,
                              enable_auto_commit=enable_auto_commit,
-                             # auto_offset_reset='earliest',
+                            #  auto_offset_reset='earliest',
                              group_id=kafka_group,
                              value_deserializer=lambda m: json.loads(m.decode('utf-8')))
     else:
