@@ -8,7 +8,8 @@ import datetime
 from typing import NewType
 from bson import ObjectId
 from dotenv import load_dotenv
-
+import sys
+from migration_mapping import get_mapping
 load_dotenv()
 import pytz
 datetype = NewType("datetype", datetime.datetime)
@@ -16,7 +17,7 @@ datetype = NewType("datetype", datetime.datetime)
 from dotenv import load_dotenv
 load_dotenv()
 
-from testing.test_util import *
+from test_util import *
 
 def convert_to_str(x) -> str:
     if(isinstance(x, list)):
@@ -113,7 +114,7 @@ class MongoTester(unittest.TestCase):
         last_run_cron_job_id = ObjectId.from_datetime(prev_time)
         query = {
             "_id": {
-                "$lt": last_run_cron_job_id, 
+                "$lte": last_run_cron_job_id, 
             }
         }
         curs = collection.find(query).limit(self.test_N).skip(math.floor(random.random()*N))
@@ -139,3 +140,22 @@ class MongoTester(unittest.TestCase):
                             continue
                 athena_record = df.loc[df['_id'] == str(record['_id'])].to_dict(orient='records')
                 assert self.check_match(record, athena_record[0])
+
+
+if __name__ == "__main__":
+    id = ''
+    if(len(sys.argv) > 1):
+        id = sys.argv.pop()
+    mapping = get_mapping(id)
+    if('collections' not in mapping.keys()):
+        mapping['collections'] = []
+    for col in mapping['collections']:
+        print("Testing", col['collection_name'])
+        MongoTester.url = mapping['source']['url']
+        MongoTester.db = mapping['source']['db_name']
+        MongoTester.id_ = id + "_DMS_" + col['collection_name']
+        MongoTester.col = col['collection_name']
+        MongoTester.col_map = col  
+        for iter in range(0, 1):
+            print("iteration:", iter)
+            unittest.main(exit=False, warnings='ignore')

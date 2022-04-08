@@ -1,7 +1,7 @@
 import json
 from math import log
 import datetime
-from config.settings import settings
+from settings import settings
 import pytz
 from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
