@@ -1,3 +1,4 @@
+#cannot be run - no primary key
 mapping = {
     'source': {
         'source_type': 'sql',
