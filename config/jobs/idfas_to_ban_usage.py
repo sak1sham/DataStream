@@ -14,7 +14,7 @@ mapping = {
         'tables': [            
             {
                 'table_name': 'idfas_to_ban_usage',
-                'cron': '* * * * * 22 10 0',
+                'cron': 'self-managed',
                 'mode': 'logging',
                 'primary_key': 'id',
                 'primary_key_datatype': 'int',

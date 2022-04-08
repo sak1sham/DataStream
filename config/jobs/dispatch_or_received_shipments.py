@@ -13,7 +13,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'dispatch_or_received_shipments',
-            'cron': '* * * * * 22 10 0',
+            'cron': 'self-managed',
             'primary_key': 'scanned_at',
             'primary_key_datatype': 'datetime',
             'to_partition': True,

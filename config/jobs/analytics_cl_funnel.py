@@ -13,7 +13,7 @@ mapping = {
     'tables': [            
         {
             'table_name': 'analytics.cl_funnel',
-            'cron': '* * * * * 22 0 0',
+            'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'cl_id',
             'primary_key_datatype': 'str',
