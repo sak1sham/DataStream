@@ -1,6 +1,5 @@
 from config.settings import settings
 from pymongo import MongoClient
-import certifi
 from helper.exceptions import ConnectionError
 from helper.logger import logger
 
@@ -17,7 +16,8 @@ def get_data_from_encr_db():
         Function to get connection to the encryption database/collection
     '''
     try:
-        client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
+        certificate = 'config/rds-combined-ca-bundle.pem'
+        client_encr = MongoClient(encryption_store['url'], tlsCAFile=certificate)
         db_encr = client_encr[encryption_store['db_name']]
         collection_encr = db_encr[encryption_store['collection_name']]
         return collection_encr
