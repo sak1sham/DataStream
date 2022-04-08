@@ -16,7 +16,7 @@ mapping = {
             'mode': 'logging',
             'primary_key': 'order_id',
             'primary_key_datatype': 'int',
-            'cron': '* * * * * 22 40 0',
+            'cron': 'self-managed',
             'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',

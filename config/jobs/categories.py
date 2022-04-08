@@ -13,7 +13,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'categories',
-            'cron': '* * * * * 22 10 0',
+            'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'category_id',
             'primary_key_datatype': 'int',

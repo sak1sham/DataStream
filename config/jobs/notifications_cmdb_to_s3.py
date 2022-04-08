@@ -13,7 +13,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'notifications',
-            'cron': '* * * * * 22 0 0',
+            'cron': 'self-managed',
             'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',

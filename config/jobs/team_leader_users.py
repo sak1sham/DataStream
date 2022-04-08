@@ -13,7 +13,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'team_leader_users',
-            'cron': '* * * * * 22 10 0',
+            'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
