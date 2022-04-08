@@ -30,7 +30,7 @@ def convert_to_str(x) -> str:
         return str(x)
 
 certificate = certifi.where()
-certificate = 'rds-combined-ca-bundle.pem'
+certificate = 'config/rds-combined-ca-bundle.pem'
 
 class MongoTester(unittest.TestCase):
     id_ = ''
@@ -44,8 +44,8 @@ class MongoTester(unittest.TestCase):
 
     def get_last_run_cron_job(self):
         client_encr = MongoClient('mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', tlsCAFile=certifi.where())
-        db_encr = client_encr['test']
-        collection_encr = db_encr['test']
+        db_encr = client_encr['migration_update_check']
+        collection_encr = db_encr['migration_update_check']
         curs = collection_encr.find({'last_run_cron_job_for_id': self.id_})
         curs = list(curs)
         return curs[0]['timing']

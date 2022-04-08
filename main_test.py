@@ -42,7 +42,9 @@ if __name__ == "__main__":
     if(mapping['source']['source_type'] == 'sql'):
         from testing.pgsql import SqlTester
         pgsql_test(id, mapping)
+        unittest.main(exit=False, warnings='ignore')
     elif(mapping['source']['source_type'] == 'mongo'):
         from testing.mongo import MongoTester
         mongo_test(id, mapping)    
-    unittest.main(exit=False, warnings='ignore')
+        for i in range(0, 100):
+            unittest.main(exit=False, warnings='ignore')
