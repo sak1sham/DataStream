@@ -63,7 +63,7 @@ class APIMigrate:
         transformed_total_events = 0
         for event_name in event_names:
             try:
-                self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
+                # self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
                 have_more_data = True
                 event_cursor = None    
                 while have_more_data:
@@ -71,11 +71,11 @@ class APIMigrate:
                     if processed_data:
                         processed_data_df = typecast_df_to_schema(pd.DataFrame(processed_data['records']), self.curr_mapping['fields'])
                         self.inform('migrating {0} event for {1}'.format(event_name, self.curr_mapping['project_name']))
-                        self.save_data_to_destination(processed_data={
-                            'name': self.curr_mapping['api_name'],
-                            'df_insert': processed_data_df,
-                            'lob_fields_length': self.curr_mapping['lob_fields']
-                        })
+                        # self.save_data_to_destination(processed_data={
+                        #     'name': self.curr_mapping['api_name'],
+                        #     'df_insert': processed_data_df,
+                        #     'lob_fields_length': self.curr_mapping['lob_fields']
+                        # })
                         event_cursor = processed_data['event_cursor']
                         total_fetch_events += int(processed_data['total_records'])
                         transformed_total_events += int(processed_data_df.shape[0])
@@ -91,7 +91,7 @@ class APIMigrate:
                 self.err(msg)
         msg = '{0} out of {1} records saved for event: {2} for project: {3}.'.format(transformed_total_events, total_fetch_events, 'Push Impressions', self.curr_mapping['project_name'])
         send_message(msg = msg, channel = channel, slack_token = slack_token)
-        self.process_clevertap_events(failed_events, max_attempts-1)
+        # self.process_clevertap_events(failed_events, max_attempts-1)
 
     def process(self) -> None:
         self.presetup()
