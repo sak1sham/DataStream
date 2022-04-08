@@ -4,7 +4,6 @@ from typing import Any
 
 from config.settings import settings
 from pymongo import MongoClient
-import certifi
 from helper.exceptions import ConnectionError
 
 from typing import NewType, Any
@@ -14,7 +13,8 @@ logging_store = settings['logging_store']
 
 def get_data_from_log_db():
     try:
-        client_log = MongoClient(logging_store['url'], tlsCAFile=certifi.where())
+        certificate = 'config/rds-combined-ca-bundle.pem'
+        client_log = MongoClient(logging_store['url'], tlsCAFile=certificate)
         db_log = client_log[logging_store['db_name']]
         collection_log = db_log[logging_store['collection_name']]
         return collection_log
