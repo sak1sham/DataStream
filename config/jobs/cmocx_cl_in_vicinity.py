@@ -13,11 +13,15 @@ mapping = {
     'tables': [
         {
             'table_name': 'cmocx_cl_in_vicinity',
-            'cron': '* * * * * 22 10 0',
-            'mode': 'dumping',
+            'cron': 'self-managed',
+            'mode': 'syncing',
+            'primary_key': 'id',
+            'primary_key_datatype': 'int',
             'to_partition': True,
-            'partition_col': 'migration_snapshot_date',
+            'partition_col': 'created_at',
             'partition_col_format': 'datetime',
+            'bookmark': 'updated_at',
+            'improper_bookmarks': False,
             'batch_size': 10000,
         },
     ]
