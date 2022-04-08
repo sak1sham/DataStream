@@ -7,8 +7,10 @@ import pytz
 from pymongo import MongoClient
 import certifi
 datetype = NewType("datetype", datetime.datetime)
+import sys
 
-from testing.test_util import *
+from test_util import *
+from migration_mapping import get_mapping
 
 class SqlTester(unittest.TestCase):
     id_ = ''
@@ -203,3 +205,26 @@ class SqlTester(unittest.TestCase):
                             athena_record = df.loc[df['unique_migration_record_id'] == row['unique_migration_record_id']].to_dict(orient='records')
                             assert self.check_match(row, athena_record[0], column_dtypes)
                     print("tested", data_df.shape[0], "records")
+
+
+if __name__ == "__main__":
+    N = 200
+    id = ''
+    if(len(sys.argv) > 1):
+        id = sys.argv.pop()
+    mapping = get_mapping(id)
+    if(mapping['source']['source_type'] == 'sql'):
+        if('tables' not in mapping.keys()):
+            mapping['tables'] = []
+        for table in mapping['tables']:
+            print("Testing", table['table_name'])
+            SqlTester.N = N
+            SqlTester.url = mapping['source']['url']
+            SqlTester.db = mapping
+            SqlTester.id_ = id + "_DMS_" + table['table_name']
+            SqlTester.table = table['table_name']
+            SqlTester.table_map = table
+            if 'primary_key' in table.keys():
+                SqlTester.primary_key = table['primary_key']
+        unittest.main(exit=False, warnings='ignore')
+    
