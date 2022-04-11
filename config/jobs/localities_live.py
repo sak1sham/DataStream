@@ -13,7 +13,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'localities_live',
-            'cron': '* * * * * 22 0 0',
+            'cron': 'self-managed',
             'mode': 'dumping',
             'to_partition': True,
             'partition_col': 'migration_snapshot_date',

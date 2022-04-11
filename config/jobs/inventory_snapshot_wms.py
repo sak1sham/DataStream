@@ -13,7 +13,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'inventory_snapshot_wms',
-            'cron': '* * * * * 22 10 0',
+            'cron': 'self-managed',
             'mode': 'logging',
             'to_partition': True,
             'partition_col': 'created_at',

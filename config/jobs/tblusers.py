@@ -13,14 +13,14 @@ mapping = {
     'tables': [
         {
             'table_name': 'tbl_user',
-            'cron': '* * * * * 22 10 0',
+            'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'user_id',
             'primary_key_datatype': 'int',
             'to_partition': True,
             'partition_col': 'user_created',
             'partition_col_format': 'datetime',
-            'bookmark': 'user_updated',
+            'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
         },

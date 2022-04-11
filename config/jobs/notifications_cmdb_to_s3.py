@@ -13,13 +13,15 @@ mapping = {
     'tables': [
         {
             'table_name': 'notifications',
-            'cron': '* * * * * 22 0 0',
-            'mode': 'logging',
+            'cron': 'self-managed',
+            'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
+            'bookmark': 'sent_at',
+            'improper_bookmarks': False,
             'batch_size': 10000,
         },
     ]

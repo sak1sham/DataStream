@@ -13,7 +13,7 @@ mapping = {
     'tables': [            
         {
             'table_name': 'commission_errors',
-            'cron': '* * * * * 22 10 0',
+            'cron': 'self-managed',
             'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
