@@ -59,9 +59,9 @@ class APIMigrate:
             send_message(msg = msg, channel = channel, slack_token = slack_token)
 
         failed_events = []
-        total_fetch_events = 0
-        transformed_total_events = 0
         for event_name in event_names:
+            total_fetch_events = 0
+            transformed_total_events = 0
             try:
                 # self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
                 have_more_data = True
@@ -70,7 +70,6 @@ class APIMigrate:
                     processed_data = self.client.get_processed_data(event_name, self.curr_mapping, event_cursor)
                     if processed_data:
                         processed_data_df = typecast_df_to_schema(pd.DataFrame(processed_data['records']), self.curr_mapping['fields'])
-                        self.inform('migrating {0} event for {1}'.format(event_name, self.curr_mapping['project_name']))
                         # self.save_data_to_destination(processed_data={
                         #     'name': self.curr_mapping['api_name'],
                         #     'df_insert': processed_data_df,
@@ -79,18 +78,19 @@ class APIMigrate:
                         event_cursor = processed_data['event_cursor']
                         total_fetch_events += int(processed_data['total_records'])
                         transformed_total_events += int(processed_data_df.shape[0])
+                        self.inform('new records: {0} event for {1} total records: {2}'.format(processed_data['total_records'], event_name, total_fetch_events]))
                     have_more_data = True if processed_data and processed_data['event_cursor'] else False
-                    # time.sleep(1)
+                msg = '{0} out of {1} records saved for event: {2} for project: {3}.'.format(transformed_total_events, total_fetch_events, 'Push Impressions', self.curr_mapping['project_name'])
+                send_message(msg = msg, channel = channel, slack_token = slack_token)
             except APIRequestError as e:
                 msg = 'Error while fetching data for event: {0} for app {1} from source. Exception: {2}'.format(event_name, self.curr_mapping['project_name'], str(e))
                 self.err(msg)
+                send_message(msg = msg, channel = channel, slack_token = slack_token)
                 failed_events.append(event_name)
             except Exception as e:
                 msg = "Something went wrong! Could not process event {0} for project {1}. Exception: {2}".format(event_name, self.curr_mapping['project_name'], str(e))
                 send_message(msg = msg, channel = channel, slack_token = slack_token)
                 self.err(msg)
-        msg = '{0} out of {1} records saved for event: {2} for project: {3}.'.format(transformed_total_events, total_fetch_events, 'Push Impressions', self.curr_mapping['project_name'])
-        send_message(msg = msg, channel = channel, slack_token = slack_token)
         # self.process_clevertap_events(failed_events, max_attempts-1)
 
     def process(self) -> None:
