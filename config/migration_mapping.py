@@ -660,7 +660,7 @@ mapping = {
             {
                 'api_name':'cx_app_events',
                 'project_name': 'cx_app',
-                'event_names': ['Notification Clicked', 'App Launched Custom', 'App Installed'],
+                'event_names': ['Notification Clicked', 'App Launched Custom', 'App Installed', 'Product Clicked'],
                 'bookmark_key_type': 'date',
                 'bookmark_key_format': 'YYYYMMDD',
                 'bookmark_key': '-1',
