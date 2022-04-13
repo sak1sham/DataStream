@@ -61,7 +61,8 @@ class DMS_importer:
                 msg += str(self.name)
                 msg += "* from database "
                 msg += self.db['source']['source_type'] + " : *" + self.db['source']['db_name']
-                msg += "*. :warning:"
+                msg += "*. :warning:\n"
+                msg += "```" + traceback.format_exc() + "```"
                 try:
                     slack_token = settings['slack_notif']['slack_token']
                     channel = settings['slack_notif']['channel']
