@@ -26,7 +26,7 @@ class EventsAPIManager:
 
     def get_event_cursor(self, event_name: str, from_date: str, to_date: str):
         params = {
-            "batch_size": 4990, 
+            "batch_size": 5000, 
             "events": "false"
         }
         payload = {
