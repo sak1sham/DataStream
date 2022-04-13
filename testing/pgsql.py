@@ -105,7 +105,7 @@ class SqlTester(unittest.TestCase):
         for key in record.keys():
             try:
                 athena_key = key.lower()
-                if not key.startswith('parquet_format'):
+                if record[key] and record[key] != 'None' and not key.startswith('parquet_format'):
                     if column_dtypes[key].startswith('timestamp') or column_dtypes[key].startswith('date'):
                         if record[key] is not pd.NaT and athena_record[athena_key] is not pd.NaT:
                             athena_record[athena_key] = int((pytz.utc.localize(athena_record[athena_key])).timestamp())
