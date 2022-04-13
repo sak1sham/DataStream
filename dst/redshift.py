@@ -18,13 +18,13 @@ class RedshiftSaver:
             user = db_destination['user'],
             password = db_destination['password']
         )
-        self.schema = db_destination['schema']
+        self.schema = db_source['source_type'] + "_" + db_source['db_name'] + "_dms"
         self.is_small_data = is_small_data
         self.name_ = ""
         self.table_list = []
 
-    def inform(self, message: str = "", save: bool = False) -> None:
-        logger.inform(job_id=self.unique_id, s= (self.unique_id + ": " + message), save=save)
+    def inform(self, message: str = "") -> None:
+        logger.inform(job_id=self.unique_id, s= (self.unique_id + ": " + message))
     
     def warn(self, message: str = "") -> None:
         logger.warn(job_id= self.unique_id, s=(self.unique_id + ": " + message))
@@ -34,8 +34,9 @@ class RedshiftSaver:
             self.table_list.extend(processed_data['name']) 
         self.name_ = processed_data['name']
         file_name = self.s3_location + self.name_ + "/"
-        self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
-        if(processed_data['df_insert'].shape[0] > 0):
+        varchar_lengths = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
+        if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
+            self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
             if(self.is_small_data):
                 wr.redshift.to_sql(
                     df = processed_data['df_insert'],
@@ -43,7 +44,9 @@ class RedshiftSaver:
                     schema = self.schema,
                     table = self.name_,
                     mode = "append",
-                    primary_keys = primary_keys
+                    primary_keys = primary_keys,
+                    varchar_lengths = varchar_lengths,
+                    varchar_lengths_default = 512
                 )
             else:
                 wr.redshift.copy(
@@ -53,11 +56,13 @@ class RedshiftSaver:
                     schema = self.schema,
                     table = self.name_,
                     mode = "append",
-                    primary_keys = primary_keys
+                    primary_keys = primary_keys,
+                    varchar_lengths = varchar_lengths,
+                    varchar_lengths_default = 512
                 )
-        self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))
-        self.inform(message=("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."))
-        if(processed_data['df_update'].shape[0] > 0):
+            self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))    
+        if('df_update' in processed_data and processed_data['df_update'].shape[0] > 0):
+            self.inform(message=("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."))
             # is_dump = False, and primary_keys will be present.
             if(self.is_small_data):
                 wr.redshift.to_sql(
@@ -66,7 +71,9 @@ class RedshiftSaver:
                     schema = self.schema,
                     table = self.name_,
                     mode = "upsert",
-                    primary_keys = primary_keys
+                    primary_keys = primary_keys,
+                    varchar_lengths = varchar_lengths,
+                    varchar_lengths_default = 512
                 )
             else:
                 wr.redshift.copy(
@@ -76,9 +83,11 @@ class RedshiftSaver:
                     schema = self.schema,
                     table = self.name_,
                     mode = "upsert",
-                    primary_keys = primary_keys
+                    primary_keys = primary_keys,
+                    varchar_lengths = varchar_lengths,
+                    varchar_lengths_default = 512
                 )
-        self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
+            self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
     
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()

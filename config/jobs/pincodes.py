@@ -6,9 +6,13 @@ mapping = {
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
-    'destination': {
-        'destination_type': 's3',
-        's3_bucket_name': 'database-migration-service-prod'
+    "destination": {
+        'destination_type': 'redshift',
+        'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+        'database': 'cmwh',
+        'user': 'cmadmin',
+        'password': 'kgDzH6Zy5xZ6HHx',
+        's3_bucket_name': 'data-migration-service-dev',
     },
     'tables': [
         {
@@ -20,6 +24,15 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'lob_fields_length': {
+                'circle_name': 100,
+                'region_name': 100,
+                'division_name': 100,
+                'pincode': 100,
+                'district': 100,
+                'state_name': 100,
+                'city': 100,
+            }
         },
     ]
 }
