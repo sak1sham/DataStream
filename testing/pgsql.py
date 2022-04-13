@@ -120,10 +120,8 @@ class SqlTester(unittest.TestCase):
                         else:
                             athena_record[athena_key] = int(athena_record[athena_key])
                             record[key] = int(record[key])
-                else:
-                    athena_record[athena_key] = str(athena_record[athena_key])
-                    record[key] = str(record[key])
-                assert record[key] == athena_record[athena_key]
+
+                    assert record[key] == athena_record[athena_key]
             except Exception as e:
                 print(key)
                 print(record[self.primary_key])
