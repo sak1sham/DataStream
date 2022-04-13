@@ -69,7 +69,7 @@ class APIMigrate:
                 while have_more_data:
                     processed_data = self.client.get_processed_data(event_name, self.curr_mapping, event_cursor)
                     if processed_data:
-                        processed_data_df = typecast_df_to_schema(pd.DataFrame(processed_data['records']), self.curr_mapping['fields'])
+                        # processed_data_df = typecast_df_to_schema(pd.DataFrame(processed_data['records']), self.curr_mapping['fields'])
                         # self.save_data_to_destination(processed_data={
                         #     'name': self.curr_mapping['api_name'],
                         #     'df_insert': processed_data_df,
@@ -77,7 +77,7 @@ class APIMigrate:
                         # })
                         event_cursor = processed_data['event_cursor']
                         total_fetch_events += int(processed_data['total_records'])
-                        transformed_total_events += int(processed_data_df.shape[0])
+                        # transformed_total_events += int(processed_data_df.shape[0])
                         self.inform('new records: {0} event for {1} total records: {2}'.format(processed_data['total_records'], event_name, total_fetch_events))
                     have_more_data = True if processed_data and processed_data['event_cursor'] else False
                 msg = '{0} out of {1} records saved for event: {2} for project: {3}.'.format(transformed_total_events, total_fetch_events, event_name, self.curr_mapping['project_name'])
