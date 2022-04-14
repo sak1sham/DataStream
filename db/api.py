@@ -73,7 +73,8 @@ class APIMigrate:
                         self.save_data_to_destination(processed_data={
                             'name': self.curr_mapping['api_name'],
                             'df_insert': processed_data_df,
-                            'lob_fields_length': self.curr_mapping['lob_fields']
+                            'lob_fields_length': self.curr_mapping['lob_fields'],
+                            'appned_s3_path': event_name
                         })
                         event_cursor = processed_data['event_cursor']
                         total_fetch_events += int(processed_data['total_records'])

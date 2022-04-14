@@ -34,6 +34,8 @@ class RedshiftSaver:
             self.table_list.extend(processed_data['name']) 
         self.name_ = processed_data['name']
         file_name = self.s3_location + self.name_ + "/"
+        if 'appned_s3_path' in processed_data:
+            file_name += str(processed_data['appned_s3_path']) + "/"
         varchar_lengths = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
             self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."), save=True)
