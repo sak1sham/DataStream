@@ -174,7 +174,7 @@ class PGSQLMigrate:
                 6. return a processed_data object
         '''
         if(not mode):
-            raise Exception('mode of inserting records not specified. mode can either be syncing or logging')
+            raise Exception('Mode of inserting records not specified: can either be syncing or logging')
         collection_encr = get_data_from_encr_db()
         
         ## Adding partition if required
@@ -607,9 +607,11 @@ class PGSQLMigrate:
             raise IncorrectMapping('Need to specify a primary_key (strictly increasing and unique - int|string|datetime) inside the table for syncing or logging mode.')
         elif(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring' and 'primary_key_datatype' not in self.curr_mapping.keys()):
             raise IncorrectMapping('primary_key_datatype not specified. Please specify primary_key_datatype as either str or int or datetime.')
-        
+
         if(self.curr_mapping['mode'] == 'mirroring' and self.db['destination']['destination_type'] == 's3'):
             raise IncorrectMapping("Mirroring mode not supported for destination S3")
+        if(self.curr_mapping['mode'] == 'mirroring', self.curr_mapping['table_name'] == '*'):
+            raise IncorrectMapping("Can not migrate all tables together in mirroring mode. Please specify a table_name.")
         
         if('username' not in self.db['source'].keys()):
             self.db['source']['username'] = ''
