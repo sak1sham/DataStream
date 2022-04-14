@@ -1,4 +1,8 @@
 import awswrangler as wr
+import boto3
+import pandas as pd
+import io
+from urllib.parse import urlparse
 
 from helper.logger import logger
 from helper.util import convert_heads_to_lowercase
@@ -18,7 +22,6 @@ class s3Saver:
         self.table_list = []
         self.database = (db_source["source_type"] + "_" + db_source["db_name"]).replace(".", "_").replace("-", "_")
         self.description = "Data migrated from " + self.database
-
 
 
     def inform(self, message: str = "", save: bool = False) -> None:
@@ -69,20 +72,21 @@ class s3Saver:
             ## Now all the records which are of same partition are grouped together, and will be updated in the same run
             for df_u in dfs_u:
                 file_name_u = self.s3_location + processed_data['name']
-                print(file_name_u)
                 if(self.partition_cols):
                     for x in self.partition_cols:
-                        file_name_u = file_name_u + "/" + x + "=" + str(processed_data['df_update'].iloc[0][x])
-                    print(file_name_u)
-                ## Now, all records within df_u are found within this same location
-                if(self.partition_cols):
+                        file_name_u = file_name_u + "/" + x + "=" + str(df_u.iloc[0][x])
                     df_u.drop(self.partition_cols, axis=1, inplace=True)
+                ## Now, all records within df_u are found within this same location
                 prev_files = wr.s3.list_objects(file_name_u)
-                self.inform(message=("Found all files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations)))
+                self.inform(message=("Found " + str(len(prev_files)) +  " files while updating: " + str(df_u.shape[0]) + " records out of " + str(n_updations)))
                 for file_ in prev_files:
-                    df_to_be_updated = wr.s3.read_parquet(
-                        path = [file_],
-                    )
+                    self.inform(file_)
+                    s3 = boto3.client('s3') 
+                    file_o = urlparse(file_, allow_fragments=False)
+                    bucket_name_read = file_o.netloc
+                    file_name_read = file_o.path[1:]
+                    obj_read = s3.get_object(Bucket=bucket_name_read, Key=file_name_read)
+                    df_to_be_updated = pd.read_parquet(io.BytesIO(obj_read['Body'].read()))
                     df_to_be_updated, modified, df_u = df_update_records(df=df_to_be_updated, df_u=df_u, primary_key=primary_keys[0])
                     if(modified):
                         wr.s3.to_parquet(
@@ -90,10 +94,12 @@ class s3Saver:
                             path = file_,
                             compression = 'snappy',
                         )
-                    if(df_u.shape[0] == 0):
-                        ## This one is complete now. Go and handle the next set of records to be updated
-                        break
-            self.inform(message=(str(n_updations) + " updations done."))
+                        if(df_u.shape[0] == 0):
+                            ## This partition-batch is complete now. Go and handle the next set of partition-batches to be updated
+                            break
+                if(df_u.shape[0] > 0):
+                    self.warn("Not all records could be updated, because some records could not be found.")
+            self.inform(message=(str(n_updations) + " updations done."), save=True)
 
 
 

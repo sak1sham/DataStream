@@ -1,6 +1,5 @@
-from config.migration_mapping import settings
+from config.settings import settings
 from pymongo import MongoClient
-import certifi
 from helper.exceptions import ConnectionError
 from helper.logger import logger
 
@@ -17,7 +16,8 @@ def get_data_from_encr_db():
         Function to get connection to the encryption database/collection
     '''
     try:
-        client_encr = MongoClient(encryption_store['url'], tlsCAFile=certifi.where())
+        certificate = 'config/rds-combined-ca-bundle.pem'
+        client_encr = MongoClient(encryption_store['url'], tlsCAFile=certificate)
         db_encr = client_encr[encryption_store['db_name']]
         collection_encr = db_encr[encryption_store['collection_name']]
         return collection_encr
@@ -29,6 +29,7 @@ def get_last_run_cron_job(job_id: str) -> datetype:
     '''
         Function to find and return the time when the job with id job_id was last run.
         If the job was never run before, it returns an old date (Jan 1, 1999)
+        Datetime is returned in UTC timezone
     '''
     db = get_data_from_encr_db()
     prev = db.find_one({'last_run_cron_job_for_id': job_id})

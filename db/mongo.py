@@ -12,9 +12,9 @@ import datetime
 import json
 import hashlib
 import pytz
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 import time
-
+from helper.sigterm import GracefulKiller, NormalKiller
 
 '''
     Dictionary returned after processing data contains following fields:
@@ -42,6 +42,8 @@ class MongoMigrate:
         self.db = db
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
+        self.n_insertions = 0
+        self.n_updations = 0
 
 
     def inform(self, message: str = None, save: bool = False) -> None:
@@ -54,15 +56,17 @@ class MongoMigrate:
         logger.err(job_id=self.curr_mapping['unique_id'], s=error)
 
 
-    def get_connectivity(self) -> int:
+    def get_connectivity(self) -> None:
         '''
             Makes the connection to the MongoDb database and returns the number of documents present inside the collection
         '''
         try:
-            client = MongoClient(self.db['source']['url'], tlsCAFile=certifi.where())
+            certificate = certifi.where()
+            if('certificate_file' in self.db['source'].keys() and self.db['source']['certificate_file']):
+                certificate = "config/" + self.db['source']['certificate_file']
+            client = MongoClient(self.db['source']['url'], tlsCAFile=certificate)
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
-            return self.db_collection.count_documents({})
         except Exception as e:
             self.err(error = e)
             self.db_collection = None
@@ -160,6 +164,8 @@ class MongoMigrate:
         '''
             After all migration has been performed, we save the datetime of this job. This helps in finding all records updated after this datetime, and before next job is running.
         '''
+        self.inform(message = "Inserted " + str(self.n_insertions) + " records")
+        self.inform(message = "Updated " + str(self.n_updations) + " records")
         set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
 
 
@@ -205,7 +211,7 @@ class MongoMigrate:
         if(not all_documents or len(all_documents) == 0):
             return None
         for document in all_documents:
-            insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            insertion_time = document['_id'].generation_time
             document['migration_snapshot_date'] = self.curr_run_cron_job
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
                 document = self.add_partitions(document=document, insertion_time=insertion_time)        
@@ -246,7 +252,7 @@ class MongoMigrate:
         query = {
             "_id": {
                 "$gt": migration_prev_id, 
-                "$lt": migration_start_id
+                "$lte": migration_start_id
             }
         }
         all_documents = self.fetch_data(query=query)
@@ -256,7 +262,7 @@ class MongoMigrate:
         ## The documents are all sorted as per creation_date and belong to a particular batch (self.batch_size)
         
         for document in all_documents:
-            insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            insertion_time = document['_id'].generation_time
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
                 ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
                 document = self.add_partitions(document=document, insertion_time=insertion_time)
@@ -309,12 +315,12 @@ class MongoMigrate:
                 "$and":[
                     {
                         self.curr_mapping['bookmark']: {
-                            "$gte": self.last_run_cron_job,
-                            "$lt": self.curr_run_cron_job,
+                            "$gt": self.last_run_cron_job,
+                            "$lte": self.curr_run_cron_job,
                         }
                     },
                     {   "_id": {
-                            "$lt": migration_prev_id,
+                            "$lte": migration_prev_id,
                         }
                     }
                 ]
@@ -325,7 +331,7 @@ class MongoMigrate:
             ## we fetch all documents migrated until the last job, and filter them in further processing steps
             query = {
                 "_id": {
-                    "$lt": migration_prev_id,
+                    "$lte": migration_prev_id,
                 }
             }
             all_documents = self.fetch_data(start=start, end=end, query=query)
@@ -335,7 +341,7 @@ class MongoMigrate:
         ## The documents are all sorted as per creation_date and belong to a particular batch (self.batch_size)
 
         for document in all_documents:
-            insertion_time = utc_to_local(document['_id'].generation_time, self.tz_info)
+            insertion_time = document['_id'].generation_time
             if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
                 ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
                 document = self.add_partitions(document=document, insertion_time=insertion_time)
@@ -345,7 +351,7 @@ class MongoMigrate:
                     document[self.curr_mapping['bookmark']] = None
                 docu_bookmark_date = convert_to_datetime(document[self.curr_mapping['bookmark']], pytz.utc)
                 ## if docu_bookmark_date is None, that means the document was never updated
-                if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date < self.last_run_cron_job):
+                if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date <= self.last_run_cron_job):
                     continue
             elif('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark']):
                 ## if bookmark is not present, we need to do the encryption of the document
@@ -413,14 +419,20 @@ class MongoMigrate:
                 self.inform(message = "Processing complete.")
                 break
             else:
-                self.save_data(processed_collection=processed_collection)
-                if(processed_collection['df_insert'].shape[0]):
-                    last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
-                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time.replace(tzinfo=pytz.utc))
-                processed_collection = {}
+                killer = NormalKiller()
+                if(self.curr_mapping['cron'] == 'self-managed'):
+                    killer = GracefulKiller()
+                while not killer.kill_now:
+                    self.save_data(processed_collection=processed_collection)
+                    if(processed_collection['df_insert'].shape[0]):
+                        last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
+                        set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
+                    processed_collection = {}
+                    break
+                if(killer.kill_now):
+                    raise KeyboardInterrupt("Ending gracefully.")
             time.sleep(self.time_delay)
-            
-        self.inform(messsage = "Logging operation complete.", save=True)
+        self.inform(message = "Logging operation complete.", save=True)
 
 
     def syncing_process(self) -> None:
@@ -437,13 +449,21 @@ class MongoMigrate:
                 self.inform(message="Insertions complete.")
                 break
             else:
-                self.save_data(processed_collection=processed_collection)
-                if(processed_collection['df_insert'].shape[0]):
-                    last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
-                    set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time.replace(tzinfo=pytz.utc))
-                processed_collection = {}
+                killer = NormalKiller()
+                if(self.curr_mapping['cron'] == 'self-managed'):
+                    killer = GracefulKiller()
+                while not killer.kill_now:
+                    self.save_data(processed_collection=processed_collection)
+                    if(processed_collection['df_insert'].shape[0]):
+                        last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
+                        set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
+                    processed_collection = {}
+                    break
+                if(killer.kill_now):
+                    raise KeyboardInterrupt("Ending gracefully.")
             time.sleep(self.time_delay)
         self.inform(message = "Insertions completed, starting to update records", save = True)
+
         ## NOW, DO ALL REQUIRED UPDATIONS
         self.inform(message="Starting to migrate updations in records.")
         start = 0
@@ -484,6 +504,7 @@ class MongoMigrate:
                     ## Still not saved the updates, will update together a large number of records...will save time
             time.sleep(self.time_delay)
             start += self.batch_size
+        self.inform(message="Updation completed.")
         self.inform(message="Syncing operation complete (Both - Insertion and Updation).", save=True)
 
 
@@ -506,10 +527,12 @@ class MongoMigrate:
             if(self.curr_mapping['mode'] != 'dumping'):
                 ## If mode is dumping, then there can't be any primary key. Otherwise, set _id as primary_key
                 primary_keys = ['_id']
+            self.n_insertions += processed_collection['df_insert'].shape[0]
+            self.n_updations += processed_collection['df_update'].shape[0]
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
 
 
-    def process(self) -> None:
+    def process(self) -> Tuple[int]:
         '''
             This function handles the entire flow of preprocessing, processing, saving and postprocessing data.
         '''
@@ -538,3 +561,5 @@ class MongoMigrate:
 
         self.saver.close()
         self.inform(message="Hope to see you again :')")
+
+        return (self.n_insertions, self.n_updations)

@@ -1,18 +1,19 @@
 import psycopg2
 import awswrangler as wr
 import unittest
-import sys
 import datetime
 from typing import NewType
 import pytz
 from pymongo import MongoClient
 import certifi
 datetype = NewType("datetype", datetime.datetime)
-from dotenv import load_dotenv
-load_dotenv()
+import sys
+import numpy
 
-from testing_mapping import mapping
 from test_util import *
+from migration_mapping import get_mapping
+
+certificate = 'config/rds-combined-ca-bundle.pem'
 
 class SqlTester(unittest.TestCase):
     id_ = ''
@@ -21,18 +22,30 @@ class SqlTester(unittest.TestCase):
     table = ''
     test_N = 1000
     table_map = {}
-    primary_keys = []
+    primary_key = ''
     tz_info = pytz.timezone("Asia/Kolkata")
+    N = 1
     
     def get_last_run_cron_job(self):
-        client_encr = MongoClient('mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', tlsCAFile=certifi.where())
-        db_encr = client_encr['migration_update_check']
-        collection_encr = db_encr['migration_update_check']
+        client_encr = MongoClient('mongodb://manish:ACVVCH7t7rqd8kB8@cohortx.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false', tlsCAFile=certificate)
+        db_encr = client_encr['dms_migration_updates']
+        collection_encr = db_encr['dms_migration_info']
         curs = collection_encr.find({'last_run_cron_job_for_id': self.id_})
         curs = list(curs)
         return curs[0]['timing']
 
-    def test_count(self):
+    def last_migrated_record(self):
+        client_encr = MongoClient('mongodb://manish:ACVVCH7t7rqd8kB8@cohortx.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false', tlsCAFile=certificate)
+        db_encr = client_encr['dms_migration_updates']
+        collection_encr = db_encr['dms_migration_info']
+        curs = collection_encr.find({'last_migrated_record_for_id': self.id_})
+        curs = list(curs)
+        last_record_migrated = curs[0]['record_id']
+        if isinstance(last_record_migrated, datetime.datetime):
+            last_record_migrated = pytz.utc.localize(last_record_migrated)
+        return last_record_migrated
+
+    def abc_test_count(self):
         if(self.table_map['mode'] != 'dumping'):
             sql_stmt = "SELECT COUNT(*) as count FROM " + self.table
             if('username' not in self.db['source'].keys()):
@@ -87,23 +100,36 @@ class SqlTester(unittest.TestCase):
             col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
 
+
     def check_match(self, record, athena_record, column_dtypes) -> bool:
         for key in record.keys():
-            athena_key = key.lower()
-                
-            if not key.startswith('parquet_format'):
-                if column_dtypes[key].startswith('timestamp') or column_dtypes[key].startswith('date'):
-                    if record[key] is not pd.NaT and athena_record[athena_key] is not pd.NaT:
-                        athena_record[athena_key] = int((pytz.utc.localize(athena_record[athena_key])).timestamp())
-                        record[key] = int((record[key]).timestamp())
-                    else:
-                        athena_record[athena_key] = str(athena_record[athena_key])
-                        record[key] = str(record[key])
-            else:
-                athena_record[athena_key] = str(athena_record[athena_key])
-                record[key] = str(record[key])
-            assert record[key] == athena_record[athena_key]
+            try:
+                athena_key = key.lower()
+                if record[key] and record[key] != 'None' and not key.startswith('parquet_format'):
+                    if column_dtypes[key].startswith('timestamp') or column_dtypes[key].startswith('date'):
+                        if record[key] is not pd.NaT and athena_record[athena_key] is not pd.NaT:
+                            athena_record[athena_key] = int((pytz.utc.localize(athena_record[athena_key])).timestamp())
+                            record[key] = int((record[key]).timestamp())
+                        else:
+                            athena_record[athena_key] = str(athena_record[athena_key])
+                            record[key] = str(record[key])
+                    elif column_dtypes[key].startswith('double') or column_dtypes[key].startswith('float') or column_dtypes[key].startswith('real') or column_dtypes[key].startswith('decimal') or column_dtypes[key].startswith('numeric'):
+                        if numpy.isnan(record[key]) or not record[key]:
+                            athena_record[athena_key] = str(athena_record[athena_key])
+                            record[key] = str(record[key])
+                        else:
+                            athena_record[athena_key] = int(athena_record[athena_key])
+                            record[key] = int(record[key])
+
+                    assert record[key] == athena_record[athena_key]
+            except Exception as e:
+                print(key)
+                print(record[self.primary_key])
+                print(record[key])
+                print(athena_record[athena_key])
+                raise
         return True
+
 
     def add_partitions(self, df: dftype = pd.DataFrame({})) -> dftype:
         self.partition_for_parquet = []
@@ -144,70 +170,69 @@ class SqlTester(unittest.TestCase):
                 password = self.db['source']['password']
             )
             column_dtypes = self.get_column_dtypes(conn=conn, curr_table_name=self.table)
-            sql_stmt = "SELECT * FROM {0} ORDER BY RANDOM() LIMIT {1}".format(self.table, self.test_N)
+            last_migrated_record = self.last_migrated_record()
+            if (self.primary_key == ''):
+                return
+            
+            lim = self.N * self.test_N
+            sql_stmt = "SELECT * FROM {0} ORDER BY RANDOM() LIMIT {1}".format(self.table, lim)
+            print(sql_stmt)
             data_df = pd.DataFrame({})
             with conn.cursor('test-cursor-name', scrollable=True) as curs:
                 curs.execute(sql_stmt)
                 _ = curs.fetchone()
                 columns = [desc[0] for desc in curs.description]
                 curs.scroll(-1)
-                ret = curs.fetchall()    
-                if ret:
+                for _ in range(self.N):
+                    ret = curs.fetchmany(self.test_N)    
+                    if not ret:
+                        break
                     data_df = pd.DataFrame(ret, columns = columns)
-            ## Adding a primary key "unique_migration_record_id" for every record
-            self.add_partitions(data_df)
-            if len(self.primary_keys) == 0:
-                self.primary_keys = data_df.columns.values.tolist()
-            if(isinstance(self.primary_keys, str)):
-                self.primary_keys = [self.primary_keys]
-            self.primary_keys = [x.lower() for x in self.primary_keys]
-            data_df['unique_migration_record_id'] = data_df[self.primary_keys].astype(str).sum(1)
-            column_dtypes['unique_migration_record_id'] = 'str'
-            convert_to_dtype(data_df, column_dtypes)
-            athena_table = str(self.table).replace('.', '_').replace('-', '_')
-            prev_time = pytz.utc.localize(self.get_last_run_cron_job())
-            if(data_df.shape[0]):
-                str_id = ""
-                if('bookmark' in self.table_map.keys() and self.table_map['bookmark']):
-                    data_df = data_df[data_df[self.table_map['bookmark']].apply(lambda x: convert_to_datetime(x=x)) <=  prev_time]
-                if('bookmark_creation' in self.table_map.keys() and self.table_map['bookmark_creation']):
-                    data_df = data_df[data_df[self.table_map['bookmark_creation']].apply(lambda x: convert_to_datetime(x=x)) <=  prev_time]
-
-                for _, row in data_df.iterrows():
-                    str_id += "\'" + str(row['unique_migration_record_id']) + "\',"
-                query = 'SELECT * FROM ' + athena_table + ' WHERE unique_migration_record_id in (' + str(str_id[:-1]) + ');'
-                database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
-                df = wr.athena.read_sql_query(sql = query, database = database)
-                for _, row in data_df.iterrows():
-                    # query = 'SELECT * FROM ' + athena_table + ' WHERE unique_migration_record_id = \'' + str(row['unique_migration_record_id']) + '\';'
-                    # database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
-                    # df = wr.athena.read_sql_query(sql = query, database = database)
-                    # athena_record = df[0:1].to_dict(orient='records')
-                    athena_record = df.loc[df['unique_migration_record_id'] == row['unique_migration_record_id']].to_dict(orient='records')
-                    assert self.check_match(row, athena_record[0], column_dtypes)
-                    print("Record Tested")
-            print("PGSQL Test Completed")
+                    
+                    ## Adding partitions and a primary key "unique_migration_record_id" for every record
+                    self.add_partitions(data_df)
+                    self.primary_key = self.primary_key.lower()
+                    data_df['unique_migration_record_id'] = data_df[self.primary_key]
+                    column_dtypes['unique_migration_record_id'] = 'str'
+                    convert_to_dtype(data_df, column_dtypes)
+                    athena_table = str(self.table).replace('.', '_').replace('-', '_')
+                    data_df = data_df[data_df[self.primary_key] <= last_migrated_record]
+                    prev_time = pytz.utc.localize(self.get_last_run_cron_job())
+                    if(data_df.shape[0]):
+                        if('bookmark' in self.table_map.keys() and self.table_map['bookmark']):
+                            data_df = data_df[data_df[self.table_map['bookmark']].apply(lambda x: convert_to_datetime(x=x)) <=  prev_time]
+                        
+                        str_id = ""
+                        for _, row in data_df.iterrows():
+                            str_id += "\'" + str(row['unique_migration_record_id']) + "\',"
+                        query = 'SELECT * FROM ' + athena_table + ' WHERE unique_migration_record_id in (' + str(str_id[:-1]) + ');'
+                        database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
+                        df = wr.athena.read_sql_query(sql = query, database = database)
+                        
+                        for _, row in data_df.iterrows():
+                            athena_record = df.loc[df['unique_migration_record_id'] == row['unique_migration_record_id']].to_dict(orient='records')
+                            assert self.check_match(row, athena_record[0], column_dtypes)
+                    print("tested", data_df.shape[0], "records")
 
 
 if __name__ == "__main__":
+    N = 200
     id = ''
-    if (len(sys.argv) > 1):
+    if(len(sys.argv) > 1):
         id = sys.argv.pop()
-    if('tables' not in mapping[id].keys()):
-        mapping[id]['tables'] = []
-    for table in mapping[id]['tables']:
-        print("Testing", table['table_name'])
-        SqlTester.url = mapping[id]['source']['url']
-        SqlTester.db = mapping[id]
-        SqlTester.id_ = id + "_DMS_" + table['table_name']
-        SqlTester.table = table['table_name']
-        SqlTester.table_map = table
-        if 'primary_keys' in table.keys():
-            SqlTester.primary_keys = table['primary_keys']
+    mapping = get_mapping(id)
+    if(mapping['source']['source_type'] == 'sql'):
+        if('tables' not in mapping.keys()):
+            mapping['tables'] = []
+        for table in mapping['tables']:
+            print("Testing", table['table_name'])
+            SqlTester.N = N
+            SqlTester.url = mapping['source']['url']
+            SqlTester.db = mapping
+            SqlTester.id_ = id + "_DMS_" + table['table_name']
+            SqlTester.table = table['table_name']
+            SqlTester.table_map = table
+            if 'primary_key' in table.keys():
+                SqlTester.primary_key = table['primary_key']
         unittest.main(exit=False, warnings='ignore')
-
-'''
-
-python accuracy.py mongo_support_service_to_s3_DMS_support_form_items 'mongodb+srv://saksham:xwNTtWtOnTD2wYMM@supportservicev2.3md7h.mongodb.net/myFirstDatabase?retryWrites=true&w=majority' support_service support_form_items
-
-'''
+    
