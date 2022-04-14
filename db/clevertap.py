@@ -96,15 +96,19 @@ class ClevertapManager(EventsAPIManager):
             logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id']+": started {2} event {0} sync for date: {1}".format(event_name, str(sync_date), self.project_name))
             event_cursor = self.get_event_cursor(event_name, sync_date, sync_date)
         cursor_data = self.get_records_for_cursor(event_cursor)
+        total_records = 0
+        records = []
+        next_cursor = None
         if cursor_data["status"] == "success":
             if "records" in cursor_data:
                 total_records = len(cursor_data['records'])
-                return {
-                    'records': self.transform_api_data(cursor_data['records'], event_name, curr_mapping),
-                    'event_cursor': cursor_data['next_cursor'] if 'next_cursor' in cursor_data else None,
-                    'total_records': total_records
-                }
-        return None
+                records = self.transform_api_data(cursor_data['records'], event_name, curr_mapping)
+                next_cursor = cursor_data['next_cursor'] if 'next_cursor' in cursor_data else None
+        return {
+            'records': records,
+            'event_cursor': next_cursor,
+            'total_records': total_records
+        }
     
     def cleaned_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], dst_saver: DMS_exporter):
         bookmark_key = curr_mapping.get('bookmark_key', '')

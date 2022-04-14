@@ -68,7 +68,7 @@ class APIMigrate:
                 event_cursor = None    
                 while have_more_data:
                     processed_data = self.client.get_processed_data(event_name, self.curr_mapping, event_cursor)
-                    if processed_data:
+                    if processed_data and processed_data['total_records'] > 0:
                         processed_data_df = typecast_df_to_schema(pd.DataFrame(processed_data['records']), self.curr_mapping['fields'])
                         # self.save_data_to_destination(processed_data={
                         #     'name': self.curr_mapping['api_name'],
