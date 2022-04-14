@@ -1,5 +1,4 @@
 from pymongo import MongoClient
-import certifi
 import awswrangler as wr
 import unittest
 import math
@@ -30,7 +29,6 @@ def convert_to_str(x) -> str:
     else:
         return str(x)
 
-certificate = certifi.where()
 certificate = 'config/rds-combined-ca-bundle.pem'
 
 class MongoTester(unittest.TestCase):
@@ -44,11 +42,12 @@ class MongoTester(unittest.TestCase):
     N_mongo = -1
 
     def get_last_run_cron_job(self):
-        client_encr = MongoClient('mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', tlsCAFile=certifi.where())
-        db_encr = client_encr['migration_update_check']
-        collection_encr = db_encr['migration_update_check']
+        client_encr = MongoClient('mongodb://manish:ACVVCH7t7rqd8kB8@cohortx.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false', tlsCAFile=certificate)
+        db_encr = client_encr['dms_migration_updates']
+        collection_encr = db_encr['dms_migration_info']
         curs = collection_encr.find({'last_run_cron_job_for_id': self.id_})
         curs = list(curs)
+        print("Curs", curs)
         return curs[0]['timing']
 
     def count_docs(self):

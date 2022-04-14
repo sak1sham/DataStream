@@ -2,7 +2,7 @@ mapping = {
     'source': {
         'source_type': 'sql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-        'db_name': 'cmdb',
+        'db_name': 'wmsdb',
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
@@ -12,16 +12,16 @@ mapping = {
     },
     'tables': [
         {
-            'table_name': 'products',
+            'table_name': 'inventory_transaction_view',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'id',
-            'primary_key_datatype': 'int',
+            'primary_key': 'transaction_id',
+            'primary_key_datatype': 'str',
             'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
-            'bookmark': 'updated_at_for_pipeline',
-            'improper_bookmarks': False,
+            # 'bookmark': 'updated_at',
+            # 'improper_bookmarks': False,
             'batch_size': 10000,
         },
     ]

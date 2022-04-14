@@ -20,7 +20,7 @@ mapping = {
             'to_partition': True,
             'partition_col': 'admin_created',
             'partition_col_format': 'datetime',
-            'bookmark': 'admin_updated',
+            'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
         },

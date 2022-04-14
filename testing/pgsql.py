@@ -8,9 +8,12 @@ from pymongo import MongoClient
 import certifi
 datetype = NewType("datetype", datetime.datetime)
 import sys
+import numpy
 
 from test_util import *
 from migration_mapping import get_mapping
+
+certificate = 'config/rds-combined-ca-bundle.pem'
 
 class SqlTester(unittest.TestCase):
     id_ = ''
@@ -24,20 +27,23 @@ class SqlTester(unittest.TestCase):
     N = 1
     
     def get_last_run_cron_job(self):
-        client_encr = MongoClient('mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', tlsCAFile=certifi.where())
-        db_encr = client_encr['migration_update_check']
-        collection_encr = db_encr['migration_update_check']
+        client_encr = MongoClient('mongodb://manish:ACVVCH7t7rqd8kB8@cohortx.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false', tlsCAFile=certificate)
+        db_encr = client_encr['dms_migration_updates']
+        collection_encr = db_encr['dms_migration_info']
         curs = collection_encr.find({'last_run_cron_job_for_id': self.id_})
         curs = list(curs)
         return curs[0]['timing']
 
     def last_migrated_record(self):
-        client_encr = MongoClient('mongodb+srv://manish:KlSh0bX605PY509h@cluster0.ebwdr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority', tlsCAFile=certifi.where())
-        db_encr = client_encr['migration_update_check']
-        collection_encr = db_encr['migration_update_check']
+        client_encr = MongoClient('mongodb://manish:ACVVCH7t7rqd8kB8@cohortx.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false', tlsCAFile=certificate)
+        db_encr = client_encr['dms_migration_updates']
+        collection_encr = db_encr['dms_migration_info']
         curs = collection_encr.find({'last_migrated_record_for_id': self.id_})
         curs = list(curs)
-        return curs[0]['record_id']
+        last_record_migrated = curs[0]['record_id']
+        if isinstance(last_record_migrated, datetime.datetime):
+            last_record_migrated = pytz.utc.localize(last_record_migrated)
+        return last_record_migrated
 
     def abc_test_count(self):
         if(self.table_map['mode'] != 'dumping'):
@@ -99,7 +105,7 @@ class SqlTester(unittest.TestCase):
         for key in record.keys():
             try:
                 athena_key = key.lower()
-                if not key.startswith('parquet_format'):
+                if record[key] and record[key] != 'None' and not key.startswith('parquet_format'):
                     if column_dtypes[key].startswith('timestamp') or column_dtypes[key].startswith('date'):
                         if record[key] is not pd.NaT and athena_record[athena_key] is not pd.NaT:
                             athena_record[athena_key] = int((pytz.utc.localize(athena_record[athena_key])).timestamp())
@@ -108,12 +114,14 @@ class SqlTester(unittest.TestCase):
                             athena_record[athena_key] = str(athena_record[athena_key])
                             record[key] = str(record[key])
                     elif column_dtypes[key].startswith('double') or column_dtypes[key].startswith('float') or column_dtypes[key].startswith('real') or column_dtypes[key].startswith('decimal') or column_dtypes[key].startswith('numeric'):
-                        athena_record[athena_key] = int(athena_record[athena_key])
-                        record[key] = int(record[key])
-                else:
-                    athena_record[athena_key] = str(athena_record[athena_key])
-                    record[key] = str(record[key])
-                assert record[key] == athena_record[athena_key]
+                        if numpy.isnan(record[key]) or not record[key]:
+                            athena_record[athena_key] = str(athena_record[athena_key])
+                            record[key] = str(record[key])
+                        else:
+                            athena_record[athena_key] = int(athena_record[athena_key])
+                            record[key] = int(record[key])
+
+                    assert record[key] == athena_record[athena_key]
             except Exception as e:
                 print(key)
                 print(record[self.primary_key])
