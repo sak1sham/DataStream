@@ -1,6 +1,7 @@
 from db.mongo import MongoMigrate
 from db.pgsql import PGSQLMigrate
 from db.s3 import S3Migrate
+from db.api import APIMigrate
 from db.kafka_dms import KafkaMigrate
 
 from typing import Dict, Any
@@ -28,6 +29,9 @@ class DMS_importer:
         elif(db['source']['source_type'] == 's3'):
             self.name = curr_mapping['table_name']
             self.obj = S3Migrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
+        elif(db['source']['source_type'] == 'api'):
+            self.name = curr_mapping['api_name']
+            self.obj = APIMigrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
         elif(db['source']['source_type'] == 'kafka'):
             self.name = curr_mapping['topic_name']
             self.obj = KafkaMigrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
@@ -48,7 +52,7 @@ class DMS_importer:
                 msg += " :tada:"
                 try:
                     slack_token = settings['slack_notif']['slack_token']
-                    channel = settings['slack_notif']['channel']
+                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                     send_message(msg = msg, channel = channel, slack_token = slack_token)
                     logger.inform(s="Notification sent successfully.")
                 except:
@@ -65,7 +69,7 @@ class DMS_importer:
                 msg += "```" + traceback.format_exc() + "```"
                 try:
                     slack_token = settings['slack_notif']['slack_token']
-                    channel = settings['slack_notif']['channel']
+                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                     send_message(msg = msg, channel = channel, slack_token = slack_token)
                     logger.inform(s="Notification sent successfully.")
                 except:
