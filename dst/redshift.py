@@ -92,7 +92,7 @@ class RedshiftSaver:
 
     def delete_table(self, table_name: str = None) -> None:
         query = "DROP TABLE " + self.schema + "." + table_name + ";"
-        print(query)
+        self.inform(query)
         with self.conn.cursor() as cursor:
             cursor.execute(query)
         self.inform("Deleted " + table_name + " from Redshift schema " + self.schema)
