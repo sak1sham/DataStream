@@ -154,7 +154,7 @@ class MongoMigrate:
                 else:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
         
-        if(self.curr_mapping['mode'] == 'dumping'):
+        if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
 
         mirroring = (self.curr_mapping['mode'] == 'mirroring')
@@ -200,7 +200,7 @@ class MongoMigrate:
 
     def dumping_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
         '''
-            When we are dumping data, snapshots of the datastore are captured at regular intervals inside destination
+            When we are dumping/mirroring data, snapshots of the datastore are captured at regular intervals inside destination
             We insert the snapshots, and no updation is performed
             All the records are inserted, there is no need for bookmarks
             By default, we add a column 'migration_snapshot_date' to capture the starting time of migration
@@ -385,7 +385,7 @@ class MongoMigrate:
         '''
             DUMPING: Everytime the job runs, entire data present in the collection is migrated to destination,
             Multiple copies of the same data are created.
-            This function handles the dumping process.
+            This function handles the dumping/mirroring process.
             While dumping, we add another column 'migration_snapshot_date' that indicates the datetime when migration was performed.
         '''
         start = 0
@@ -401,7 +401,7 @@ class MongoMigrate:
                 self.save_data(processed_collection=processed_collection)
                 processed_collection = {}
             time.sleep(self.time_delay)
-        self.inform(message = "Dumping Complete.", save=True)
+        self.inform(message = "Migration Complete.", save=True)
         if('expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform(message = "Expired data removed.", save=True)
@@ -528,7 +528,7 @@ class MongoMigrate:
                 processed_collection['lob_fields_length'] = self.curr_mapping['lob_fields_length']
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping'):
-                ## If mode is dumping, then there can't be any primary key. Otherwise, set _id as primary_key
+                ## If mode is dumping, then there can't be any primary key (because multiple copies are present for same record). Otherwise, set _id as primary_key
                 primary_keys = ['_id']
             self.n_insertions += processed_collection['df_insert'].shape[0]
             self.n_updations += processed_collection['df_update'].shape[0]
@@ -548,10 +548,11 @@ class MongoMigrate:
         self.inform(message="Collection pre-processed.", save=True)
 
         '''
-            Mode = 'syncing', 'logging', 'dumping'
+            Mode = 'syncing', 'logging', 'dumping' or 'mirroring'
             When we are dumping data, snapshots of the datastore are captured at regular intervals. We maintain multiple copies of the tables
             Logging is the mode where the data is only being added to the source table, and we assume no updations are ever performed. Only new records are migrated.
             Syncing: Where all new records is migrated, and all updations are also mapped to destination. If a record is deleted at source, it's NOT deleted at destination
+            Mirroring: A mirror image of source db is maintained at destination
         '''
         if(self.curr_mapping['mode'] == 'dumping'):
             self.dumping_process()
