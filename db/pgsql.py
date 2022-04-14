@@ -50,7 +50,9 @@ class PGSQLMigrate:
         '''
         self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
         self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
-        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
+
+        mirroring = (self.curr_mapping['mode'] == 'mirroring')
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], mirroring=mirroring, table_name=self.curr_mapping['table_name'])
 
 
     def postprocess(self):
@@ -240,7 +242,7 @@ class PGSQLMigrate:
             if('lob_fields_length' in self.curr_mapping.keys() and self.curr_mapping['lob_fields_length']):
                 processed_data['lob_fields_length'] = self.curr_mapping['lob_fields_length']
             primary_keys = []
-            if(self.curr_mapping['mode'] != 'dumping'):
+            if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring'):
                 primary_keys = ['unique_migration_record_id']
             self.n_insertions += processed_data['df_insert'].shape[0]
             self.n_updations += processed_data['df_update'].shape[0]
@@ -288,7 +290,7 @@ class PGSQLMigrate:
             ret_dtype = {}
             if('fields' in self.curr_mapping.keys()):
                 ret_dtype = self.curr_mapping['fields']
-            if(self.curr_mapping['mode'] == 'dumping'):
+            if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
                 ret_dtype['migration_snapshot_date'] = 'datetime'
             return ret_dtype
         tn = curr_table_name.split('.')
@@ -307,7 +309,7 @@ class PGSQLMigrate:
             rows = curs.fetchall()
             for key, val in rows:
                 col_dtypes[key] = val
-        if(self.curr_mapping['mode'] == 'dumping'):
+        if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
             col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
 
@@ -346,7 +348,7 @@ class PGSQLMigrate:
                             break
                         else:
                             data_df = pd.DataFrame(rows, columns = columns)
-                            if(mode == "dumping"):
+                            if(mode == "dumping" or mode == "mirroring"):
                                 ## In Dumping mode, resume mode is not supported
                                 ## Processes the data in the batch and save that batch
                                 ## If any error is encountered, DMS needs to restart
@@ -481,7 +483,7 @@ class PGSQLMigrate:
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             sql_stmt = self.curr_mapping['fetch_data_query']
-        self.process_sql_query(table_name, sql_stmt, mode='dumping')
+        self.process_sql_query(table_name, sql_stmt, mode=self.curr_mapping['mode'])
 
 
     def logging_process(self, table_name: str = None) -> None:
@@ -601,11 +603,14 @@ class PGSQLMigrate:
 
 
     def process(self) -> Tuple[int]:
-        if(self.curr_mapping['mode'] != 'dumping' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):
+        if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):
             raise IncorrectMapping('Need to specify a primary_key (strictly increasing and unique - int|string|datetime) inside the table for syncing or logging mode.')
-        elif(self.curr_mapping['mode'] != 'dumping' and 'primary_key_datatype' not in self.curr_mapping.keys()):
+        elif(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring' and 'primary_key_datatype' not in self.curr_mapping.keys()):
             raise IncorrectMapping('primary_key_datatype not specified. Please specify primary_key_datatype as either str or int or datetime.')
-
+        
+        if(self.curr_mapping['mode'] == 'mirroring' and self.db['destination']['destination_type'] == 's3'):
+            raise IncorrectMapping("Mirroring mode not supported for destination S3")
+        
         if('username' not in self.db['source'].keys()):
             self.db['source']['username'] = ''
         if('password' not in self.db['source'].keys()):
@@ -650,6 +655,8 @@ class PGSQLMigrate:
                 self.logging_process(table_name)
             elif(self.curr_mapping['mode'] == 'syncing'):
                 self.syncing_process(table_name)
+            elif(self.curr_mapping['mode'] == 'mirroring'):
+                self.dumping_process(table_name)
             else:
                 raise IncorrectMapping("Wrong mode of operation: can be syncing, logging or dumping only.")
             self.inform(message=("Migration completed for table " + str(table_name)), save=True)

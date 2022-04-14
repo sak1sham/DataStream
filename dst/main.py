@@ -5,7 +5,7 @@ from helper.exceptions import *
 from typing import List, Dict, Any
 
 class DMS_exporter:
-    def __init__(self, db: Dict[str, Any] = None, uid: str = None, partition: List[str] = None) -> None:
+    def __init__(self, db: Dict[str, Any] = None, uid: str = None, partition: List[str] = None, mirroring: bool = False, table_name: str = None) -> None:
         self.type = db['destination']['destination_type']
         self.source_type = db['source']['source_type']
         if(self.type == 's3'):
@@ -17,6 +17,8 @@ class DMS_exporter:
                 self.saver = RedshiftSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid, is_small_data = True)
             else:
                 self.saver = RedshiftSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid)
+            if(mirroring):
+                self.saver.delete_table(table_name)
         else:
             raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
 

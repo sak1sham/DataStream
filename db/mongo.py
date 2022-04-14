@@ -157,7 +157,8 @@ class MongoMigrate:
         if(self.curr_mapping['mode'] == 'dumping'):
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
 
-        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
+        mirroring = (self.curr_mapping['mode'] == 'mirroring')
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet, mirroring=mirroring, table_name=self.curr_mapping['collection_name'])
 
 
     def postprocess(self):
@@ -538,6 +539,9 @@ class MongoMigrate:
         '''
             This function handles the entire flow of preprocessing, processing, saving and postprocessing data.
         '''
+        if(self.curr_mapping['mode'] == 'mirroring' and self.db['destination']['destination_type'] == 's3'):
+            raise IncorrectMapping("Mirroring mode not supported for destination S3")
+        
         self.get_connectivity()
         self.inform(message="Connected to database and collection.", save=True)
         self.preprocess()
@@ -555,6 +559,8 @@ class MongoMigrate:
             self.logging_process()
         elif(self.curr_mapping['mode'] == 'syncing'):
             self.syncing_process()
+        elif(self.curr_mapping['mode'] == 'mirroring'):
+            self.dumping_process()
         else:
             raise IncorrectMapping("Please specify a mode of operation.")
 

@@ -88,7 +88,16 @@ class RedshiftSaver:
                     varchar_lengths_default = 512
                 )
             self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
-    
+
+
+    def delete_table(self, table_name: str = None) -> None:
+        query = "DROP TABLE " + self.schema + "." + table_name + ";"
+        print(query)
+        with self.conn.cursor() as cursor:
+            cursor.execute(query)
+        self.inform("Deleted " + table_name + " from Redshift schema " + self.schema)
+
+
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()
         if(tz):
