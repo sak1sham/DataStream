@@ -32,7 +32,6 @@ mapping = {
                 'date': 'datetime',
             },
             'cron': 'self-managed',
-            # 'cron': '* * * * * 22 0 0',
             'to_partition': True,
             'partition_col': 'date',
             'partition_col_format': ['datetime']
