@@ -237,6 +237,8 @@ class PGSQLMigrate:
                 processed_data['df_insert'] = pd.DataFrame({})
             if('df_update' not in processed_data.keys()):
                 processed_data['df_update'] = pd.DataFrame({})
+            if('lob_fields_length' in self.curr_mapping.keys() and self.curr_mapping['lob_fields_length']):
+                processed_data['lob_fields_length'] = self.curr_mapping['lob_fields_length']
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping'):
                 primary_keys = ['unique_migration_record_id']
