@@ -14,7 +14,8 @@ class DMS_exporter:
                 self.saver = ConsoleSaver()
         elif(self.type == 'redshift'):
             if(self.source_type == 'api'):
-                self.saver = RedshiftSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid, is_small_data = True)
+                bulk_data = db['source']['bulk_data'] if 'bulk_data' in db['source'] else False
+                self.saver = RedshiftSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid, is_small_data = bulk_data)
             else:
                 self.saver = RedshiftSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid)
         else:

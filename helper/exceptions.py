@@ -21,3 +21,6 @@ class MissingData(Exception):
 
 class IncorrectMapping(Exception):
     pass
+
+class APIRequestError(Exception):
+    pass
