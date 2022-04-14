@@ -147,7 +147,7 @@ class PGSQLMigrate:
 
     def dumping_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
         '''
-            Function that takes in dataframe and processes it assuming dumping mode of operation
+            Function that takes in dataframe and processes it assuming dumping/mirroring mode of operation
                 1. Adds migration_snapshot_date column to differentiate snapshots of data
                 2. Add partitions if required
                 3. Final conversion of every column in dataframe to required datatypes
@@ -319,7 +319,7 @@ class PGSQLMigrate:
             The pgsql query is prepared by various processing functions. This function helps in processing and saving data in accordance to that PGSQL query
             sync_mode = 1 means insertion has to be performed
             sync_mode = 2 means updation has to be performed
-            mode = 'syncing', 'dumping' or 'logging'
+            mode = 'syncing', 'dumping' 'mirroring' or 'logging'
         '''
         self.inform(message = str(sql_stmt))
         processed_data = {}
@@ -349,7 +349,7 @@ class PGSQLMigrate:
                         else:
                             data_df = pd.DataFrame(rows, columns = columns)
                             if(mode == "dumping" or mode == "mirroring"):
-                                ## In Dumping mode, resume mode is not supported
+                                ## In Dumping/mirroring mode, resume mode is not supported
                                 ## Processes the data in the batch and save that batch
                                 ## If any error is encountered, DMS needs to restart
                                 processed_data = self.dumping_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
@@ -478,7 +478,7 @@ class PGSQLMigrate:
 
     def dumping_process(self, table_name: str = None) -> None:
         '''
-            Function to create PGSQL query for dumping mode and then send it further for processing.
+            Function to create PGSQL query for dumping/mirroring mode and then send it further for processing.
         '''
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
@@ -658,7 +658,7 @@ class PGSQLMigrate:
             elif(self.curr_mapping['mode'] == 'mirroring'):
                 self.dumping_process(table_name)
             else:
-                raise IncorrectMapping("Wrong mode of operation: can be syncing, logging or dumping only.")
+                raise IncorrectMapping("Wrong mode of operation: can be syncing, logging, mirroring or dumping only.")
             self.inform(message=("Migration completed for table " + str(table_name)), save=True)
                 
         self.inform(message="Overall migration complete.", save=True)
