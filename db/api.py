@@ -9,7 +9,7 @@ import time
 import pandas as pd
 from helper.exceptions import APIRequestError
 from notifications.slack_notify import send_message
-from config.migration_mapping import settings
+from config.settings import settings
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 slack_token = settings['slack_notif']['slack_token']
