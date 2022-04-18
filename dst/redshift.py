@@ -99,14 +99,14 @@ class RedshiftSaver:
 
 
     def get_n_redshift_cols(self, table_name: str = None) -> int:
-        query = 'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{1}}\' AND table_name = \'{2}\''.format(self.schema, table_name)
+        query = 'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{0}\' AND table_name = \'{1}\''.format(self.schema, table_name)
         self.inform(query)
         df = wr.redshift.read_sql_query(
             sql = query,
             con = self.conn
         )
         return df.iloc[0][0]
-        
+
 
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()

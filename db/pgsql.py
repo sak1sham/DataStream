@@ -337,6 +337,7 @@ class PGSQLMigrate:
                 with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
+                    self.inform("Executed the sql statement")
                     _ = curs.fetchone()
                     columns = [desc[0] for desc in curs.description]
                     ## Now, we have the names of the columns. Next, go back right to the starting of table (-1) and fetch records from the cursor in batches.
