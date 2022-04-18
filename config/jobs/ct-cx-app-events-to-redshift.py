@@ -1,4 +1,4 @@
-mappings = {
+mapping = {
     "source": {
         "source_type": "api",
         "db_name": "clevertap"
