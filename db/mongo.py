@@ -190,9 +190,9 @@ class MongoMigrate:
                 document[parq_col] = float(document[col])
             elif(col_form == 'datetime'):
                 document[col] = convert_to_datetime(document[col], pytz.utc)
-                document[parq_col + "_year"] = document[col].year
-                document[parq_col + "_month"] = document[col].month
-                document[parq_col + "_day"] = document[col].day
+                document[parq_col + "_year"] = str(float(document[col].year))
+                document[parq_col + "_month"] = str(float(document[col].month))
+                document[parq_col + "_day"] = str(float(document[col].day))
             else:
                 raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
         return document
