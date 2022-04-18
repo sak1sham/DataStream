@@ -8,7 +8,7 @@ mapping = {
     },
     'destination': {
         'destination_type': 's3',
-        's3_bucket_name': 'data-migration-server'
+        's3_bucket_name': 'database-migration-service-prod'
     },
     'tables': [
         {
