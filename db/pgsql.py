@@ -3,7 +3,7 @@ import psycopg2
 import pymongo
 
 from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
@@ -602,6 +602,48 @@ class PGSQLMigrate:
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
 
 
+    def preprocess_table(self, table_name: str = None) -> None:
+        n_columns_redshift = self.saver.get_n_redshift_cols(table_name=table_name)
+        try:
+            conn = psycopg2.connect(
+                host = self.db['source']['url'],
+                database = self.db['source']['db_name'],
+                user = self.db['source']['username'],
+                password = self.db['source']['password']
+            )
+            col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
+            n_columns_pgsql = len(col_dtypes) + 1
+            ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
+            ## In case of dumping/mirroring, migration_snapshot_date is present
+            ## we also need to account for those columns which are partitioned
+            if('partition_col' in self.curr_mapping.keys()):
+                if(isinstance(self.curr_mapping['partition_col'], str)):
+                    self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+                if('partition_col_format' not in self.curr_mapping.keys()):
+                    self.curr_mapping['partition_col_format'] = ['str']
+                if(isinstance(self.curr_mapping['partition_col_format'], str)):
+                    self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
+                while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
+                    self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
+                for i in range(len(self.curr_mapping['partition_col'])):
+                    col = self.curr_mapping['partition_col'][i].lower()
+                    col_form = self.curr_mapping['partition_col_format'][i]
+                    if(col == 'migration_snapshot_date' or col_form == 'datetime'):
+                        n_columns_pgsql += 3
+                    elif(col_form == 'str'):
+                        n_columns_pgsql += 1
+                    elif(col_form == 'int'):
+                        n_columns_pgsql += 1
+            if(n_columns_redshift > 0 and n_columns_pgsql != n_columns_redshift):
+                self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
+                self.saver.drop_redshift_table(table_name=table_name)
+                delete_metadata_from_mongodb(self.curr_mapping['unique_id'])
+                self.inform("Data is deleted, now starting migration again.")
+            else:
+                self.inform('No discrepancy, let\'s start the migration')
+        except ProcessingError:
+            raise Exception("Unable to verify datatypes of table from source and destination.")
+
     def process(self) -> Tuple[int]:
         if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):
             raise IncorrectMapping('Need to specify a primary_key (strictly increasing and unique - int|string|datetime) inside the table for syncing or logging mode.')
@@ -633,6 +675,7 @@ class PGSQLMigrate:
         if('batch_end' in self.curr_mapping.keys()):
             b_end = self.curr_mapping['batch_end']
         name_tables = name_tables[b_start:b_end]
+
         self.preprocess()
         self.inform(message="Mapping pre-processed.", save=True)
         
@@ -651,7 +694,11 @@ class PGSQLMigrate:
         for table_name in name_tables:
             if(table_name.count('.') >= 2):
                 self.warn(message=("Can not migrate table with table_name: " + table_name))
-            elif(self.curr_mapping['mode'] == 'dumping'):
+                continue
+            if(self.db['destination']['destination_type'] == 'redshift'):
+                self.preprocess_table(table_name)
+            
+            if(self.curr_mapping['mode'] == 'dumping'):
                 self.dumping_process(table_name)
             elif(self.curr_mapping['mode'] == 'logging'):
                 self.logging_process(table_name)
