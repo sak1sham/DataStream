@@ -24,15 +24,7 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'lob_fields_length': {
-                'circle_name': 100,
-                'region_name': 100,
-                'division_name': 100,
-                'pincode': 100,
-                'district': 100,
-                'state_name': 100,
-                'city': 100,
-            }
+            'lob_fields_length': {}
         },
     ]
 }
