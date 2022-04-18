@@ -1,3 +1,4 @@
+import traceback
 import pandas as pd
 import json
 import datetime
@@ -23,6 +24,7 @@ class KafkaMigrate:
         self.primary_key = 0
         self.get_table_name, self.process_dict = get_kafka_mapping_functions(self.db['id'])
         self.table_name = self.curr_mapping['topic_name']
+        self.batch_size = 1000
 
     def get_kafka_connection(self, topic, kafka_group, kafka_server, KafkaPassword, KafkaUsername, enable_auto_commit = True):
         if "aws" in kafka_server:
@@ -145,6 +147,8 @@ class KafkaMigrate:
                 processed_data['df_insert'] = pd.DataFrame({})
             if('df_update' not in processed_data.keys()):
                 processed_data['df_update'] = pd.DataFrame({})
+            if('dtypes' not in processed_data.keys()):
+                processed_data['dtypes'] = get_athena_dtypes(self.curr_mapping['fields'])
             primary_keys = ['dms_pkey']
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
 
@@ -165,22 +169,24 @@ class KafkaMigrate:
             self.inform(message='Started consuming messages.', save=True)
             self.preprocess()
             self.inform(message="Preprocessing done.", save=True)
-            for message in consumer:
-                '''
-                    reads the data in the messages being consumed
-                '''
-                try:
-                    self.inform(message="Recieved data")
-                    self.table_name = self.get_table_name(message.value)
-                    ready_to_convert_df = self.process_dict(message.value)
-                    converted_df = pd.DataFrame([ready_to_convert_df])
-                    processed_data = self.process_table(df=converted_df)
-                    self.inform(message='Processed data')
-                    self.save_data(processed_data=processed_data)
-                    self.inform(message="Data saved")
-                except Exception as e:
-                    self.err(error=('Consumer exception', e))
-                    continue
+            try:
+                while(1):
+                    recs = consumer.poll(timeout_ms=1000000, max_records=self.batch_size)
+                    if(not recs):
+                        self.inform('No more records found. Stopping the script')
+                        break
+                    else:
+                        for _, records in recs.items():
+                            converted_list = []
+                            for message in records:
+                                converted_list.append(self.process_dict(message.value))
+                            converted_df = pd.DataFrame(converted_list)
+                            processed_data = self.process_table(df=converted_df)
+                            self.save_data(processed_data=processed_data)
+                            self.inform(message="Data saved")
+            except Exception as e:
+                self.inform(traceback.format_exc())
+                self.err(error=('Consumer exception', e))
         except Exception as e:
             self.err(error=("Got some error in Kafka Consumer.", e))
 

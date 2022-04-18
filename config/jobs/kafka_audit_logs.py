@@ -12,7 +12,7 @@ mapping = {
     },
     'destination': {
         'destination_type': 's3',
-        's3_bucket_name': 'learning-migrationservice',
+        's3_bucket_name': 'data-migration-server',
     },
     'topics': [
         {
