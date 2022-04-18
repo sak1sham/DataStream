@@ -610,7 +610,7 @@ class PGSQLMigrate:
 
         if(self.curr_mapping['mode'] == 'mirroring' and self.db['destination']['destination_type'] == 's3'):
             raise IncorrectMapping("Mirroring mode not supported for destination S3")
-        if(self.curr_mapping['mode'] == 'mirroring', self.curr_mapping['table_name'] == '*'):
+        if(self.curr_mapping['mode'] == 'mirroring' and self.curr_mapping['table_name'] == '*'):
             raise IncorrectMapping("Can not migrate all tables together in mirroring mode. Please specify a table_name.")
         
         if('username' not in self.db['source'].keys()):
