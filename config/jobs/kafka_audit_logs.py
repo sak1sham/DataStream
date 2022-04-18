@@ -8,7 +8,7 @@ mapping = {
         'kafka_password': 'JjZXllrTsb6KgOVM',
         'consumer_group_id': 'dms_group',
         'kafka_server': 'b-2.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-3.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-1.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-4.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-5.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-6.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096',
-        'db_name': 'audit_logs',
+        'db_name': 'audit_logs'
     },
     'destination': {
         'destination_type': 's3',
@@ -24,7 +24,7 @@ mapping = {
                 'action': 'str',
                 'entity': 'str',
                 'changes': 'str',
-                'created_at': 'datetime',
+                # 'created_at': 'datetime',
                 'lat': 'float',
                 'lng': 'float',
                 'fingerprint': 'str',
@@ -43,7 +43,9 @@ mapping = {
         'db_name': 'cmdb',
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma',
-        'table_name': 'audit_logs'
+        'table_name': 'audit_logs',
+        'field_to_compare': 'created_at',
+        'field_format': 'datetime',
     },
 }
 
