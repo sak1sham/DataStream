@@ -27,6 +27,20 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'lob_fields_length': {
+                'address_address1': 1000,
+                'address_address2': 1000,
+                'address_landmark': 1000,
+                'tracking_info': 30000,
+                'order_cancellation_error': 5000,
+                'order_error': 5000,
+                'order_error_details': 5000,
+                'order_cancellation_reason': 2000,
+                'tags': 5000,
+                'touchpoint_formatted_address': 1000,
+                'cx_formatted_address': 1000,
+                'order_rescheduled_reason': 1000
+            }
         },
     ]
 }
