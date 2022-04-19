@@ -38,7 +38,7 @@ mapping = {
                 'order_error': 5000,
                 'order_error_details': 5000,
                 'order_cancellation_reason': 2000,
-                'tags': 30000,
+                'tags': 45000,
                 'touchpoint_formatted_address': 1000,
                 'cx_formatted_address': 1000,
                 'order_rescheduled_reason': 1000,
