@@ -113,9 +113,9 @@ class KafkaMigrate:
             parq_col = "parquet_format_" + col
             if(col_form == 'datetime'):
                 temp = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
-                df[parq_col + "_year"] = temp.dt.year
-                df[parq_col + "_month"] = temp.dt.month
-                df[parq_col + "_day"] = temp.dt.day
+                df[parq_col + "_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
+                df[parq_col + "_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
+                df[parq_col + "_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
             elif(col_form == 'str'):
                 df[parq_col] = df[col].astype(str)
             elif(col_form == 'int'):
