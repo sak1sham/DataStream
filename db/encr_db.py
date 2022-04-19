@@ -69,7 +69,7 @@ def set_last_run_cron_job(job_id: str, timing: datetype, last_record_id: Any = N
         'record_id': last_record_id
     }    
     if(prev):
-        db.delete_many({'last_run_cron_job_for_id': job_id})
+        db.delete_one({'last_run_cron_job_for_id': job_id})
         db.insert_one(rec)
     else:
         db.insert_one(rec)
@@ -102,7 +102,7 @@ def set_last_migrated_record(job_id: str, _id: Any, timing: datetype) -> None:
     db = get_data_from_encr_db()
     prev = db.find_one({'last_migrated_record_for_id': job_id})
     if(prev):
-        db.delete_many({'last_migrated_record_for_id': job_id})
+        db.delete_one({'last_migrated_record_for_id': job_id})
         db.insert_one(rec)
     else:
         db.insert_one(rec)
