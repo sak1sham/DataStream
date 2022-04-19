@@ -19,6 +19,8 @@ class RedshiftSaver:
             password = db_destination['password']
         )
         self.schema = db_source['source_type'] + "_" + db_source['db_name'] + "_dms"
+        if('schema' in db_destination.keys() and db_destination['schema']):
+            self.schema = db_destination['schema']
         self.is_small_data = is_small_data
         self.name_ = ""
         self.table_list = []
