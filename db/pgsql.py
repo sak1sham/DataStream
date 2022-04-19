@@ -129,9 +129,9 @@ class PGSQLMigrate:
                 if(col == 'migration_snapshot_date' or col_form == 'datetime'):
                     self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                     temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
-                    df[parq_col + "_year"] = temp.dt.year.astype(float).astype(str)
-                    df[parq_col + "_month"] = temp.dt.month.astype(float).astype(str)
-                    df[parq_col + "_day"] = temp.dt.day.astype(float).astype(str)
+                    df[parq_col + "_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
+                    df[parq_col + "_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
+                    df[parq_col + "_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
                 elif(col_form == 'str'):
                     self.partition_for_parquet.extend([parq_col])
                     df[parq_col] = df[col].astype(str)
