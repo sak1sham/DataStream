@@ -8,3 +8,6 @@ temp
 credentials.py
 AWSCLIV2.pkg
 .env
+debug.log
+Dockerfile
+.dockerignore

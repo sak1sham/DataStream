@@ -35,13 +35,18 @@ def write_logs(job_id: str = None, log: str = None, timing: datetype = datetime.
 
 class Log_manager:
     def __init__(self) -> None:
-        # logger.add(sys.stdout, colorize=True, format="<green>{time:HH:mm:ss}</green> | {level} | <level>{message}</level>")
         logging.basicConfig(
             format = '%(asctime)s %(levelname)-8s %(message)s',
             level = logging.INFO,
-            datefmt = '%Y-%m-%d %H:%M:%S'
+            datefmt = '%Y-%m-%d %H:%M:%S',
+            handlers=[
+                logging.FileHandler("debug.log", mode='w'),
+                logging.StreamHandler()
+            ]
         )
         logging.getLogger().setLevel(logging.INFO)
+
+
     def inform(self, job_id: str = None, s: str = None, save : bool = False) -> None:
         logging.info(s)
         if(save and 'save_logs' in settings.keys() and settings['save_logs']):
