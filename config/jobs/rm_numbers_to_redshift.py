@@ -7,22 +7,23 @@ mapping = {
         'password': '3y5HMs^2qy%&Kma'
     },
     'destination': {
-        'destination_type': 's3',
-        's3_bucket_name': 'database-migration-service-prod'
+        'destination_type': 'redshift',
+        'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+        'database': 'cmwh',
+        'user': 'cmadmin',
+        'password': 'kgDzH6Zy5xZ6HHx',
+        's3_bucket_name': 'data-migration-service-dev',
     },
-    'tables': [
+    'tables': [            
         {
-            'table_name': 'freshdesk_agents',
-            'cron': '* * * * * 14 25 0',
+            'table_name': 'rm_numbers',
+            'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'to_partition': True,
-            'partition_col': 'created_at',
-            'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
-            'batch_size': 10000,
+            'batch_size': 100000,
         },
     ]
 }
