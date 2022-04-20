@@ -11,3 +11,4 @@ AWSCLIV2.pkg
 debug.log
 Dockerfile
 .dockerignore
+tmp
