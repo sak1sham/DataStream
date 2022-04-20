@@ -26,9 +26,10 @@ mapping = {
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
-            'batch_size': 10000,
+            'batch_size': 40000,
             'lob_fields_length': {
                 'cx_formatted_address': 3036,
+                'created_by_name': 3036,
                 'touchpoint_formatted_address': 3036,
                 'address_address1': 1024,
                 'address_address2': 1024,
