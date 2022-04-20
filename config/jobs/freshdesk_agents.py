@@ -13,7 +13,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'freshdesk_agents',
-            'cron': 'self-managed',
+            'cron': '* * * * * 22 10 0',
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
