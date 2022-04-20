@@ -26,7 +26,7 @@ mapping = {
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
-            'batch_size': 40000,
+            'batch_size': 30000,
             'lob_fields_length': {
                 'cx_formatted_address': 3036,
                 'created_by_name': 3036,
