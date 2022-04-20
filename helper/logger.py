@@ -1,6 +1,7 @@
 from datetime import datetime
 import logging
 from typing import Any
+import os
 
 from config.settings import settings
 from pymongo import MongoClient
@@ -35,12 +36,18 @@ def write_logs(job_id: str = None, log: str = None, timing: datetype = datetime.
 
 class Log_manager:
     def __init__(self) -> None:
+        p = os.path.abspath(os.getcwd())
+        logs_folder = p + '/tmp'
+        isExist = os.path.exists(logs_folder)
+        if not isExist:
+            os.makedirs(logs_folder)
+            print("The new directory is created to save logs!")
         logging.basicConfig(
             format = '%(asctime)s %(levelname)-8s %(message)s',
             level = logging.INFO,
             datefmt = '%Y-%m-%d %H:%M:%S',
             handlers=[
-                logging.FileHandler("debug.log", mode='w'),
+                logging.FileHandler(logs_folder + '/debug.log', mode='w'),
                 logging.StreamHandler()
             ]
         )
