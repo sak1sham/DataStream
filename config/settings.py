@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 settings = {
-    'fastapi_server': True,
+    'fastapi_server': False,
     'timezone': 'Asia/Kolkata',
     'notify': True,
     'encryption_store': {
