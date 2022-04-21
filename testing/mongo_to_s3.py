@@ -47,7 +47,6 @@ class MongoTester(unittest.TestCase):
         collection_encr = db_encr['dms_migration_info']
         curs = collection_encr.find({'last_run_cron_job_for_id': self.id_})
         curs = list(curs)
-        print("Curs", curs)
         return curs[0]['timing']
 
     def count_docs(self):
@@ -142,6 +141,7 @@ class MongoTester(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    n_test = 20
     id = ''
     if(len(sys.argv) > 1):
         id = sys.argv.pop()
@@ -155,6 +155,6 @@ if __name__ == "__main__":
         MongoTester.id_ = id + "_DMS_" + col['collection_name']
         MongoTester.col = col['collection_name']
         MongoTester.col_map = col  
-        for iter in range(0, 1):
+        for iter in range(0, n_test):
             print("iteration:", iter)
             unittest.main(exit=False, warnings='ignore')

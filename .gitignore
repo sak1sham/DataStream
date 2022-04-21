@@ -12,3 +12,4 @@ debug.log
 Dockerfile
 .dockerignore
 tmp
+temp_test.py
