@@ -53,8 +53,8 @@ class DMS_importer:
                 msg += "*" + self.db['source']['db_name'] + "* (" + self.db['source']['source_type'] + ") to *" + self.db['destination']['destination_type'] + "*:\n"
                 msg += "Total time taken: " + time_taken + "\n"
                 if(isinstance(result, tuple)):
-                    msg += "Insertions: " + str(result[0]) + "\n"
-                    msg += "Updations: " + str(result[1])
+                    msg += "Insertions: " + "{:,}".format(result[0]) + "\n"
+                    msg += "Updations: " + "{:,}".format(result[1])
                 try:
                     slack_token = settings['slack_notif']['slack_token']
                     channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
