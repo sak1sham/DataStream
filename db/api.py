@@ -4,12 +4,13 @@ from typing import Dict, Any, List
 import pytz
 from dst.main import DMS_exporter
 import traceback
-from helper.util import typecast_df_to_schema
+from helper.util import typecast_df_to_schema, get_date_from_days
 import time
 import pandas as pd
-from helper.exceptions import APIRequestError
+from helper.exceptions import APIRequestError, MissingData
 from notifications.slack_notify import send_message
 from config.settings import settings
+from datetime import timedelta, datetime
 
 IST_tz = pytz.timezone('Asia/Kolkata')
 slack_token = settings['slack_notif']['slack_token']
@@ -40,7 +41,7 @@ class APIMigrate:
             self.curr_mapping['fields'] = {}
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
     
-    def process_clevertap_events(self, event_names: List[Any]=[], max_attempts: int=3):
+    def process_clevertap_events(self, event_names: List[Any]=[], sync_date: datetime=None, max_attempts: int=3):
         if not event_names:
             return
         channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
@@ -63,11 +64,11 @@ class APIMigrate:
             total_fetch_events = 0
             transformed_total_events = 0
             try:
-                self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver)
+                self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver, sync_date)
                 have_more_data = True
                 event_cursor = None    
                 while have_more_data:
-                    processed_data = self.client.get_processed_data(event_name, self.curr_mapping, event_cursor)
+                    processed_data = self.client.get_processed_data(event_name, self.curr_mapping, sync_date, event_cursor)
                     if processed_data and processed_data['total_records'] > 0:
                         processed_data_df = typecast_df_to_schema(pd.DataFrame(processed_data['records']), self.curr_mapping['fields'])
                         self.save_data_to_destination(processed_data={
@@ -91,10 +92,21 @@ class APIMigrate:
                 self.err(msg)
         self.process_clevertap_events(failed_events, max_attempts-1)
 
+    def presetup_clevertap_process(self) -> None:
+        start_day = self.curr_mapping.get('start_day', -1)
+        end_day = self.curr_mapping.get('end_day', -1)
+        if not start_day or not end_day:
+            raise MissingData("please provide start_day and end_day in mapping")
+        start_date = get_date_from_days(days=start_day)
+        end_date = get_date_from_days(days=end_day)
+        event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
+        while start_date <= end_date:
+            self.process_clevertap_events( event_names, start_date, 3)
+            start_date += timedelta(1)
+
     def process(self) -> None:
         self.presetup()
         if (self.db['source']['db_name']=='clevertap'):
             self.client = ClevertapManager(self.curr_mapping['project_name'])
-            event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
-            self.process_clevertap_events( event_names, 3)
+            self.presetup_clevertap_process()
         self.saver.close()

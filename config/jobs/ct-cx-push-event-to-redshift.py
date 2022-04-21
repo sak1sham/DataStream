@@ -17,9 +17,8 @@ mapping = {
             'api_name':'cx_app_events',
             'project_name': 'cx_app',
             'event_names': ['Push Impressions'],
-            'bookmark_key_type': 'date',
-            'bookmark_key_format': 'YYYYMMDD',
-            'bookmark_key': '-1',
+            'start_day': '-1',
+            'end_day': '-1',
             'slack_channel':'C035WQHD291',
             'fields': {
                 "event_name": 'str',
