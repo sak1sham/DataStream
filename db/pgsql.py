@@ -1,14 +1,15 @@
-import pandas as pd
-import psycopg2
-import pymongo
-
 from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, get_athena_dtypes
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
 from helper.sigterm import GracefulKiller, NormalKiller
+from notifications.slack_notify import send_message
+from config.settings import settings
 
+import pandas as pd
+import psycopg2
+import pymongo
 import datetime
 import hashlib
 import pytz
@@ -382,6 +383,13 @@ class PGSQLMigrate:
                                     processed_data = {}
                                     break
                                 if(killer.kill_now):
+                                        msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                                        msg += "Reason: Caught sigterm :warning:\n"
+                                        msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                                        slack_token = settings['slack_notif']['slack_token']
+                                        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                                        send_message(msg = msg, channel = channel, slack_token = slack_token)
+                                        self.inform('Notification sent.')
                                         raise KeyboardInterrupt("Ending gracefully.")
 
                             elif(mode == "syncing"):
@@ -411,6 +419,13 @@ class PGSQLMigrate:
                                         processed_data = {}
                                         break
                                     if(killer.kill_now):
+                                        msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                                        msg += "Reason: Caught sigterm :warning:\n"
+                                        msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                                        slack_token = settings['slack_notif']['slack_token']
+                                        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                                        send_message(msg = msg, channel = channel, slack_token = slack_token)
+                                        self.inform('Notification sent.')
                                         raise KeyboardInterrupt("Ending gracefully.")
                                 else:
                                     ## UPDATION MODE

@@ -3,13 +3,15 @@ from db.pgsql import PGSQLMigrate
 from db.s3 import S3Migrate
 from db.api import APIMigrate
 from db.kafka_dms import KafkaMigrate
-
-from typing import Dict, Any
-from helper.exceptions import IncorrectMapping
-from helper.logger import logger
-import traceback
 from notifications.slack_notify import send_message
 from config.settings import settings
+from helper.exceptions import IncorrectMapping
+from helper.logger import logger
+
+from typing import Dict, Any
+import traceback
+import time
+import datetime
 
 class DMS_importer:
     def __init__(self, db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
@@ -40,16 +42,19 @@ class DMS_importer:
     
     def process(self):
         try:
+            start = time.time()
             result = self.obj.process()
+            end = time.time()
+            time_taken = str(datetime.timedelta(seconds=int(end-start)))
             if('notify' in settings.keys() and settings['notify']):
                 msg = "Migration completed for *"
                 msg += str(self.name)
                 msg += "* from database "
-                msg += self.db['source']['source_type'] + " : *" + self.db['source']['db_name']
-                msg += "*. "
+                msg += "*" + self.db['source']['db_name'] + "* (" + self.db['source']['source_type'] + ") to *" + self.db['destination']['destination_type'] + "*:\n"
+                msg += "Total time taken: " + time_taken + "\n"
                 if(isinstance(result, tuple)):
-                    msg += "Inserted " + str(result[0]) + " records and updated " + str(result[1]) + " records."
-                msg += " :tada:"
+                    msg += "Insertions: " + "{:,}".format(result[0]) + "\n"
+                    msg += "Updations: " + "{:,}".format(result[1])
                 try:
                     slack_token = settings['slack_notif']['slack_token']
                     channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']

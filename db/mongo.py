@@ -3,6 +3,9 @@ from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_ru
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
+from helper.sigterm import GracefulKiller, NormalKiller
+from notifications.slack_notify import send_message
+from config.settings import settings
 
 from bson.objectid import ObjectId
 from pymongo import MongoClient
@@ -14,7 +17,6 @@ import hashlib
 import pytz
 from typing import List, Dict, Any, Tuple
 import time
-from helper.sigterm import GracefulKiller, NormalKiller
 
 '''
     Dictionary returned after processing data contains following fields:
@@ -431,6 +433,13 @@ class MongoMigrate:
                     processed_collection = {}
                     break
                 if(killer.kill_now):
+                    msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                    msg += "Reason: Caught sigterm :warning:\n"
+                    msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                    slack_token = settings['slack_notif']['slack_token']
+                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                    send_message(msg = msg, channel = channel, slack_token = slack_token)
+                    self.inform('Notification sent.')
                     raise KeyboardInterrupt("Ending gracefully.")
             time.sleep(self.time_delay)
         self.inform(message = "Logging operation complete.", save=True)
@@ -461,6 +470,13 @@ class MongoMigrate:
                     processed_collection = {}
                     break
                 if(killer.kill_now):
+                    msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                    msg += "Reason: Caught sigterm :warning:\n"
+                    msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                    slack_token = settings['slack_notif']['slack_token']
+                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                    send_message(msg = msg, channel = channel, slack_token = slack_token)
+                    self.inform('Notification sent.')
                     raise KeyboardInterrupt("Ending gracefully.")
             time.sleep(self.time_delay)
         self.inform(message = "Insertions completed, starting to update records", save = True)
