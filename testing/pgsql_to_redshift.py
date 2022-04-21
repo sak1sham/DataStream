@@ -5,13 +5,14 @@ import datetime
 from typing import NewType
 import pytz
 from pymongo import MongoClient
-datetype = NewType("datetype", datetime.datetime)
 import sys
-import numpy
+import redshift_connector
+import numpy as np
 
 from test_util import *
 from migration_mapping import get_mapping
 
+datetype = NewType("datetype", datetime.datetime)
 certificate = 'config/rds-combined-ca-bundle.pem'
 
 class SqlTester(unittest.TestCase):
@@ -44,40 +45,6 @@ class SqlTester(unittest.TestCase):
             last_record_migrated = pytz.utc.localize(last_record_migrated)
         return last_record_migrated
 
-    def abc_test_count(self):
-        if(self.table_map['mode'] != 'dumping'):
-            sql_stmt = "SELECT COUNT(*) as count FROM " + self.table
-            if('username' not in self.db['source'].keys()):
-                self.db['source']['username'] = ''
-            if('password' not in self.db['source'].keys()):
-                self.db['source']['password'] = ''
-            conn = psycopg2.connect(
-                host = self.db['source']['url'],
-                database = self.db['source']['db_name'],
-                user = self.db['source']['username'],
-                password = self.db['source']['password']
-            )
-            with conn.cursor('test-cursor-name') as curs:
-                curs.execute(sql_stmt)
-                ret = curs.fetchall()
-                N = ret[0][0]
-            
-            if(N > 0):
-                athena_table = str(self.table).replace('.', '_').replace('-', '_')
-                query = 'SELECT COUNT(*) as count FROM ' + athena_table + ';'
-                database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
-                df = wr.athena.read_sql_query(sql = query, database = database)
-                athena_count = int(df.iloc[0]['count'])
-                print(athena_count, N)
-                print(confidence(N))
-                print(confidence(N) * N)
-                assert athena_count >= int(confidence(N) * N)
-                assert athena_count <= N
-            print("Count Test completed")
-        
-    # https://stackoverflow.com/questions/580639/how-to-randomly-select-rows-in-sql
-    # Select RANDOM RECORDS from PgSQL
-
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
         tn = curr_table_name.split('.')
         schema_name = 'public'
@@ -100,32 +67,32 @@ class SqlTester(unittest.TestCase):
         return col_dtypes
 
 
-    def check_match(self, record, athena_record, column_dtypes) -> bool:
+    def check_match(self, record, redshift_record, column_dtypes) -> bool:
         for key in record.keys():
             try:
-                athena_key = key.lower()
+                redshift_key = key.lower()
                 if record[key] and not key.startswith('parquet_format'):
                     if column_dtypes[key].startswith('timestamp') or column_dtypes[key].startswith('date'):
-                        if record[key] is not pd.NaT and athena_record[athena_key] is not pd.NaT:
-                            athena_record[athena_key] = int((pytz.utc.localize(athena_record[athena_key])).timestamp())
+                        if record[key] is not pd.NaT and redshift_record[redshift_key] is not pd.NaT:
+                            redshift_record[redshift_key] = int((pytz.utc.localize(redshift_record[redshift_key])).timestamp())
                             record[key] = int((record[key]).timestamp())
                         else:
-                            athena_record[athena_key] = None
+                            redshift_record[redshift_key] = None
                             record[key] = None
                     elif column_dtypes[key].startswith('double') or column_dtypes[key].startswith('float') or column_dtypes[key].startswith('real') or column_dtypes[key].startswith('decimal') or column_dtypes[key].startswith('numeric'):
-                        if numpy.isnan(record[key]) or not record[key]:
-                            athena_record[athena_key] = str(athena_record[athena_key])
-                            record[key] = str(record[key])
-                        else:
-                            athena_record[athena_key] = None
+                        if np.isnan(record[key]) or not record[key]:
+                            redshift_record[redshift_key] = None
                             record[key] = None
+                        else:
+                            redshift_record[redshift_key] = int(redshift_record[redshift_key])
+                            record[key] = int(record[key])
 
-                    assert record[key] == athena_record[athena_key]
+                    assert record[key] == redshift_record[redshift_key]
             except Exception as e:
                 print(key)
                 print(record[self.primary_key])
-                print(record[key])
-                print(athena_record[athena_key])
+                print("Source: ", record[key])
+                print("Destination: ", redshift_record[redshift_key])
                 raise
         return True
 
@@ -194,7 +161,7 @@ class SqlTester(unittest.TestCase):
                     data_df['unique_migration_record_id'] = data_df[self.primary_key]
                     column_dtypes['unique_migration_record_id'] = 'str'
                     convert_to_dtype(data_df, column_dtypes)
-                    athena_table = str(self.table).replace('.', '_').replace('-', '_')
+                    redshift_table = str(self.table).replace('.', '_').replace('-', '_')
                     data_df = data_df[data_df[self.primary_key] <= last_migrated_record]
                     prev_time = pytz.utc.localize(self.get_last_run_cron_job())
                     if(data_df.shape[0]):
@@ -204,14 +171,23 @@ class SqlTester(unittest.TestCase):
                         str_id = ""
                         for _, row in data_df.iterrows():
                             str_id += "\'" + str(row['unique_migration_record_id']) + "\',"
-                        query = 'SELECT * FROM ' + athena_table + ' WHERE unique_migration_record_id in (' + str(str_id[:-1]) + ');'
-                        database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
-                        df = wr.athena.read_sql_query(sql = query, database = database)
+                        redshift_schema = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_') + "_dms"
+                        query = 'SELECT * FROM {0}.{1} WHERE unique_migration_record_id in ({2});'.format(redshift_schema, redshift_table, str(str_id[:-1]))
+                        redshift_conn = redshift_connector.connect(
+                            host = self.db['destination']['host'],
+                            database = self.db['destination']['database'],
+                            user = self.db['destination']['user'],
+                            password = self.db['destination']['password']
+                        )
+                        df = wr.redshift.read_sql_query(
+                            sql = query, 
+                            con = redshift_conn
+                        )
                         
                         for _, row in data_df.iterrows():
                             athena_record = df.loc[df['unique_migration_record_id'] == row['unique_migration_record_id']].to_dict(orient='records')
                             assert self.check_match(row, athena_record[0], column_dtypes)
-                    print("tested", data_df.shape[0], "records")
+                    print("Tested {0} records.".format(data_df.shape[0]))
 
 
 if __name__ == "__main__":
