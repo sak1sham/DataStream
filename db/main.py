@@ -3,15 +3,15 @@ from db.pgsql import PGSQLMigrate
 from db.s3 import S3Migrate
 from db.api import APIMigrate
 from db.kafka_dms import KafkaMigrate
-
-from typing import Dict, Any
+from notifications.slack_notify import send_message
+from config.settings import settings
 from helper.exceptions import IncorrectMapping
 from helper.logger import logger
+
+from typing import Dict, Any
 import traceback
 import time
 import datetime
-from notifications.slack_notify import send_message
-from config.settings import settings
 
 class DMS_importer:
     def __init__(self, db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
