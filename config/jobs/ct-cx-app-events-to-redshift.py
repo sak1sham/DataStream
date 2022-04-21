@@ -17,7 +17,7 @@ mapping = {
             'api_name':'cx_app_events',
             'project_name': 'cx_app',
             'event_names': '*',
-            'start_day': '-7',
+            'start_day': '-6',
             'end_day': '-6',
             'slack_channel':'C035WQHD291',
             'fields': {
