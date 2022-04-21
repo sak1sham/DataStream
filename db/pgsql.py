@@ -385,7 +385,7 @@ class PGSQLMigrate:
                                 if(killer.kill_now):
                                         msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                                         msg += "Reason: Caught sigterm :warning:\n"
-                                        msg += "Insertions: {0}\nUpdations: {1}".format(self.n_insertions, self.n_updations)
+                                        msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
                                         slack_token = settings['slack_notif']['slack_token']
                                         channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                                         send_message(msg = msg, channel = channel, slack_token = slack_token)
@@ -421,7 +421,7 @@ class PGSQLMigrate:
                                     if(killer.kill_now):
                                         msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                                         msg += "Reason: Caught sigterm :warning:\n"
-                                        msg += "Insertions: {0}\nUpdations: {1}".format(self.n_insertions, self.n_updations)
+                                        msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
                                         slack_token = settings['slack_notif']['slack_token']
                                         channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                                         send_message(msg = msg, channel = channel, slack_token = slack_token)
