@@ -102,7 +102,7 @@ class APIMigrate:
         event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
         while start_date <= end_date:
             self.process_clevertap_events( event_names, start_date, 3)
-            start_day += timedelta(1)
+            start_date += timedelta(1)
 
     def process(self) -> None:
         self.presetup()
