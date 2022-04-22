@@ -8,11 +8,8 @@ temp
 credentials.py
 AWSCLIV2.pkg
 .env
-<<<<<<< HEAD
-=======
 debug.log
 Dockerfile
 .dockerignore
 tmp
->>>>>>> 5db4dca860283f339e2040ee306e36d0a00499b4
 temp_test.py
