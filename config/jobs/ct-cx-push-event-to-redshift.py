@@ -19,7 +19,7 @@ mapping = {
             'event_names': ['Push Impressions'],
             'start_day': '-1',
             'end_day': '-1',
-            'slack_channel':'C035WQHD291',
+            'slack_channel':'C025PTAUUFP',
             'fields': {
                 "event_name": 'str',
                 "ct_ts": 'int',
