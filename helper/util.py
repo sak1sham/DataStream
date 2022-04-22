@@ -286,9 +286,11 @@ def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
     return athena_types
 
 
-def get_yyyymmdd_from_date(days=0):
-        sync_date = datetime.date.today() + datetime.timedelta(days=int(days))
-        return int(sync_date.strftime('%Y%m%d'))
+def get_yyyymmdd_from_date(_date):
+        return int(_date.strftime('%Y%m%d'))
+
+def get_date_from_days(days=0):
+    return datetime.date.today() + datetime.timedelta(days=int(days))
 
 def transformTs(ts: str):
     value = str(ts)
