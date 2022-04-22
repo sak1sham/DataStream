@@ -8,3 +8,4 @@ temp
 credentials.py
 AWSCLIV2.pkg
 .env
+temp_test.py
