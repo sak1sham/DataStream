@@ -1,9 +1,11 @@
+import traceback
 import pandas as pd
 import json
 import datetime
 from typing import NewType, Any, Dict
 from kafka import KafkaConsumer
 
+from config.migration_mapping import get_kafka_mapping_functions
 from helper.util import *
 from helper.logger import logger
 from helper.exceptions import *
@@ -11,9 +13,6 @@ from dst.main import DMS_exporter
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
-
-kafka_group = 'dms_kafka'
-
 
 class KafkaMigrate:
     def __init__(self, db: Dict[str, Any] = None, curr_mapping: Dict[str, Any] = None, tz_str: str = 'Asia/Kolkata') -> None:
@@ -23,6 +22,28 @@ class KafkaMigrate:
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
         self.primary_key = 0
+        self.get_table_name, self.process_dict = get_kafka_mapping_functions(self.db['id'])
+        self.table_name = self.curr_mapping['topic_name']
+        self.batch_size = 1000
+
+    def get_kafka_connection(self, topic, kafka_group, kafka_server, KafkaPassword, KafkaUsername, enable_auto_commit = True):
+        if "aws" in kafka_server:
+            return KafkaConsumer(topic,
+                                bootstrap_servers=kafka_server,
+                                security_protocol='SASL_SSL',
+                                sasl_mechanism='SCRAM-SHA-512',
+                                sasl_plain_username=KafkaUsername,
+                                sasl_plain_password=KafkaPassword,
+                                enable_auto_commit=enable_auto_commit,
+                                #  auto_offset_reset='earliest',
+                                group_id=kafka_group,
+                                value_deserializer=lambda m: json.loads(m.decode('utf-8')))
+        else:
+            return KafkaConsumer(topic,
+                                bootstrap_servers=kafka_server,
+                                enable_auto_commit=enable_auto_commit,
+                                group_id=kafka_group,
+                                value_deserializer=lambda m: json.loads(m.decode('utf-8')))
 
     def inform(self, message: str = None, save: bool = False) -> None:
         logger.inform(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message), save=save)
@@ -92,9 +113,9 @@ class KafkaMigrate:
             parq_col = "parquet_format_" + col
             if(col_form == 'datetime'):
                 temp = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
-                df[parq_col + "_year"] = temp.dt.year
-                df[parq_col + "_month"] = temp.dt.month
-                df[parq_col + "_day"] = temp.dt.day
+                df[parq_col + "_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
+                df[parq_col + "_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
+                df[parq_col + "_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
             elif(col_form == 'str'):
                 df[parq_col] = df[col].astype(str)
             elif(col_form == 'int'):
@@ -104,14 +125,13 @@ class KafkaMigrate:
         return df
 
 
-    def process_table(self, df: dftype = pd.DataFrame({})) -> dftype:
+    def process_table(self, df: dftype) -> dftype:
         end = self.primary_key + len(df)
         df.insert(0, 'dms_pkey', range(self.primary_key, end))
         self.primary_key = end
         df = self.add_partitions(df)
-        print(df)
         df = convert_to_dtype(df, self.curr_mapping['fields'])
-        processed_data = {'name': self.curr_mapping['topic_name'], 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': self.athena_dtypes}
+        processed_data = {'name': self.table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': self.athena_dtypes}
         return processed_data
 
     def save_data(self, processed_data: dftype = None) -> None:
@@ -127,6 +147,8 @@ class KafkaMigrate:
                 processed_data['df_insert'] = pd.DataFrame({})
             if('df_update' not in processed_data.keys()):
                 processed_data['df_update'] = pd.DataFrame({})
+            if('dtypes' not in processed_data.keys()):
+                processed_data['dtypes'] = get_athena_dtypes(self.curr_mapping['fields'])
             primary_keys = ['dms_pkey']
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
 
@@ -143,28 +165,28 @@ class KafkaMigrate:
             '''
                 Consumes the data in kafka
             '''
-            consumer = KafkaConsumer(self.curr_mapping['topic_name'], bootstrap_servers = [self.db['source']['kafka_server']], 
-            enable_auto_commit = True, group_id = 'dms_kafka_group', value_deserializer = self.value_deserializer)
+            consumer = self.get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
             self.inform(message='Started consuming messages.', save=True)
             self.preprocess()
             self.inform(message="Preprocessing done.", save=True)
-            for message in consumer:
-                '''
-                    reads the data in the messages being consumed
-                '''
-                try:
-                    self.inform(message="Recieved data")
-                    df = pd.DataFrame(message.value)
-                    print(df)
-                    processed_data = self.process_table(df=df)
-                    print(processed_data)
-                    self.inform(message='Processed data')
-                    self.save_data(processed_data=processed_data)
-                    self.inform(message="Data saved")
-                except Exception as e:
-                    # self.err(e)
-                    self.err(error=('Consumer exception', e))
-                    continue
+            try:
+                while(1):
+                    recs = consumer.poll(timeout_ms=1000000, max_records=self.batch_size)
+                    if(not recs):
+                        self.inform('No more records found. Stopping the script')
+                        break
+                    else:
+                        for _, records in recs.items():
+                            converted_list = []
+                            for message in records:
+                                converted_list.append(self.process_dict(message.value))
+                            converted_df = pd.DataFrame(converted_list)
+                            processed_data = self.process_table(df=converted_df)
+                            self.save_data(processed_data=processed_data)
+                            self.inform(message="Data saved")
+            except Exception as e:
+                self.inform(traceback.format_exc())
+                self.err(error=('Consumer exception', e))
         except Exception as e:
             self.err(error=("Got some error in Kafka Consumer.", e))
 

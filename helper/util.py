@@ -243,7 +243,6 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                     df[col] = df[col].astype(str, copy=False, errors='ignore')
             else:
                 df[col] = df[col].astype(str, copy=False, errors='ignore')
-    if(df.shape[0]):
         df = df.reindex(sorted(df.columns), axis=1)
     return df
 
@@ -287,6 +286,30 @@ def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
     return athena_types
 
 
+def get_yyyymmdd_from_date(days=0):
+        sync_date = datetime.date.today() + datetime.timedelta(days=int(days))
+        return int(sync_date.strftime('%Y%m%d'))
+
+def transformTs(ts: str):
+    value = str(ts)
+    year = int(value[0:4])
+    month = int(value[4:6])
+    day = int(value[6:8])
+    hour = int(value[8:10])
+    minute = int(value[10:12])
+    second = int(value[12:14])
+    return datetime.datetime(year, month, day, hour, minute, second).isoformat()
+
+def extract_value_from_nested_obj(obj: Dict[str, Any] = {}, key: str = ''):
+    keys = key.split('.')
+    value = None
+    for k in keys:
+        try:
+            value = obj[k]
+            obj = obj[k]
+        except KeyError:
+            return None
+    return value
 def convert_heads_to_lowercase(x: Any) -> Any:
     '''
         Convert df.columns to lowercase

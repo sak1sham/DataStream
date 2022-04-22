@@ -107,3 +107,14 @@ def set_last_migrated_record(job_id: str, _id: Any, timing: datetype) -> None:
     else:
         db.insert_one(rec)
 
+
+def delete_metadata_from_mongodb(job_id: str = None) -> None:
+    '''
+        Delete all records from mongodb temporary data
+    '''
+    db = get_data_from_encr_db()
+    db.delete_many({'last_migrated_record_for_id': job_id})
+    db.delete_many({'last_run_cron_job_for_id': job_id})
+    db.delete_many({'table': job_id})
+    db.delete_many({'collection': job_id})
+

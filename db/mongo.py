@@ -3,6 +3,9 @@ from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_ru
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
+from helper.sigterm import GracefulKiller, NormalKiller
+from notifications.slack_notify import send_message
+from config.settings import settings
 
 from bson.objectid import ObjectId
 from pymongo import MongoClient
@@ -14,7 +17,6 @@ import hashlib
 import pytz
 from typing import List, Dict, Any, Tuple
 import time
-from helper.sigterm import GracefulKiller, NormalKiller
 
 '''
     Dictionary returned after processing data contains following fields:
@@ -154,10 +156,11 @@ class MongoMigrate:
                 else:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
         
-        if(self.curr_mapping['mode'] == 'dumping'):
+        if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
 
-        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
+        mirroring = (self.curr_mapping['mode'] == 'mirroring')
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet, mirroring=mirroring, table_name=self.curr_mapping['collection_name'])
 
 
     def postprocess(self):
@@ -189,9 +192,9 @@ class MongoMigrate:
                 document[parq_col] = float(document[col])
             elif(col_form == 'datetime'):
                 document[col] = convert_to_datetime(document[col], pytz.utc)
-                document[parq_col + "_year"] = document[col].year
-                document[parq_col + "_month"] = document[col].month
-                document[parq_col + "_day"] = document[col].day
+                document[parq_col + "_year"] = str(float(document[col].year))
+                document[parq_col + "_month"] = str(float(document[col].month))
+                document[parq_col + "_day"] = str(float(document[col].day))
             else:
                 raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
         return document
@@ -199,7 +202,7 @@ class MongoMigrate:
 
     def dumping_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
         '''
-            When we are dumping data, snapshots of the datastore are captured at regular intervals inside destination
+            When we are dumping/mirroring data, snapshots of the datastore are captured at regular intervals inside destination
             We insert the snapshots, and no updation is performed
             All the records are inserted, there is no need for bookmarks
             By default, we add a column 'migration_snapshot_date' to capture the starting time of migration
@@ -384,7 +387,7 @@ class MongoMigrate:
         '''
             DUMPING: Everytime the job runs, entire data present in the collection is migrated to destination,
             Multiple copies of the same data are created.
-            This function handles the dumping process.
+            This function handles the dumping/mirroring process.
             While dumping, we add another column 'migration_snapshot_date' that indicates the datetime when migration was performed.
         '''
         start = 0
@@ -400,7 +403,7 @@ class MongoMigrate:
                 self.save_data(processed_collection=processed_collection)
                 processed_collection = {}
             time.sleep(self.time_delay)
-        self.inform(message = "Dumping Complete.", save=True)
+        self.inform(message = "Migration Complete.", save=True)
         if('expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform(message = "Expired data removed.", save=True)
@@ -430,6 +433,13 @@ class MongoMigrate:
                     processed_collection = {}
                     break
                 if(killer.kill_now):
+                    msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                    msg += "Reason: Caught sigterm :warning:\n"
+                    msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                    slack_token = settings['slack_notif']['slack_token']
+                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                    send_message(msg = msg, channel = channel, slack_token = slack_token)
+                    self.inform('Notification sent.')
                     raise KeyboardInterrupt("Ending gracefully.")
             time.sleep(self.time_delay)
         self.inform(message = "Logging operation complete.", save=True)
@@ -460,6 +470,13 @@ class MongoMigrate:
                     processed_collection = {}
                     break
                 if(killer.kill_now):
+                    msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                    msg += "Reason: Caught sigterm :warning:\n"
+                    msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                    slack_token = settings['slack_notif']['slack_token']
+                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                    send_message(msg = msg, channel = channel, slack_token = slack_token)
+                    self.inform('Notification sent.')
                     raise KeyboardInterrupt("Ending gracefully.")
             time.sleep(self.time_delay)
         self.inform(message = "Insertions completed, starting to update records", save = True)
@@ -527,7 +544,7 @@ class MongoMigrate:
                 processed_collection['lob_fields_length'] = self.curr_mapping['lob_fields_length']
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping'):
-                ## If mode is dumping, then there can't be any primary key. Otherwise, set _id as primary_key
+                ## If mode is dumping, then there can't be any primary key (because multiple copies are present for same record). Otherwise, set _id as primary_key
                 primary_keys = ['_id']
             self.n_insertions += processed_collection['df_insert'].shape[0]
             self.n_updations += processed_collection['df_update'].shape[0]
@@ -538,16 +555,20 @@ class MongoMigrate:
         '''
             This function handles the entire flow of preprocessing, processing, saving and postprocessing data.
         '''
+        if(self.curr_mapping['mode'] == 'mirroring' and self.db['destination']['destination_type'] == 's3'):
+            raise IncorrectMapping("Mirroring mode not supported for destination S3")
+        
         self.get_connectivity()
         self.inform(message="Connected to database and collection.", save=True)
         self.preprocess()
         self.inform(message="Collection pre-processed.", save=True)
 
         '''
-            Mode = 'syncing', 'logging', 'dumping'
+            Mode = 'syncing', 'logging', 'dumping' or 'mirroring'
             When we are dumping data, snapshots of the datastore are captured at regular intervals. We maintain multiple copies of the tables
             Logging is the mode where the data is only being added to the source table, and we assume no updations are ever performed. Only new records are migrated.
             Syncing: Where all new records is migrated, and all updations are also mapped to destination. If a record is deleted at source, it's NOT deleted at destination
+            Mirroring: A mirror image of source db is maintained at destination
         '''
         if(self.curr_mapping['mode'] == 'dumping'):
             self.dumping_process()
@@ -555,6 +576,8 @@ class MongoMigrate:
             self.logging_process()
         elif(self.curr_mapping['mode'] == 'syncing'):
             self.syncing_process()
+        elif(self.curr_mapping['mode'] == 'mirroring'):
+            self.dumping_process()
         else:
             raise IncorrectMapping("Please specify a mode of operation.")
 

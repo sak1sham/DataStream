@@ -16,14 +16,23 @@ mapping = {
     },
     'tables': [
         {
-            'table_name': 'pincodes',
+            'table_name': 'user_cashbacks',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'id',
-            'primary_key_datatype': 'int',
+            'primary_key_datatype': 'str',
+            'to_partition': True,
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'lob_fields_length': {
+                'status': 3036,
+                'campaign_description': 3036,
+                'campaign_type': 3036,
+                'campaign_name': 3036,
+            }
         },
     ]
 }

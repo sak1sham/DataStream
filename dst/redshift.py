@@ -18,7 +18,7 @@ class RedshiftSaver:
             user = db_destination['user'],
             password = db_destination['password']
         )
-        self.schema = db_source['source_type'] + "_" + db_source['db_name'] + "_dms"
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else db_source['source_type'] + "_" + db_source['db_name'] + "_dms"
         self.is_small_data = is_small_data
         self.name_ = ""
         self.table_list = []
@@ -34,6 +34,8 @@ class RedshiftSaver:
             self.table_list.extend(processed_data['name']) 
         self.name_ = processed_data['name']
         file_name = self.s3_location + self.name_ + "/"
+        if 'filename' in processed_data:
+            file_name += str(processed_data['filename']) + "/"
         varchar_lengths = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
             self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
@@ -88,7 +90,26 @@ class RedshiftSaver:
                     varchar_lengths_default = 512
                 )
             self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
-    
+
+
+    def delete_table(self, table_name: str = None) -> None:
+        query = "DROP TABLE " + self.schema + "." + table_name + ";"
+        self.inform(query)
+        with self.conn.cursor() as cursor:
+            cursor.execute(query)
+        self.inform("Deleted " + table_name + " from Redshift schema " + self.schema)
+
+
+    def get_n_redshift_cols(self, table_name: str = None) -> int:
+        query = 'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{0}\' AND table_name = \'{1}\''.format(self.schema, table_name)
+        self.inform(query)
+        df = wr.redshift.read_sql_query(
+            sql = query,
+            con = self.conn
+        )
+        return df.iloc[0][0]
+
+
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()
         if(tz):

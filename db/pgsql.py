@@ -1,14 +1,15 @@
-import pandas as pd
-import psycopg2
-import pymongo
-
 from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
 from helper.sigterm import GracefulKiller, NormalKiller
+from notifications.slack_notify import send_message
+from config.settings import settings
 
+import pandas as pd
+import psycopg2
+import pymongo
 import datetime
 import hashlib
 import pytz
@@ -50,7 +51,9 @@ class PGSQLMigrate:
         '''
         self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
         self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
-        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
+
+        mirroring = (self.curr_mapping['mode'] == 'mirroring')
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], mirroring=mirroring, table_name=self.curr_mapping['table_name'])
 
 
     def postprocess(self):
@@ -127,9 +130,9 @@ class PGSQLMigrate:
                 if(col == 'migration_snapshot_date' or col_form == 'datetime'):
                     self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
                     temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
-                    df[parq_col + "_year"] = temp.dt.year
-                    df[parq_col + "_month"] = temp.dt.month
-                    df[parq_col + "_day"] = temp.dt.day
+                    df[parq_col + "_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
+                    df[parq_col + "_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
+                    df[parq_col + "_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
                 elif(col_form == 'str'):
                     self.partition_for_parquet.extend([parq_col])
                     df[parq_col] = df[col].astype(str)
@@ -145,7 +148,7 @@ class PGSQLMigrate:
 
     def dumping_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
         '''
-            Function that takes in dataframe and processes it assuming dumping mode of operation
+            Function that takes in dataframe and processes it assuming dumping/mirroring mode of operation
                 1. Adds migration_snapshot_date column to differentiate snapshots of data
                 2. Add partitions if required
                 3. Final conversion of every column in dataframe to required datatypes
@@ -172,7 +175,7 @@ class PGSQLMigrate:
                 6. return a processed_data object
         '''
         if(not mode):
-            raise Exception('mode of inserting records not specified. mode can either be syncing or logging')
+            raise Exception('Mode of inserting records not specified: can either be syncing or logging')
         collection_encr = get_data_from_encr_db()
         
         ## Adding partition if required
@@ -240,7 +243,7 @@ class PGSQLMigrate:
             if('lob_fields_length' in self.curr_mapping.keys() and self.curr_mapping['lob_fields_length']):
                 processed_data['lob_fields_length'] = self.curr_mapping['lob_fields_length']
             primary_keys = []
-            if(self.curr_mapping['mode'] != 'dumping'):
+            if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring'):
                 primary_keys = ['unique_migration_record_id']
             self.n_insertions += processed_data['df_insert'].shape[0]
             self.n_updations += processed_data['df_update'].shape[0]
@@ -288,7 +291,7 @@ class PGSQLMigrate:
             ret_dtype = {}
             if('fields' in self.curr_mapping.keys()):
                 ret_dtype = self.curr_mapping['fields']
-            if(self.curr_mapping['mode'] == 'dumping'):
+            if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
                 ret_dtype['migration_snapshot_date'] = 'datetime'
             return ret_dtype
         tn = curr_table_name.split('.')
@@ -307,7 +310,7 @@ class PGSQLMigrate:
             rows = curs.fetchall()
             for key, val in rows:
                 col_dtypes[key] = val
-        if(self.curr_mapping['mode'] == 'dumping'):
+        if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
             col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
 
@@ -317,7 +320,7 @@ class PGSQLMigrate:
             The pgsql query is prepared by various processing functions. This function helps in processing and saving data in accordance to that PGSQL query
             sync_mode = 1 means insertion has to be performed
             sync_mode = 2 means updation has to be performed
-            mode = 'syncing', 'dumping' or 'logging'
+            mode = 'syncing', 'dumping' 'mirroring' or 'logging'
         '''
         self.inform(message = str(sql_stmt))
         processed_data = {}
@@ -335,6 +338,7 @@ class PGSQLMigrate:
                 with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
+                    self.inform("Executed the sql statement")
                     _ = curs.fetchone()
                     columns = [desc[0] for desc in curs.description]
                     ## Now, we have the names of the columns. Next, go back right to the starting of table (-1) and fetch records from the cursor in batches.
@@ -346,8 +350,8 @@ class PGSQLMigrate:
                             break
                         else:
                             data_df = pd.DataFrame(rows, columns = columns)
-                            if(mode == "dumping"):
-                                ## In Dumping mode, resume mode is not supported
+                            if(mode == "dumping" or mode == "mirroring"):
+                                ## In Dumping/mirroring mode, resume mode is not supported
                                 ## Processes the data in the batch and save that batch
                                 ## If any error is encountered, DMS needs to restart
                                 processed_data = self.dumping_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
@@ -379,6 +383,13 @@ class PGSQLMigrate:
                                     processed_data = {}
                                     break
                                 if(killer.kill_now):
+                                        msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                                        msg += "Reason: Caught sigterm :warning:\n"
+                                        msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                                        slack_token = settings['slack_notif']['slack_token']
+                                        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                                        send_message(msg = msg, channel = channel, slack_token = slack_token)
+                                        self.inform('Notification sent.')
                                         raise KeyboardInterrupt("Ending gracefully.")
 
                             elif(mode == "syncing"):
@@ -408,6 +419,13 @@ class PGSQLMigrate:
                                         processed_data = {}
                                         break
                                     if(killer.kill_now):
+                                        msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                                        msg += "Reason: Caught sigterm :warning:\n"
+                                        msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                                        slack_token = settings['slack_notif']['slack_token']
+                                        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                                        send_message(msg = msg, channel = channel, slack_token = slack_token)
+                                        self.inform('Notification sent.')
                                         raise KeyboardInterrupt("Ending gracefully.")
                                 else:
                                     ## UPDATION MODE
@@ -476,12 +494,12 @@ class PGSQLMigrate:
 
     def dumping_process(self, table_name: str = None) -> None:
         '''
-            Function to create PGSQL query for dumping mode and then send it further for processing.
+            Function to create PGSQL query for dumping/mirroring mode and then send it further for processing.
         '''
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             sql_stmt = self.curr_mapping['fetch_data_query']
-        self.process_sql_query(table_name, sql_stmt, mode='dumping')
+        self.process_sql_query(table_name, sql_stmt, mode=self.curr_mapping['mode'])
 
 
     def logging_process(self, table_name: str = None) -> None:
@@ -600,12 +618,59 @@ class PGSQLMigrate:
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
 
 
+    def preprocess_table(self, table_name: str = None) -> None:
+        n_columns_redshift = self.saver.get_n_redshift_cols(table_name=table_name)
+        try:
+            conn = psycopg2.connect(
+                host = self.db['source']['url'],
+                database = self.db['source']['db_name'],
+                user = self.db['source']['username'],
+                password = self.db['source']['password']
+            )
+            col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
+            n_columns_pgsql = len(col_dtypes) + 1
+            ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
+            ## In case of dumping/mirroring, migration_snapshot_date is present
+            ## we also need to account for those columns which are partitioned
+            if('partition_col' in self.curr_mapping.keys()):
+                if(isinstance(self.curr_mapping['partition_col'], str)):
+                    self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+                if('partition_col_format' not in self.curr_mapping.keys()):
+                    self.curr_mapping['partition_col_format'] = ['str']
+                if(isinstance(self.curr_mapping['partition_col_format'], str)):
+                    self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
+                while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
+                    self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
+                for i in range(len(self.curr_mapping['partition_col'])):
+                    col = self.curr_mapping['partition_col'][i].lower()
+                    col_form = self.curr_mapping['partition_col_format'][i]
+                    if(col == 'migration_snapshot_date' or col_form == 'datetime'):
+                        n_columns_pgsql += 3
+                    elif(col_form == 'str'):
+                        n_columns_pgsql += 1
+                    elif(col_form == 'int'):
+                        n_columns_pgsql += 1
+            if(n_columns_redshift > 0 and n_columns_pgsql != n_columns_redshift):
+                self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
+                self.saver.drop_redshift_table(table_name=table_name)
+                delete_metadata_from_mongodb(self.curr_mapping['unique_id'])
+                self.inform("Data is deleted, now starting migration again.")
+            else:
+                self.inform('No discrepancy, let\'s start the migration')
+        except ProcessingError:
+            raise Exception("Unable to verify datatypes of table from source and destination.")
+
     def process(self) -> Tuple[int]:
-        if(self.curr_mapping['mode'] != 'dumping' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):
+        if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):
             raise IncorrectMapping('Need to specify a primary_key (strictly increasing and unique - int|string|datetime) inside the table for syncing or logging mode.')
-        elif(self.curr_mapping['mode'] != 'dumping' and 'primary_key_datatype' not in self.curr_mapping.keys()):
+        elif(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring' and 'primary_key_datatype' not in self.curr_mapping.keys()):
             raise IncorrectMapping('primary_key_datatype not specified. Please specify primary_key_datatype as either str or int or datetime.')
 
+        if(self.curr_mapping['mode'] == 'mirroring' and self.db['destination']['destination_type'] == 's3'):
+            raise IncorrectMapping("Mirroring mode not supported for destination S3")
+        if(self.curr_mapping['mode'] == 'mirroring' and self.curr_mapping['table_name'] == '*'):
+            raise IncorrectMapping("Can not migrate all tables together in mirroring mode. Please specify a table_name.")
+        
         if('username' not in self.db['source'].keys()):
             self.db['source']['username'] = ''
         if('password' not in self.db['source'].keys()):
@@ -626,6 +691,7 @@ class PGSQLMigrate:
         if('batch_end' in self.curr_mapping.keys()):
             b_end = self.curr_mapping['batch_end']
         name_tables = name_tables[b_start:b_end]
+
         self.preprocess()
         self.inform(message="Mapping pre-processed.", save=True)
         
@@ -644,14 +710,20 @@ class PGSQLMigrate:
         for table_name in name_tables:
             if(table_name.count('.') >= 2):
                 self.warn(message=("Can not migrate table with table_name: " + table_name))
-            elif(self.curr_mapping['mode'] == 'dumping'):
+                continue
+            if(self.db['destination']['destination_type'] == 'redshift'):
+                self.preprocess_table(table_name)
+            
+            if(self.curr_mapping['mode'] == 'dumping'):
                 self.dumping_process(table_name)
             elif(self.curr_mapping['mode'] == 'logging'):
                 self.logging_process(table_name)
             elif(self.curr_mapping['mode'] == 'syncing'):
                 self.syncing_process(table_name)
+            elif(self.curr_mapping['mode'] == 'mirroring'):
+                self.dumping_process(table_name)
             else:
-                raise IncorrectMapping("Wrong mode of operation: can be syncing, logging or dumping only.")
+                raise IncorrectMapping("Wrong mode of operation: can be syncing, logging, mirroring or dumping only.")
             self.inform(message=("Migration completed for table " + str(table_name)), save=True)
                 
         self.inform(message="Overall migration complete.", save=True)

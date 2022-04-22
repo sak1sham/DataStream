@@ -14,16 +14,21 @@ mapping = {
         'password': 'kgDzH6Zy5xZ6HHx',
         's3_bucket_name': 'data-migration-service-dev',
     },
-    'tables': [
+    'tables': [            
         {
-            'table_name': 'pincodes',
+            'table_name': 'commission_errors',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'bookmark': 'updated_at',
-            'improper_bookmarks': False,
+            'to_partition': True,
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'batch_size': 10000,
+            'lob_fields_length': {
+                'order_json': 65535,
+                'error': 3036
+            }
         },
     ]
 }

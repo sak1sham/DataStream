@@ -16,14 +16,31 @@ mapping = {
     },
     'tables': [
         {
-            'table_name': 'pincodes',
+            'table_name': 'categories',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'id',
+            'primary_key': 'category_id',
             'primary_key_datatype': 'int',
+            'to_partition': True,
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'lob_fields_length': {
+                'original_images': 65535,
+                'category_tags': 65535,
+                'category_url': 1024,
+                'child_link_cl': 3036,
+                'category_name_hi': 3036,
+                'category_name_en': 3036,
+                'category_image': 3036,
+                'category_type': 3036,
+                'child_type': 3036,
+                'child_link_cx': 3036,
+                'category_image_active': 3036,
+                'category_image_non_active': 3036,
+            }
         },
     ]
 }
