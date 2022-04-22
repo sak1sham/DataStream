@@ -6,17 +6,17 @@ mapping = {
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
-    'destination': {
+    "destination": {
         'destination_type': 'redshift',
         'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
         'database': 'cmwh',
         'user': 'cmadmin',
         'password': 'kgDzH6Zy5xZ6HHx',
-        's3_bucket_name': 'database-migration-service-prod',
+        's3_bucket_name': 'data-migration-service-dev',
     },
-    'tables': [            
+    'tables': [
         {
-            'table_name': 'rm_numbers',
+            'table_name': 'pincodes',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'id',

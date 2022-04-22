@@ -14,13 +14,16 @@ mapping = {
         'password': 'kgDzH6Zy5xZ6HHx',
         's3_bucket_name': 'database-migration-service-prod',
     },
-    'tables': [            
+    'tables': [
         {
-            'table_name': 'rm_numbers',
+            'table_name': 'batch_process_table',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
+            'to_partition': True,
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
