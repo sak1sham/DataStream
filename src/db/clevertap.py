@@ -9,6 +9,7 @@ from typing import Dict, Any, List
 from helper.logger import logger
 import traceback
 from helper.exceptions import MissingData, APIRequestError, IncorrectMapping
+from datetime import datetime
 
 class EventsAPIManager:
     CLEVERTAP_API_BASE_URL = os.getenv('CLEVERTAP_BASE_URL')
@@ -87,12 +88,9 @@ class ClevertapManager(EventsAPIManager):
             tf_records.append(tf_record)
         return tf_records
 
-    def get_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], event_cursor: str = None):
+    def get_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], sync_date: datetime, event_cursor: str = None):
         if not event_cursor:
-            bookmark_key = curr_mapping.get('bookmark_key', '')
-            if not bookmark_key:
-                raise MissingData("please provide bookmark key in mapping")
-            sync_date = get_yyyymmdd_from_date(days=bookmark_key)
+            sync_date = get_yyyymmdd_from_date(sync_date)
             logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id']+": started {2} event {0} sync for date: {1}".format(event_name, str(sync_date), self.project_name))
             event_cursor = self.get_event_cursor(event_name, sync_date, sync_date)
         cursor_data = self.get_records_for_cursor(event_cursor)
@@ -110,11 +108,8 @@ class ClevertapManager(EventsAPIManager):
             'total_records': total_records
         }
     
-    def cleaned_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], dst_saver: DMS_exporter):
-        bookmark_key = curr_mapping.get('bookmark_key', '')
-        if not bookmark_key:
-            raise Exception("please provide bookmark key")
-        sync_date = get_yyyymmdd_from_date(days=bookmark_key)
+    def cleaned_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], dst_saver: DMS_exporter, sync_date: datetime):
+        sync_date = get_yyyymmdd_from_date(sync_date)
         year = str(sync_date)[0:4]
         month = str(sync_date)[4:6]
         day = str(sync_date)[6:8]
