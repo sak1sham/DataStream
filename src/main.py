@@ -101,6 +101,6 @@ if __name__ == "__main__":
             i += 1
         logger.inform(s='Added all jobs.')
     else:
-        logger.inform("Please provide the job_id as arguments to migrate")
+        logger.inform(s="Please provide the job_id as arguments to migrate")
     if(is_fastapi):
         uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))
