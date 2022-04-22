@@ -64,7 +64,7 @@ def use_mapping(db, key, is_fastapi):
     if(key not in db.keys()):
         db[key] = []
     for curr_mapping in db[key]:
-        create_new_job(db, curr_mapping, db['id'], is_fastapi)
+        create_new_job(db, curr_mapping, unique_id, is_fastapi)
 
 def get_batch_size(s) -> Tuple[int]:
     b = s.split(',')
