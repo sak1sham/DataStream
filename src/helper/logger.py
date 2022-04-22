@@ -37,7 +37,7 @@ def write_logs(job_id: str = None, log: str = None, timing: datetype = datetime.
 class Log_manager:
     def __init__(self) -> None:
         p = os.path.abspath(os.getcwd())
-        logs_folder = p + '/tmp'
+        logs_folder = p + '/../tmp'
         isExist = os.path.exists(logs_folder)
         if not isExist:
             os.makedirs(logs_folder)

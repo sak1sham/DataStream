@@ -64,6 +64,8 @@ def use_mapping(db, key, is_fastapi):
     if(key not in db.keys()):
         db[key] = []
     for curr_mapping in db[key]:
+        logger.inform(s="Mapping processed.")
+        continue
         create_new_job(db, curr_mapping, unique_id, is_fastapi)
 
 def get_batch_size(s) -> Tuple[int]:
@@ -101,6 +103,6 @@ if __name__ == "__main__":
             i += 1
         logger.inform(s='Added all jobs.')
     else:
-        logger.inform("Please provide the job_id as arguments to migrate")
+        logger.inform(s="Please provide the job_id as arguments to migrate")
     if(is_fastapi):
         uvicorn.run(app, port=int(os.getenv('PORT')), host=os.getenv("HOST"))
