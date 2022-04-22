@@ -102,6 +102,10 @@ class KafkaMigrate:
         self.curr_mapping['fields']['dms_pkey'] = 'int'
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
         self.athena_dtypes = get_athena_dtypes(self.curr_mapping['fields'])
+        if('col_rename' in self.curr_mapping.keys() and self.curr_mapping['col_rename']):
+            for key, val in self.curr_mapping['col_rename'].items():
+                self.athena_dtypes[val] = self.athena_dtypes[key]
+                self.athena_dtypes.pop(key)
 
     def add_partitions(self, df: dftype) -> dftype:
         '''
@@ -131,6 +135,8 @@ class KafkaMigrate:
         self.primary_key = end
         df = self.add_partitions(df)
         df = convert_to_dtype(df, self.curr_mapping['fields'])
+        if('col_rename' in self.curr_mapping.keys() and self.curr_mapping['col_rename']):
+            df.rename(columns=self.curr_mapping['col_rename'], inplace=True)
         processed_data = {'name': self.table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': self.athena_dtypes}
         return processed_data
 
@@ -142,13 +148,13 @@ class KafkaMigrate:
             return
         else:
             if('name' not in processed_data.keys()):
-                processed_data['name'] = self.curr_mapping['collection_name']
+                processed_data['name'] = self.table_name
             if('df_insert' not in processed_data.keys()):
                 processed_data['df_insert'] = pd.DataFrame({})
             if('df_update' not in processed_data.keys()):
                 processed_data['df_update'] = pd.DataFrame({})
             if('dtypes' not in processed_data.keys()):
-                processed_data['dtypes'] = get_athena_dtypes(self.curr_mapping['fields'])
+                processed_data['dtypes'] = self.athena_dtypes
             primary_keys = ['dms_pkey']
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
 
@@ -173,15 +179,24 @@ class KafkaMigrate:
                 while(1):
                     recs = consumer.poll(timeout_ms=1000000, max_records=self.batch_size)
                     if(not recs):
-                        self.inform('No more records found. Stopping the script')
+                        self.inform('No more records found. Stopping the script.')
                         break
                     else:
+                        n_records = 0
+                        segregated_recs = {}
                         for _, records in recs.items():
-                            converted_list = []
                             for message in records:
-                                converted_list.append(self.process_dict(message.value))
-                            converted_df = pd.DataFrame(converted_list)
+                                n_records += 1
+                                message_table_name = self.get_table_name(message.value)
+                                if(message_table_name not in segregated_recs.keys()):
+                                    segregated_recs[message_table_name] = [self.process_dict(message.value)]
+                                else:
+                                    segregated_recs[message_table_name].append(self.process_dict(message.value))
+                        self.inform("Read {0} records from kafka".format(n_records))
+                        for table_name, recs in segregated_recs.items():
+                            converted_df = pd.DataFrame(recs)
                             processed_data = self.process_table(df=converted_df)
+                            processed_data['name'] = table_name
                             self.save_data(processed_data=processed_data)
                             self.inform(message="Data saved")
             except Exception as e:
