@@ -25,6 +25,9 @@ mapping = {
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'batch_size': 10000,
+            'lob_fields_length': {
+                'idfa': 3036,
+            }
         },
     ]
 }
