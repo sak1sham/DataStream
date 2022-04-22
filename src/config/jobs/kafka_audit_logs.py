@@ -33,7 +33,10 @@ mapping = {
             'cron': 'self-managed',
             'to_partition': True,
             'partition_col': 'date',
-            'partition_col_format': ['datetime']
+            'partition_col_format': ['datetime'],
+            'col_rename': {
+                'date': 'created_at',
+            }
         },
     ],
     'testing': {
