@@ -27,6 +27,13 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'lob_fields_length': {
+                'status_result': 65535,
+                'current_row': 65535,
+                'run_result': 65535,
+                'errors': 10240,
+                'validation_error': 10240,
+            }
         },
     ]
 }
