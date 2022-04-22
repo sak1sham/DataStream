@@ -35,9 +35,7 @@ mapping = {
                 'delivery_boy_location_geog': 65535,
                 'whatsapp_location_geog': 65535,
                 'device_location_geog': 65535,
-
                 'pincode': 1024,
-
                 'db_username': 4048,
                 'formatted_address': 10240,
                 'landmark': 4048,
