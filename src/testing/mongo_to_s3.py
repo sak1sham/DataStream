@@ -8,17 +8,19 @@ from typing import NewType
 from bson import ObjectId
 from dotenv import load_dotenv
 import sys
-from migration_mapping import get_mapping
+import time 
+import traceback
+from typing import Dict, Any
 load_dotenv()
 import pytz
 datetype = NewType("datetype", datetime.datetime)
-
 import os
-
 from dotenv import load_dotenv
 load_dotenv()
 
+from migration_mapping import get_mapping
 from test_util import *
+from slack_notify import send_message
 
 def convert_to_str(x) -> str:
     if(isinstance(x, list)):
@@ -33,16 +35,19 @@ def convert_to_str(x) -> str:
 
 certificate = 'config/rds-combined-ca-bundle.pem'
 
-class MongoTester(unittest.TestCase):
-    id_ = ''
-    url = ''
-    db = ''
-    col = ''
-    test_N = 2000
-    col_map = {}
-    tz_info = pytz.timezone('Asia/Kolkata')
-    N_mongo = -1
-
+class MongoTester():
+    def __init__(self, id_: str = '', url: str = '', db: Dict = {}, col: Dict = {}, test_N: int = 1000, col_map: Dict = {}, primary_key: str = '', tz_info: Any = pytz.timezone("Asia/Kolkata")):
+        self.id_ = id_
+        self.url = url
+        self.db = db
+        self.col = col
+        self.test_N = test_N
+        self.col_map = col_map
+        self.primary_key = primary_key
+        self.tz_info = tz_info
+        self.N_mongo = -1
+        self.count = 0
+    
     def get_last_run_cron_job(self):
         client_encr = MongoClient(os.getenv('ENCR_MONGO_URL'), tlsCAFile=certificate)
         db_encr = client_encr[os.getenv('DB_NAME')]
@@ -139,24 +144,52 @@ class MongoTester(unittest.TestCase):
                             print("Record updated later.")
                             continue
                 athena_record = df.loc[df['_id'] == str(record['_id'])].to_dict(orient='records')
-                assert self.check_match(record, athena_record[0])
+                try:
+                    assert self.check_match(record, athena_record[0])
+                except Exception as e:
+                    print("Assertion Error found.")
+                    self.count += 1
 
 
 if __name__ == "__main__":
-    n_test = 20
-    id = ''
-    if(len(sys.argv) > 1):
-        id = sys.argv.pop()
-    mapping = get_mapping(id)
-    if('collections' not in mapping.keys()):
-        mapping['collections'] = []
-    for col in mapping['collections']:
-        print("Testing", col['collection_name'])
-        MongoTester.url = mapping['source']['url']
-        MongoTester.db = mapping['source']['db_name']
-        MongoTester.id_ = id + "_DMS_" + col['collection_name']
-        MongoTester.col = col['collection_name']
-        MongoTester.col_map = col  
-        for iter in range(0, n_test):
-            print("iteration:", iter)
-            unittest.main(exit=False, warnings='ignore')
+    try:
+        n_test = 1
+        records_per_batch = 1000
+        id = ''
+        if(len(sys.argv) > 1):
+            id = sys.argv.pop()
+        mapping = get_mapping(id)
+        if('collections' not in mapping.keys()):
+            mapping['collections'] = []
+        for col in mapping['collections']:
+            start = time.time()
+            obj = MongoTester(url=mapping['source']['url'], db = mapping['source']['db_name'], id_ = id + "_DMS_" + col['collection_name'], col = col['collection_name'], col_map = col, primary_key = '_id', test_N=records_per_batch)
+            print("Testing", col['collection_name'])
+            for iter in range(0, n_test):
+                print("Iteration:", iter)
+                obj.test_mongo()
+            mismatch = obj.count
+            end = time.time()
+            time_taken = str(datetime.timedelta(seconds=int(end-start)))
+            if('notify' in settings.keys() and settings['notify']):
+                msg = "Testing completed for *{0}* from database *{1}* ({2}) with desination {3}.\nTested {4} random records\nTotal time taken {5}\nFound {6} mismatches".format(col['collection_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], n_test*records_per_batch, str(time_taken), mismatch)
+                try:
+                    slack_token = settings['slack_notif']['slack_token']
+                    channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
+                    send_message(msg = msg, channel = channel, slack_token = slack_token)
+                    print("Testing notification sent successfully.")
+                except Exception as e:
+                    print(traceback.format_exc())
+                    print("Unable to connect to slack and send the notification.")
+    except Exception as e:
+        if('notify' in settings.keys() and settings['notify']):
+            msg = "Testing failed for *{0}* from database *{1}* ({2}) with desination {3} with following exception:\n```{4}```".format(col['collection_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], traceback.format_exc())
+            try:
+                slack_token = settings['slack_notif']['slack_token']
+                channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
+                send_message(msg = msg, channel = channel, slack_token = slack_token)
+                print("Testing notification sent successfully.")
+            except Exception as e:
+                print(traceback.format_exc())
+                print("Unable to connect to slack and send the notification.")
+    

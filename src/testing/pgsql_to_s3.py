@@ -1,6 +1,5 @@
 import psycopg2
 import awswrangler as wr
-import unittest
 import datetime
 from typing import NewType
 import pytz
@@ -8,9 +7,13 @@ from pymongo import MongoClient
 datetype = NewType("datetype", datetime.datetime)
 import sys
 import numpy
+import time 
+import traceback
+from typing import Dict, Any
 
 from test_util import *
 from migration_mapping import get_mapping
+from slack_notify import send_message
 
 import os
 from dotenv import load_dotenv
@@ -19,17 +22,19 @@ load_dotenv()
 
 certificate = 'config/rds-combined-ca-bundle.pem'
 
-class SqlTester(unittest.TestCase):
-    id_ = ''
-    url = ''
-    db = ''
-    table = ''
-    test_N = 1000
-    table_map = {}
-    primary_key = ''
-    tz_info = pytz.timezone("Asia/Kolkata")
-    N = 1
-    
+class SqlTester():
+    def __init__(self, id_: str = '', url: str = '', db: Dict = {}, table: Dict = {}, test_N: int = 1000, table_map: Dict = {}, primary_key: str = '', tz_info: Any = pytz.timezone("Asia/Kolkata"), N: int = 1):
+        self.id_ = id_
+        self.url = url
+        self.db = db
+        self.table = table
+        self.test_N = test_N
+        self.table_map = table_map
+        self.primary_key = primary_key
+        self.tz_info = tz_info
+        self.N = N
+        self.count = 0
+
     def get_last_run_cron_job(self):
         client_encr = MongoClient(os.getenv('ENCR_MONGO_URL'), tlsCAFile=certificate)
         db_encr = client_encr[os.getenv('DB_NAME')]
@@ -80,9 +85,6 @@ class SqlTester(unittest.TestCase):
                 assert athena_count <= N
             print("Count Test completed")
         
-    # https://stackoverflow.com/questions/580639/how-to-randomly-select-rows-in-sql
-    # Select RANDOM RECORDS from PgSQL
-
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
         tn = curr_table_name.split('.')
         schema_name = 'public'
@@ -103,7 +105,6 @@ class SqlTester(unittest.TestCase):
         if(self.table_map['mode'] == 'dumping'):
             col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
-
 
     def check_match(self, record, athena_record, column_dtypes) -> bool:
         for key in record.keys():
@@ -134,7 +135,6 @@ class SqlTester(unittest.TestCase):
                 raise
         return True
 
-
     def add_partitions(self, df: dftype = pd.DataFrame({})) -> dftype:
         self.partition_for_parquet = []
         if('partition_col' in self.table_map.keys()):
@@ -164,8 +164,8 @@ class SqlTester(unittest.TestCase):
                     df[parq_col] = df[col].astype(int)
         return df
 
-
-    def test_pgsql(self):
+    def test_pgsql(self) -> int:
+        self.count = 0
         if(self.table_map['mode'] != 'dumping'):
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
@@ -216,28 +216,54 @@ class SqlTester(unittest.TestCase):
                         
                         for _, row in data_df.iterrows():
                             athena_record = df.loc[df['unique_migration_record_id'] == row['unique_migration_record_id']].to_dict(orient='records')
-                            assert self.check_match(row, athena_record[0], column_dtypes)
-                    print("tested", data_df.shape[0], "records")
+                            try:
+                                assert self.check_match(row, athena_record[0], column_dtypes)
+                            except Exception as e:
+                                print("Assertion Error found.")
+                                self.count += 1
+                    print("Tested {0} records.".format(data_df.shape[0]))
+        return self.count
 
 
 if __name__ == "__main__":
-    N = 200
-    id = ''
-    if(len(sys.argv) > 1):
-        id = sys.argv.pop()
-    mapping = get_mapping(id)
-    if(mapping['source']['source_type'] == 'sql'):
-        if('tables' not in mapping.keys()):
-            mapping['tables'] = []
-        for table in mapping['tables']:
-            print("Testing", table['table_name'])
-            SqlTester.N = N
-            SqlTester.url = mapping['source']['url']
-            SqlTester.db = mapping
-            SqlTester.id_ = id + "_DMS_" + table['table_name']
-            SqlTester.table = table['table_name']
-            SqlTester.table_map = table
-            if 'primary_key' in table.keys():
-                SqlTester.primary_key = table['primary_key']
-        unittest.main(exit=False, warnings='ignore')
-    
+    try:
+        N = 200
+        records_per_batch = 1000
+        id = ''
+        if(len(sys.argv) > 1):
+            id = sys.argv.pop()
+        mapping = get_mapping(id)
+        if('username' not in mapping['source'].keys()):
+            mapping['source']['username'] = ''
+            mapping['source']['password'] = ''
+        if(mapping['source']['source_type'] == 'sql'):
+            if('tables' not in mapping.keys()):
+                mapping['tables'] = []
+            for table in mapping['tables']:
+                start = time.time()
+                obj = SqlTester(N=N, url=mapping['source']['url'], db = mapping, id_ = id + "_DMS_" + table['table_name'], table = table['table_name'], table_map = table, primary_key = table['primary_key'], test_N=records_per_batch)
+                print("Testing", table['table_name'])
+                mismatch = obj.test_pgsql()
+                end = time.time()
+                time_taken = str(datetime.timedelta(seconds=int(end-start)))
+                if('notify' in settings.keys() and settings['notify']):
+                    msg = "Testing completed for *{0}* from database *{1}* ({2}) with desination {3}.\nTested {4} random records\nTotal time taken {5}\nFound {6} mismatches".format(table['table_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], N*records_per_batch, str(time_taken), mismatch)
+                    try:
+                        slack_token = settings['slack_notif']['slack_token']
+                        channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
+                        send_message(msg = msg, channel = channel, slack_token = slack_token)
+                        print("Testing notification sent successfully.")
+                    except Exception as e:
+                        print(traceback.format_exc())
+                        print("Unable to connect to slack and send the notification.")
+    except Exception as e:
+        if('notify' in settings.keys() and settings['notify']):
+            msg = "Testing failed for *{0}* from database *{1}* ({2}) with desination {3} with following exception:\n```{4}```".format(table['table_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], traceback.format_exc())
+            try:
+                slack_token = settings['slack_notif']['slack_token']
+                channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
+                send_message(msg = msg, channel = channel, slack_token = slack_token)
+                print("Testing notification sent successfully.")
+            except Exception as e:
+                print(traceback.format_exc())
+                print("Unable to connect to slack and send the notification.")
