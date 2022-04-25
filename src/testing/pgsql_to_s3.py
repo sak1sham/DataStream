@@ -12,7 +12,7 @@ import numpy
 from test_util import *
 from migration_mapping import get_mapping
 
-certificate = 'config/rds-combined-ca-bundle.pem'
+certificate = 'src/config/rds-combined-ca-bundle.pem'
 
 class SqlTester(unittest.TestCase):
     id_ = ''
