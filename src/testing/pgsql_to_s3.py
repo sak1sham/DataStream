@@ -12,7 +12,12 @@ import numpy
 from test_util import *
 from migration_mapping import get_mapping
 
-certificate = 'src/config/rds-combined-ca-bundle.pem'
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+certificate = 'config/rds-combined-ca-bundle.pem'
 
 class SqlTester(unittest.TestCase):
     id_ = ''
@@ -26,17 +31,17 @@ class SqlTester(unittest.TestCase):
     N = 1
     
     def get_last_run_cron_job(self):
-        client_encr = MongoClient('mongodb://manish:ACVVCH7t7rqd8kB8@cohortx.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false', tlsCAFile=certificate)
-        db_encr = client_encr['dms_migration_updates']
-        collection_encr = db_encr['dms_migration_info']
+        client_encr = MongoClient(os.getenv('ENCR_MONGO_URL'), tlsCAFile=certificate)
+        db_encr = client_encr[os.getenv('DB_NAME')]
+        collection_encr = db_encr[os.getenv('COLLECTION_NAME')]
         curs = collection_encr.find({'last_run_cron_job_for_id': self.id_})
         curs = list(curs)
         return curs[0]['timing']
 
     def last_migrated_record(self):
-        client_encr = MongoClient('mongodb://manish:ACVVCH7t7rqd8kB8@cohortx.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false', tlsCAFile=certificate)
-        db_encr = client_encr['dms_migration_updates']
-        collection_encr = db_encr['dms_migration_info']
+        client_encr = MongoClient(os.getenv('ENCR_MONGO_URL'), tlsCAFile=certificate)
+        db_encr = client_encr[os.getenv('DB_NAME')]
+        collection_encr = db_encr[os.getenv('COLLECTION_NAME')]
         curs = collection_encr.find({'last_migrated_record_for_id': self.id_})
         curs = list(curs)
         last_record_migrated = curs[0]['record_id']

@@ -13,6 +13,8 @@ load_dotenv()
 import pytz
 datetype = NewType("datetype", datetime.datetime)
 
+import os
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -42,9 +44,9 @@ class MongoTester(unittest.TestCase):
     N_mongo = -1
 
     def get_last_run_cron_job(self):
-        client_encr = MongoClient('mongodb://manish:ACVVCH7t7rqd8kB8@cohortx.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false', tlsCAFile=certificate)
-        db_encr = client_encr['dms_migration_updates']
-        collection_encr = db_encr['dms_migration_info']
+        client_encr = MongoClient(os.getenv('ENCR_MONGO_URL'), tlsCAFile=certificate)
+        db_encr = client_encr[os.getenv('DB_NAME')]
+        collection_encr = db_encr[os.getenv('COLLECTION_NAME')]
         curs = collection_encr.find({'last_run_cron_job_for_id': self.id_})
         curs = list(curs)
         return curs[0]['timing']
