@@ -609,13 +609,29 @@ class PGSQLMigrate:
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         
-        last = self.last_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
-        if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']):
-            if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']):
-                sql_stmt += " AND Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)"
-            else:
-                sql_stmt += " AND " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp"
-        self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
+        last = self.last_run_cron_job
+        if('graceful_updation_lag' in self.curr_mapping.keys() and self.curr_mapping['graceful_updation_lag']):
+            '''
+                parameter to pass to double-check for any updations missed.
+            '''
+            days = 0
+            hours = 0
+            minutes = 0
+            if('days' in self.curr_mapping['graceful_updation_lag'].keys()):
+                days = self.curr_mapping['graceful_updation_lag']['days']
+            if('hours' in self.curr_mapping['graceful_updation_lag'].keys()):
+                hours = self.curr_mapping['graceful_updation_lag']['hours']
+            if('minutes' in self.curr_mapping['graceful_updation_lag'].keys()):
+                minutes = self.curr_mapping['graceful_updation_lag']['minutes']
+            last = last - datetime.timedelta(days=days, hours=hours, minutes=minutes)
+
+        last = last.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+        if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']): 
+            if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']): 
+                sql_stmt += " AND Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)" 
+            else: 
+                sql_stmt += " AND " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp" 
+        self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2) 
 
 
     def preprocess_table(self, table_name: str = None) -> None:

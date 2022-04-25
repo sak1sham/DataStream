@@ -23,6 +23,9 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'graceful_updation_lag': {
+                'days': 1
+            }
         },
     ]
 }
