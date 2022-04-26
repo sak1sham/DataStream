@@ -20,7 +20,7 @@ mapping = {
             'to_partition': True,
             'partition_col': 'primary_category_id',
             'partition_col_format': 'int',
-            'bookmark': 'updated_at',
+            'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
         },
