@@ -138,7 +138,7 @@ class PGSQLMigrate:
                     df[parq_col] = df[col].astype(str)
                 elif(col_form == 'int'):
                     self.partition_for_parquet.extend([parq_col])
-                    df[parq_col] = df[col].astype(int)
+                    df[parq_col] = df[col].fillna(0).astype(int)
                 else:
                     raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, str or datetime.") 
         else:
