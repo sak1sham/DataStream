@@ -45,7 +45,6 @@ class RedshiftSaver:
                 if(key in varchar_lengths.keys()):
                     varchar_lengths[val] = varchar_lengths[key]
                     varchar_lengths.pop(key)
-            processed_data['df_insert'].rename(columns = processed_data['col_rename'], inplace = True)
         
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
             if('col_rename' in processed_data and processed_data['col_rename']):

@@ -28,7 +28,7 @@ mapping = {
             'improper_bookmarks': False,
             'batch_size': 10000,
             'col_rename': {
-                'tags': 'tags_'
+                'tag': 'tag_'
             },
             'lob_fields_length': {
                 'sub_category': 65535,
