@@ -131,7 +131,7 @@ class SqlTester():
                     df[parq_col] = df[col].astype(str)
                 elif(col_form == 'int'):
                     self.partition_for_parquet.extend([parq_col])
-                    df[parq_col] = df[col].astype(int)
+                    df[parq_col] = df[col].fillna(0).astype(int)
         return df
 
     def test_pgsql(self) -> int:
