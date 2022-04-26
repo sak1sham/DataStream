@@ -27,6 +27,9 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'col_rename': {
+                'tags': 'tags_'
+            },
             'lob_fields_length': {
                 'sub_category': 65535,
                 'original_images': 65535,
