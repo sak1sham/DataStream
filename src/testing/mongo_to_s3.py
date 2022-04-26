@@ -1,6 +1,5 @@
 from pymongo import MongoClient
 import awswrangler as wr
-import unittest
 import math
 import random
 import datetime
