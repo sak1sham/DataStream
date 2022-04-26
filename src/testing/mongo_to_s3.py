@@ -20,6 +20,7 @@ load_dotenv()
 from migration_mapping import get_mapping
 from test_util import *
 from slack_notify import send_message
+from testing_logger import logger
 
 def convert_to_str(x) -> str:
     if(isinstance(x, list)):
@@ -99,15 +100,15 @@ class MongoTester():
                         else:
                             assert convert_to_str(record[key]) == athena_record[athena_key]
                     except:
-                        print(key)
-                        print('record[key]', record[key], "of type", type(record[key]))
-                        print('athena_record[athena_key]', athena_record[key.lower()], "of type", type(athena_record[key.lower()]))
-                        print("\n\n\n\n\n")
+                        logger.inform(key)
+                        logger.inform(str(record['_id']))
+                        logger.inform('Source: ' + str(record[key]))
+                        logger.inform('Destination: ' + str(athena_record[key.lower()]))
                         raise
             return True
         except Exception as e:
-            print(e)
-            print(record['_id'])
+            logger.inform(e)
+            logger.inform(record['_id'])
 
     def test_mongo(self):
         client = MongoClient(self.url, tlsCAFile=certificate)
@@ -127,8 +128,9 @@ class MongoTester():
         str_id = ""
         for records in curs:
             str_id += "\'" + str(records['_id']) + "\',"
-        
-        if(len(curs)):
+
+        n_recs = len(curs)
+        if(n_recs):
             query = 'SELECT * FROM ' + self.col + ' WHERE _id in (' + str_id[:-1] + ');'
             database = "mongo" + "_" + self.db.replace('.', '_').replace('-', '_')
             df = wr.athena.read_sql_query(sql = query, database = database)
@@ -136,19 +138,21 @@ class MongoTester():
                 if('bookmark' in self.col_map.keys() and self.col_map['bookmark']):
                     if('improper_bookmarks' in self.col_map.keys() and not self.col_map['improper_bookmarks']):
                         if(pytz.utc.localize(record[self.col_map['bookmark']]) > prev_time):
-                            print('Record updated later.')
+                            n_recs -= 1
+                            logger.inform('Record updated later.')
                             continue
                     else:
                         if(convert_to_datetime(record[self.col_map['bookmark']], pytz.utc) > prev_time):
-                            print("Record updated later.")
+                            n_recs -= 1
+                            logger.inform("Record updated later.")
                             continue
                 athena_record = df.loc[df['_id'] == str(record['_id'])].to_dict(orient='records')
                 try:
                     assert self.check_match(record, athena_record[0])
                 except Exception as e:
-                    print("Assertion Error found.")
+                    logger.inform("Assertion Error found.")
                     self.count += 1
-
+        logger.inform("Tested {0} records.".format(n_recs))
 
 if __name__ == "__main__":
     try:
@@ -163,9 +167,9 @@ if __name__ == "__main__":
         for col in mapping['collections']:
             start = time.time()
             obj = MongoTester(url=mapping['source']['url'], db = mapping['source']['db_name'], id_ = id + "_DMS_" + col['collection_name'], col = col['collection_name'], col_map = col, primary_key = '_id', test_N=records_per_batch)
-            print("Testing", col['collection_name'])
+            logger.inform("Testing " +  str(col['collection_name']))
             for iter in range(0, n_test):
-                print("Iteration:", iter)
+                logger.inform("Iteration: " + str(iter))
                 obj.test_mongo()
             mismatch = obj.count
             end = time.time()
@@ -176,10 +180,10 @@ if __name__ == "__main__":
                     slack_token = settings['slack_notif']['slack_token']
                     channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
                     send_message(msg = msg, channel = channel, slack_token = slack_token)
-                    print("Testing notification sent successfully.")
+                    logger.inform("Testing notification sent successfully.")
                 except Exception as e:
-                    print(traceback.format_exc())
-                    print("Unable to connect to slack and send the notification.")
+                    logger.inform(traceback.format_exc())
+                    logger.inform("Unable to connect to slack and send the notification.")
     except Exception as e:
         if('notify' in settings.keys() and settings['notify']):
             msg = "Testing failed for *{0}* from database *{1}* ({2}) with desination {3} with following exception:\n```{4}```".format(col['collection_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], traceback.format_exc())
@@ -187,8 +191,8 @@ if __name__ == "__main__":
                 slack_token = settings['slack_notif']['slack_token']
                 channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
                 send_message(msg = msg, channel = channel, slack_token = slack_token)
-                print("Testing notification sent successfully.")
+                logger.inform("Testing notification sent successfully.")
             except Exception as e:
-                print(traceback.format_exc())
-                print("Unable to connect to slack and send the notification.")
+                logger.inform(traceback.format_exc())
+                logger.inform("Unable to connect to slack and send the notification.")
     

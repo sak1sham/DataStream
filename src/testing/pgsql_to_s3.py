@@ -14,6 +14,7 @@ from typing import Dict, Any
 from test_util import *
 from migration_mapping import get_mapping
 from slack_notify import send_message
+from testing_logger import logger
 
 import os
 from dotenv import load_dotenv
@@ -78,12 +79,12 @@ class SqlTester():
                 database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
                 df = wr.athena.read_sql_query(sql = query, database = database)
                 athena_count = int(df.iloc[0]['count'])
-                print(athena_count, N)
-                print(confidence(N))
-                print(confidence(N) * N)
+                logger.inform(athena_count, N)
+                logger.inform(confidence(N))
+                logger.inform(confidence(N) * N)
                 assert athena_count >= int(confidence(N) * N)
                 assert athena_count <= N
-            print("Count Test completed")
+            logger.inform("Count Test completed")
         
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
         tn = curr_table_name.split('.')
@@ -128,10 +129,10 @@ class SqlTester():
 
                     assert record[key] == athena_record[athena_key]
             except Exception as e:
-                print(key)
-                print(record[self.primary_key])
-                print(record[key])
-                print(athena_record[athena_key])
+                logger.inform(key)
+                logger.inform(record[self.primary_key])
+                logger.inform("Source: " + str(record[key]))
+                logger.inform("Destination: " + str(athena_record[athena_key]))
                 raise
         return True
 
@@ -180,7 +181,7 @@ class SqlTester():
             
             lim = self.N * self.test_N
             sql_stmt = "SELECT * FROM {0} ORDER BY RANDOM() LIMIT {1}".format(self.table, lim)
-            print(sql_stmt)
+            logger.inform(sql_stmt)
             data_df = pd.DataFrame({})
             with conn.cursor('test-cursor-name', scrollable=True) as curs:
                 curs.execute(sql_stmt)
@@ -219,9 +220,9 @@ class SqlTester():
                             try:
                                 assert self.check_match(row, athena_record[0], column_dtypes)
                             except Exception as e:
-                                print("Assertion Error found.")
+                                logger.inform("Assertion Error found.")
                                 self.count += 1
-                    print("Tested {0} records.".format(data_df.shape[0]))
+                    logger.inform("Tested {0} records.".format(data_df.shape[0]))
         return self.count
 
 
@@ -242,7 +243,7 @@ if __name__ == "__main__":
             for table in mapping['tables']:
                 start = time.time()
                 obj = SqlTester(N=N, url=mapping['source']['url'], db = mapping, id_ = id + "_DMS_" + table['table_name'], table = table['table_name'], table_map = table, primary_key = table['primary_key'], test_N=records_per_batch)
-                print("Testing", table['table_name'])
+                logger.inform("Testing " + str(table['table_name']))
                 mismatch = obj.test_pgsql()
                 end = time.time()
                 time_taken = str(datetime.timedelta(seconds=int(end-start)))
@@ -252,10 +253,10 @@ if __name__ == "__main__":
                         slack_token = settings['slack_notif']['slack_token']
                         channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
                         send_message(msg = msg, channel = channel, slack_token = slack_token)
-                        print("Testing notification sent successfully.")
+                        logger.inform("Testing notification sent successfully.")
                     except Exception as e:
-                        print(traceback.format_exc())
-                        print("Unable to connect to slack and send the notification.")
+                        logger.inform(traceback.format_exc())
+                        logger.inform("Unable to connect to slack and send the notification.")
     except Exception as e:
         if('notify' in settings.keys() and settings['notify']):
             msg = "Testing failed for *{0}* from database *{1}* ({2}) with desination {3} with following exception:\n```{4}```".format(table['table_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], traceback.format_exc())
@@ -263,7 +264,7 @@ if __name__ == "__main__":
                 slack_token = settings['slack_notif']['slack_token']
                 channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
                 send_message(msg = msg, channel = channel, slack_token = slack_token)
-                print("Testing notification sent successfully.")
+                logger.inform("Testing notification sent successfully.")
             except Exception as e:
-                print(traceback.format_exc())
-                print("Unable to connect to slack and send the notification.")
+                logger.inform(traceback.format_exc())
+                logger.inform("Unable to connect to slack and send the notification.")
