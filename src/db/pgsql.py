@@ -242,6 +242,8 @@ class PGSQLMigrate:
                 processed_data['df_update'] = pd.DataFrame({})
             if('lob_fields_length' in self.curr_mapping.keys() and self.curr_mapping['lob_fields_length']):
                 processed_data['lob_fields_length'] = self.curr_mapping['lob_fields_length']
+            if('col_rename' in self.curr_mapping.keys() and self.curr_mapping['col_rename']):
+                processed_data['col_rename'] = self.curr_mapping['col_rename']
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring'):
                 primary_keys = ['unique_migration_record_id']
@@ -675,6 +677,7 @@ class PGSQLMigrate:
                 self.inform('No discrepancy, let\'s start the migration')
         except ProcessingError:
             raise Exception("Unable to verify datatypes of table from source and destination.")
+
 
     def process(self) -> Tuple[int]:
         if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):

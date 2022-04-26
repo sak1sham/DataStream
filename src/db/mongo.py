@@ -542,6 +542,8 @@ class MongoMigrate:
                 processed_collection['df_update'] = pd.DataFrame({})
             if('lob_fields_length' in self.curr_mapping.keys() and self.curr_mapping['lob_fields_length']):
                 processed_collection['lob_fields_length'] = self.curr_mapping['lob_fields_length']
+            if('col_rename' in self.curr_mapping.keys() and self.curr_mapping['col_rename']):
+                processed_collection['col_rename'] = self.curr_mapping['col_rename']
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping'):
                 ## If mode is dumping, then there can't be any primary key (because multiple copies are present for same record). Otherwise, set _id as primary_key
