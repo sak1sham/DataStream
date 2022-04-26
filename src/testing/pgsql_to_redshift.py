@@ -147,6 +147,11 @@ class SqlTester():
                 password = self.db['source']['password']
             )
             column_dtypes = self.get_column_dtypes(conn=conn, curr_table_name=self.table)
+            if('col_rename' in table.keys() and table['col_rename']):
+                for key, val in table['col_rename'].items():
+                    if(key in column_dtypes.keys()):
+                        column_dtypes[val] = column_dtypes[key]
+                        column_dtypes.pop(key)
             last_migrated_record = self.last_migrated_record()
             if (self.primary_key == ''):
                 return
@@ -167,6 +172,8 @@ class SqlTester():
                     data_df = pd.DataFrame(ret, columns = columns)
                     
                     ## Adding partitions and a primary key "unique_migration_record_id" for every record
+                    if('col_rename' in table.keys() and table['col_rename']):
+                        data_df.rename(columns=table['col_rename'], inplace=True)
                     self.add_partitions(data_df)
                     self.primary_key = self.primary_key.lower()
                     data_df['unique_migration_record_id'] = data_df[self.primary_key]
