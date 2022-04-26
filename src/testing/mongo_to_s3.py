@@ -64,15 +64,6 @@ class MongoTester():
             self.N_mongo = collection.count_documents({})
         return self.N_mongo
     
-    def abc_test_count(self):
-        N = self.count_docs()
-        if(N > 0):
-            query = 'SELECT COUNT(*) as count FROM ' + self.col + ';'
-            df = wr.athena.read_sql_query(sql = query, database = "mongo" + "_" + self.db.replace('.', '_').replace('-', '_'))
-            athena_count = int(df.iloc[0]['count'])
-            assert athena_count >= int(confidence(N) * N)
-            assert athena_count <= N
-
     def check_match(self, record, athena_record) -> bool:
         try:
             for key in record.keys():

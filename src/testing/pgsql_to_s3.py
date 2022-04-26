@@ -55,37 +55,6 @@ class SqlTester():
             last_record_migrated = pytz.utc.localize(last_record_migrated)
         return last_record_migrated
 
-    def abc_test_count(self):
-        if(self.table_map['mode'] != 'dumping'):
-            sql_stmt = "SELECT COUNT(*) as count FROM " + self.table
-            if('username' not in self.db['source'].keys()):
-                self.db['source']['username'] = ''
-            if('password' not in self.db['source'].keys()):
-                self.db['source']['password'] = ''
-            conn = psycopg2.connect(
-                host = self.db['source']['url'],
-                database = self.db['source']['db_name'],
-                user = self.db['source']['username'],
-                password = self.db['source']['password']
-            )
-            with conn.cursor('test-cursor-name') as curs:
-                curs.execute(sql_stmt)
-                ret = curs.fetchall()
-                N = ret[0][0]
-            
-            if(N > 0):
-                athena_table = str(self.table).replace('.', '_').replace('-', '_')
-                query = 'SELECT COUNT(*) as count FROM ' + athena_table + ';'
-                database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
-                df = wr.athena.read_sql_query(sql = query, database = database)
-                athena_count = int(df.iloc[0]['count'])
-                logger.inform(athena_count, N)
-                logger.inform(confidence(N))
-                logger.inform(confidence(N) * N)
-                assert athena_count >= int(confidence(N) * N)
-                assert athena_count <= N
-            logger.inform("Count Test completed")
-        
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
         tn = curr_table_name.split('.')
         schema_name = 'public'
