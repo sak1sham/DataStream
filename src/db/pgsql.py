@@ -1,5 +1,5 @@
 from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb, save_recovery_data, get_recovery_data, delete_recovery_data
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
@@ -68,6 +68,7 @@ class PGSQLMigrate:
             set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job, last_record_id = last_rec['record_id'])
         else:
             set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
+        delete_recovery_data(self.curr_mapping['unique_id'])
 
 
     def distribute_records(self, collection_encr: collectionType = None, df: dftype = pd.DataFrame({}), mode: str = "both") -> Tuple[dftype]:
@@ -418,6 +419,7 @@ class PGSQLMigrate:
                                                     last_record_id = self.tz_info.localize(last_record_id)
                                                 last_record_id = last_record_id.astimezone(pytz.utc)
                                             set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = datetime.datetime.utcnow())
+                                            save_recovery_data(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = self.curr_run_cron_job)
                                         processed_data = {}
                                         break
                                     if(killer.kill_now):
@@ -550,7 +552,44 @@ class PGSQLMigrate:
             Function to create PGSQL query for logging mode and then send it further for processing.
             2-step process: Insertion followed by Deletion
         '''
-        ## FIRST, LET'S FOCUS ON INSERTING NEW DATA
+        ## FIRST WE NEED TO UPDATE THOSE RECORDS WHICH WERE INSERTED IN LAST RUN, BUT AN ERROR WAS ENCOUNTERED, AND THOSE WERE UPDATED AT SOURCE LATER ON
+        recovery_data = get_recovery_data(self.curr_mapping['unique_id'])
+        if(recovery_data):
+            self.inform("Trying to make the system recover by updating the records inserted during the previously failed job(s).")
+            last2 = recovery_data['record_id']
+            sql_stmt = "SELECT * FROM " + table_name
+            if(self.curr_mapping['primary_key_datatype'] == 'int'):
+                last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
+                last = -2147483648
+                if(last_rec):
+                    last = int(last_rec)
+                last = str(last)
+                sql_stmt += " WHERE {0} > {1} AND {2} <= {3}".format(self.curr_mapping['primary_key'], last, self.curr_mapping['primary_key'], last2)
+            elif(self.curr_mapping['primary_key_datatype'] == 'str'):
+                last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
+                last = ""
+                if(last_rec):
+                    last = str(last_rec)
+                sql_stmt += " WHERE {0} > \'{1}\' AND {2} <= \'{3}\'".format(self.curr_mapping['primary_key'], last, self.curr_mapping['primary_key'], last2)
+            elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
+                last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
+                last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
+                if(last_rec):
+                    last = pytz.utc.localize(last_rec).astimezone(self.tz_info)
+                sql_stmt += " WHERE CAST({0} as timestamp) > CAST(\'{1}\' as timestamp) AND CAST({2} as timestamp) <= CAST(\'{3}\' as timestamp)".format(self.curr_mapping['primary_key'], last.strftime('%Y-%m-%d %H:%M:%S'), self.curr_mapping['primary_key'], last2.strftime('%Y-%m-%d %H:%M:%S'))
+            else:
+                IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
+            
+            last_time = pytz.utc.localize(recovery_data['timing'])
+            last_time = last_time.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+            if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']): 
+                if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']): 
+                    sql_stmt += " AND Cast({0} as timestamp) > CAST(\'{1}\' as timestamp)".format(self.curr_mapping['bookmark'], last_time)
+                else: 
+                    sql_stmt += " AND {0} > \'{1}\'::timestamp".format(self.curr_mapping['bookmark'], last_time)
+            self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
+
+        ## NOW, SYSTEM IS RECOVERED, LET'S FOCUS ON INSERTING NEW DATA
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")

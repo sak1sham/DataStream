@@ -1,5 +1,5 @@
 from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, save_recovery_data, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record, save_recovery_data, get_recovery_data, delete_recovery_data
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
@@ -170,6 +170,7 @@ class MongoMigrate:
         self.inform(message = "Inserted " + str(self.n_insertions) + " records")
         self.inform(message = "Updated " + str(self.n_updations) + " records")
         set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
+        delete_recovery_data(job_id=self.curr_mapping['unique_id'])
 
 
     def add_partitions(self, document: Dict[str, Any], insertion_time) -> Dict[str, Any]:
@@ -287,6 +288,102 @@ class MongoMigrate:
         ## Processing is complete. While saving, we need to pass the datatypes of columns to Athena (to create SQL table).
         dtypes = get_athena_dtypes(self.curr_mapping['fields'])
         return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
+
+
+    def updating_recovered_data(self, start: int = 0, end: int = 0, improper_bookmarks: bool = False, last_recovered_record: Any = None, recovered_data_timing: datetime.datetime = None) -> Dict[str, Any]:
+        '''
+            This function finds all records which are inserted in last run, but the last run failed due to any reason, and finds and migrates those records which were updated at the source later
+                1. When we are updating data, no need to capture new records, only old records are to be processed
+                2. If bookmark for updation is not provided, we can find all records, and filter them further while matching with their encryptions
+            Returns None if no more batches need to be searched for. Otherwise, returns a dictionary (Dict[str, Any]) of data to be saved with following keys:
+            processed_collection = {
+                'name': str: collection_name,
+                'df_insert': pd.Dataframe({}): all records to be inserted
+                'df_update': pd.DataFrame({}): all records to be updated,
+                'dtypes': Dict[str, str]: Glue/Athena mapping of all fields
+            }
+        '''
+        docu_update = []
+        collection_encr = get_data_from_encr_db()
+        migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
+        self.inform(message = 'Updating all records updated between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
+        all_documents = []
+        ## Bookmark is that field in the document (dictionary) which identifies the timestamp when the record was updated
+        ## If bookmark field is not proper (can either be string, or integer timestamp, or datetime), we set improper_bookmarks as True, and can't query inside mongodb collection using that field directly
+        ## In case of improper_bookmarks = True, we need to convert that field into a datetime.datetime datatype and then compare
+        if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and not improper_bookmarks):
+            ## Return all documents which are greater than and equal to ('$gte') the time when last job was performed
+            ## and less than ('$lt') the starting time of current job
+            ## Also, the record shall be created before the last job ended (i.e., it should already be migrated and present in destination)
+            query = {
+                "$and":[
+                    {
+                        self.curr_mapping['bookmark']: {
+                            "$gt": recovered_data_timing,
+                            "$lte": self.curr_run_cron_job,
+                        }
+                    },
+                    {   "_id": {
+                            "$gt": migration_prev_id,
+                            "$lte": last_recovered_record
+                        }
+                    }
+                ]
+            }
+            all_documents = self.fetch_data(start=start, end=end, query=query)
+        else:
+            ## If we are not able to do the comparison of when the document was updated,
+            ## we fetch all documents migrated until the last job, and filter them in further processing steps
+            query = {
+                "_id": {
+                    "$gt": migration_prev_id,
+                    "$lte": last_recovered_record
+                }
+            }
+            all_documents = self.fetch_data(start=start, end=end, query=query)
+        if(not all_documents or len(all_documents) == 0):
+            return None
+        ## all_documents is a list of documents, each document as a dictionary datatype. 
+        ## The documents are all sorted as per creation_date and belong to a particular batch (self.batch_size)
+
+        for document in all_documents:
+            insertion_time = document['_id'].generation_time
+            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
+                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
+                document = self.add_partitions(document=document, insertion_time=insertion_time)
+
+            if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and improper_bookmarks):
+                if(self.curr_mapping['bookmark'] not in document.keys()):
+                    document[self.curr_mapping['bookmark']] = None
+                docu_bookmark_date = convert_to_datetime(document[self.curr_mapping['bookmark']], pytz.utc)
+                ## if docu_bookmark_date is None, that means the document was never updated
+                if(docu_bookmark_date is not pd.Timestamp(None) and docu_bookmark_date <= recovered_data_timing):
+                    continue
+            elif('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark']):
+                ## if bookmark is not present, we need to do the encryption of the document
+                ## if the encryption of document is different when compared to its previous hash (already stored in metadata) that means the document has been modified
+                ## otherwise, no updation are performed in that document
+                document['_id'] = str(document['_id'])
+                encr = {
+                    'collection': self.curr_mapping['unique_id'],
+                    'map_id': document['_id'],
+                    'document_sha': hashlib.sha256(json.dumps(document, default=str, sort_keys=True).encode()).hexdigest()
+                }
+                previous_records = collection_encr.find_one({'collection': self.curr_mapping['unique_id'], 'map_id': document['_id']})
+                if(previous_records):
+                    if(previous_records['document_sha'] == encr['document_sha']):
+                        continue
+                    else:
+                        collection_encr.delete_one({'collection': self.curr_mapping['unique_id'], 'map_id': document['_id']})
+                        collection_encr.insert_one(encr)
+                else:
+                    collection_encr.insert_one(encr)
+            
+            document = validate_or_convert(document, self.curr_mapping['fields'], pytz.utc)
+            docu_update.append(document)
+        ret_df_update = typecast_df_to_schema(pd.DataFrame(docu_update), self.curr_mapping['fields'])
+        dtypes = get_athena_dtypes(self.curr_mapping['fields'])
+        return {'name': self.curr_mapping['collection_name'], 'df_insert': pd.DataFrame({}), 'df_update': ret_df_update, 'dtypes': dtypes}
 
 
     def updating_data(self, start: int = 0, end: int = 0, improper_bookmarks: bool = False) -> Dict[str, Any]:
@@ -450,7 +547,52 @@ class MongoMigrate:
             Function to handle all syncing process. First we find all records to be inserted and make the changes at destination
             Then we find all records to be updated and overwrite those records sequentially in destination.
         '''
-        ## FIRST DO ALL INSERTIONS
+        ## FIRST WE NEED TO UPDATE THOSE RECORDS WHICH WERE INSERTED IN LAST RUN, BUT AN ERROR WAS ENCOUNTERED, AND THOSE WERE UPDATED AT SOURCE LATER ON
+        recovery_data = get_recovery_data(self.curr_mapping['unique_id'])
+        if(recovery_data):
+            self.inform("Trying to make the system recover by updating the records inserted during the previously failed job(s).")
+            start = 0
+            updated_in_destination = True
+            processed_collection = {}
+            processed_collection_u = {}
+            end = 0
+            while(True):
+                end = start + self.batch_size
+                if('improper_bookmarks' not in self.curr_mapping.keys()):
+                    self.curr_mapping['improper_bookmarks'] = True
+                processed_collection_u = {}
+                processed_collection_u = self.updating_recovered_data(start=start, end=end, improper_bookmarks=self.curr_mapping['improper_bookmarks'], last_recovered_record = recovery_data['record_id'], recovered_data_timing = recovery_data['timing'])
+                '''
+                    self.updating_recovered_data() returns either None or Dict[str, Any]
+                    None is returned when no more records need to be checked for updations and all updations have been identified.
+                    Dict[str, Any] is returned in case either updations are found, or if not found then there is scope to find updations in next batch
+                '''
+                if(processed_collection_u is not None):
+                    if(updated_in_destination):
+                        processed_collection['df_update'] = processed_collection_u['df_update']
+                    else:
+                        processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
+                    self.inform(message="Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
+                else:
+                    if(processed_collection):
+                        self.save_data(processed_collection=processed_collection)
+                        updated_in_destination = True
+                        processed_collection = {}
+                    break
+                if('df_update' in processed_collection.keys()):
+                    if(processed_collection['df_update'].shape[0] >= self.batch_size):
+                        self.save_data(processed_collection=processed_collection)
+                        updated_in_destination = True
+                        processed_collection = {}
+                    else:
+                        updated_in_destination = False
+                        ## Still not saved the updates, will update together a large number of records...will save time
+                time.sleep(self.time_delay)
+                start += self.batch_size
+            self.inform(message="Updation completed for recovered data.")
+            
+
+        ## NOW, SYSTEM IS RECOVERED, LET'S FOCUS ON INSERTING NEW DATA
         self.inform(message="Starting to migrate newly inserted records.")
         processed_collection = {}
         while(True):
@@ -467,6 +609,7 @@ class MongoMigrate:
                     if(processed_collection['df_insert'].shape[0]):
                         last_record_id = ObjectId(processed_collection['df_insert']['_id'].iloc[-1])
                         set_last_migrated_record(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = last_record_id.generation_time)
+                        save_recovery_data(job_id = self.curr_mapping['unique_id'], _id = last_record_id, timing = self.curr_run_cron_job)
                     processed_collection = {}
                     break
                 if(killer.kill_now):

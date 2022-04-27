@@ -118,3 +118,37 @@ def delete_metadata_from_mongodb(job_id: str = None) -> None:
     db.delete_many({'table': job_id})
     db.delete_many({'collection': job_id})
 
+
+def save_recovery_data(job_id: str = None, _id: Any = None, timing: datetime.datetime = None) -> None:
+    '''
+        On encountering any error, we try to save the last migrated record before error in the failed job
+    '''
+    rec = {
+        'recovery_record_for_id': job_id,
+        'record_id': _id,
+        'timing': timing
+    }
+    db = get_data_from_encr_db()
+    prev = db.find_one({'recovery_record_for_id': job_id})
+    if(prev):
+        rec['timing'] = prev['timing']
+        db.delete_one({'recovery_record_for_id': job_id})
+        db.insert_one(rec)
+    else:
+        db.insert_one(rec)
+
+
+def get_recovery_data(job_id: str = None) -> Any:
+    '''
+        While updating in sync mode, we try to find if the system had stopped anywhere in between last time. this helps us in updating all inserted records which were updated later but got missed.
+    '''
+    db = get_data_from_encr_db()
+    prev = db.find_one({'recovery_record_for_id': job_id})
+    if(prev):
+        return prev
+    else:
+        return None
+
+def delete_recovery_data(job_id: str = None) -> None:
+    db = get_data_from_encr_db()
+    db.delete_many({'recovery_record_for_id': job_id})
