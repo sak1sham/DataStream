@@ -555,6 +555,7 @@ class PGSQLMigrate:
         ## FIRST WE NEED TO UPDATE THOSE RECORDS WHICH WERE INSERTED IN LAST RUN, BUT AN ERROR WAS ENCOUNTERED, AND THOSE WERE UPDATED AT SOURCE LATER ON
         recovery_data = get_recovery_data(self.curr_mapping['unique_id'])
         if(recovery_data):
+            self.inform("")
             self.inform("Trying to make the system recover by updating the records inserted during the previously failed job(s).")
             last2 = recovery_data['record_id']
             sql_stmt = "SELECT * FROM " + table_name
@@ -590,6 +591,8 @@ class PGSQLMigrate:
             self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
 
         ## NOW, SYSTEM IS RECOVERED, LET'S FOCUS ON INSERTING NEW DATA
+        self.inform("")
+        self.inform("Starting Insertion of new records.")
         sql_stmt = "SELECT * FROM " + table_name
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
@@ -625,8 +628,11 @@ class PGSQLMigrate:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         sql_stmt += " ORDER BY " + self.curr_mapping['primary_key'] 
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 1)
+        self.inform("Inserted all records found.")
         
         ## NOW INSERTION IS COMPLETE, LET'S FOCUS ON UPDATING OLD DATA
+        self.inform("")
+        self.inform("Starting updation of previously existing records.")
         sql_stmt = "SELECT * FROM " + table_name
         if(self.curr_mapping['primary_key_datatype'] == 'int'):
             last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
@@ -672,7 +678,37 @@ class PGSQLMigrate:
                 sql_stmt += " AND Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)" 
             else: 
                 sql_stmt += " AND " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp" 
-        self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2) 
+        self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
+        self.inform("Updated all existing records.")
+
+        ## NOW, UPDATION IS ALSO COMPLETE
+        ## WE NEED TO UPDATE/DOUBLE-CHECK THAT DATA WHICH WAS INSERTED DURING CURRENT MIGRATION, BUT UPDATED 2-3 MINUTES BEFORE THE JOB STARTED
+        self.inform("")
+        self.inform("Starting updation-check for newly inserted records which were updated in the 5 minutes before the job started.")
+        curr = get_last_migrated_record(self.curr_mapping['unique_id'])
+        if(curr and self.n_insertions > 0 and 'record_id' in curr.keys() and curr['record_id']):
+            ## If some records were inserted, we need to check updates for last few records as per precise time 
+            curr = curr['record_id']
+            sql_stmt = "SELECT * FROM " + table_name
+            if(self.curr_mapping['primary_key_datatype'] == 'int'):
+                sql_stmt += " WHERE {0} <= {1}".format(self.curr_mapping['primary_key'], str(int(float(curr))))
+            elif(self.curr_mapping['primary_key_datatype'] == 'str'):
+                sql_stmt += " WHERE {0} <= \'{1}\'".format(self.curr_mapping['primary_key'], curr)
+            elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
+                curr = pytz.utc.localize(curr).astimezone(self.tz_info)
+                sql_stmt += " WHERE {0} <= CAST(\'{1}\' as timestamp)".format(self.curr_mapping['primary_key'], curr)
+            else:
+                IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
+            
+            last1 = (self.curr_run_cron_job - datetime.timedelta(minutes=5)).astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+            last2 = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+            if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']): 
+                if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']): 
+                    sql_stmt += " AND Cast({0} as timestamp) > CAST(\'{1}\' as timestamp) AND Cast({2} as timestamp) <= CAST(\'{3}\' as timestamp)".format(self.curr_mapping['bookmark'], last1, self.curr_mapping['bookmark'], last2)
+                else:
+                    sql_stmt += " AND {0} > \'{1}\'::timestamp AND {2} <= \'{3}\'::timestamp".format(self.curr_mapping['bookmark'], last1, self.curr_mapping['bookmark'], last2) 
+            self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
+            self.inform("Double-checked for updations in last 5 minutes.")
 
 
     def preprocess_table(self, table_name: str = None) -> None:

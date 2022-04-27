@@ -175,7 +175,7 @@ class SqlTester():
                     if(data_df.shape[0]):
                         if('bookmark' in self.table_map.keys() and self.table_map['bookmark']):
                             data_df_NaT = data_df[data_df[self.table_map['bookmark']].isnull()]
-                            data_df_old = data_df[data_df[self.table_map['bookmark']].apply(lambda x: convert_to_datetime(x=x, tz_ = pytz.timezone('Asia/Kolkata'))) <=  prev_time]
+                            data_df_old = data_df[data_df[self.table_map['bookmark']].apply(lambda x: convert_to_datetime(x=x, tz_ = pytz.timezone('Asia/Kolkata'))) <  prev_time]
                             data_df = pd.concat([data_df_NaT, data_df_old])
                         str_id = ""
                         for _, row in data_df.iterrows():
