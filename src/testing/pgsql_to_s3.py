@@ -98,10 +98,10 @@ class SqlTester():
 
                     assert record[key] == athena_record[athena_key]
             except Exception as e:
-                logger.inform(key)
-                logger.inform(record[self.primary_key])
-                logger.inform("Source: " + str(record[key]))
-                logger.inform("Destination: " + str(athena_record[athena_key]))
+                logger.err(key)
+                logger.err(record[self.primary_key])
+                logger.err("Source: " + str(record[key]))
+                logger.err("Destination: " + str(athena_record[athena_key]))
                 raise
         return True
 
@@ -189,7 +189,7 @@ class SqlTester():
                             try:
                                 assert self.check_match(row, athena_record[0], column_dtypes)
                             except Exception as e:
-                                logger.inform("Assertion Error found.")
+                                logger.err("Assertion Error found.")
                                 self.count += 1
                     logger.inform("Tested {0} records.".format(data_df.shape[0]))
         return self.count
@@ -224,8 +224,8 @@ if __name__ == "__main__":
                         send_message(msg = msg, channel = channel, slack_token = slack_token)
                         logger.inform("Testing notification sent successfully.")
                     except Exception as e:
-                        logger.inform(traceback.format_exc())
-                        logger.inform("Unable to connect to slack and send the notification.")
+                        logger.err(traceback.format_exc())
+                        logger.err("Unable to connect to slack and send the notification.")
     except Exception as e:
         if('notify' in settings.keys() and settings['notify']):
             msg = "Testing failed for *{0}* from database *{1}* ({2}) with desination {3} with following exception:\n```{4}```".format(table['table_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], traceback.format_exc())
@@ -235,5 +235,5 @@ if __name__ == "__main__":
                 send_message(msg = msg, channel = channel, slack_token = slack_token)
                 logger.inform("Testing notification sent successfully.")
             except Exception as e:
-                logger.inform(traceback.format_exc())
-                logger.inform("Unable to connect to slack and send the notification.")
+                logger.err(traceback.format_exc())
+                logger.err("Unable to connect to slack and send the notification.")
