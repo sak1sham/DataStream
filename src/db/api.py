@@ -45,7 +45,7 @@ class APIMigrate:
         if not event_names:
             return
         channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
-        if max_attempts==0:
+        if max_attempts<=0:
             msg = 'Unable to process following events: \n'
             for event_name in event_names:
                 msg += event_name + '\n'
@@ -82,15 +82,19 @@ class APIMigrate:
                         transformed_total_events += int(processed_data_df.shape[0])
                     have_more_data = True if processed_data and processed_data['event_cursor'] else False
             except APIRequestError as e:
-                msg = 'Error while fetching data for event: {0} for app {1} from source.``` Exception: {2}```'.format(event_name, self.curr_mapping['project_name'], str(e))
-                self.err(msg)
+                msg = 'Error while fetching data for event: {0} for app {1} from source on {2}.'.format(event_name, self.curr_mapping['project_name'], str(sync_date.date()))
                 send_message(msg = msg, channel = channel, slack_token = slack_token)
+                msg += '``` Exception: {0}```'.format(str(e))
+                self.err(msg)
                 failed_events.append(event_name)
+                max_attempts -= 1
             except Exception as e:
                 msg = "Something went wrong! Could not process event {0} for project {1}.``` Exception: {2}```".format(event_name, self.curr_mapping['project_name'], str(e))
                 send_message(msg = msg, channel = channel, slack_token = slack_token)
                 self.err(msg)
-        self.process_clevertap_events(failed_events, max_attempts-1)
+                failed_events.append(event_name)
+                max_attempts -= 2
+        self.process_clevertap_events(failed_events, sync_date, max_attempts)
 
     def presetup_clevertap_process(self) -> None:
         start_day = self.curr_mapping.get('start_day', -1)
