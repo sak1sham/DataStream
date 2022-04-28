@@ -101,8 +101,8 @@ class APIMigrate:
         end_day = self.curr_mapping.get('end_day', -1)
         if not start_day or not end_day:
             raise MissingData("please provide start_day and end_day in mapping")
-        start_date = get_date_from_days(days=start_day)
-        end_date = get_date_from_days(days=end_day)
+        start_date = get_date_from_days(start_day, self.tz_info)
+        end_date = get_date_from_days(end_day, self.tz_info)
         event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
         while start_date <= end_date:
             self.process_clevertap_events( event_names, start_date, 3)
