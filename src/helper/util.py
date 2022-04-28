@@ -170,7 +170,7 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
             if(col in schema.keys()):
                 dtype = schema[col].lower()
                 if(dtype == 'jsonb' or dtype == 'json'):
-                    df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
+                    df[col] = df[col].fillna('').apply(lambda x: convert_jsonb_to_string(x))
                     df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
                     df[col] = df[col].apply(lambda x: convert_to_datetime(x, tz_))
