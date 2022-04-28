@@ -289,8 +289,8 @@ def get_athena_dtypes(maps: Dict[str, str] = {}) -> Dict[str, str]:
 def get_yyyymmdd_from_date(_date):
         return int(_date.strftime('%Y%m%d'))
 
-def get_date_from_days(days=0):
-    return datetime.date.today() + datetime.timedelta(days=int(days))
+def get_date_from_days(days=0, tz_: Any = pytz.utc):
+    return datetime.datetime.now(tz_).date() + datetime.timedelta(days=int(days))
 
 def transformTs(ts: str):
     value = str(ts)
