@@ -83,9 +83,11 @@ class ClevertapManager(EventsAPIManager):
                     if curr_mapping['fields'][key]=='int':
                         result = 0
                 tf_record[key] = result
-
-            tf_record = validate_or_convert(tf_record, curr_mapping['fields'], self.tz_info)
-            tf_records.append(tf_record)
+            try:
+                tf_record = validate_or_convert(tf_record, curr_mapping['fields'], self.tz_info)
+                tf_records.append(tf_record)
+            except:
+                logger.err(curr_mapping['unique_id'], curr_mapping['unique_id']+ ": Could not process record for event {0}. Record: ```{1}```".format(event_name, str(tf_record)))
         return tf_records
 
     def get_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], sync_date: datetime, event_cursor: str = None):
