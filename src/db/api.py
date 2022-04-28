@@ -40,24 +40,24 @@ class APIMigrate:
         if('fields' not in self.curr_mapping.keys()):
             self.curr_mapping['fields'] = {}
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
+        self.channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
     
     def process_clevertap_events(self, event_names: List[Any]=[], sync_date: datetime=None, max_attempts: int=3):
         if not event_names:
             return
-        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
         if max_attempts<=0:
             msg = 'Unable to process following events: \n'
             for event_name in event_names:
                 msg += event_name + '\n'
-            msg += 'for {0}.'.format(self.curr_mapping['project_name'])
-            send_message(msg = msg, channel = channel, slack_token = slack_token)
+            msg += 'for *{0}*.'.format(self.curr_mapping['project_name'])
+            send_message(msg = msg, channel = self.channel, slack_token = slack_token)
             return
         if max_attempts < 3:
             msg = 'Error while processing following events: \n'
             for event_name in event_names:
                 msg += event_name + '\n'
-            msg += 'for {0}. Will remigrate these events automatically'.format(self.curr_mapping['project_name'])
-            send_message(msg = msg, channel = channel, slack_token = slack_token)
+            msg += 'for *{0}*. Will remigrate these events automatically'.format(self.curr_mapping['project_name'])
+            send_message(msg = msg, channel = self.channel, slack_token = slack_token)
 
         failed_events = []
         for event_name in event_names:
@@ -82,15 +82,15 @@ class APIMigrate:
                         transformed_total_events += int(processed_data_df.shape[0])
                     have_more_data = True if processed_data and processed_data['event_cursor'] else False
             except APIRequestError as e:
-                msg = 'Error while fetching data for event: {0} for app {1} from source on {2}.'.format(event_name, self.curr_mapping['project_name'], str(sync_date.date()))
-                send_message(msg = msg, channel = channel, slack_token = slack_token)
+                msg = 'Error while fetching data for event: *{0}* for app *{1}* from source on *{2}*.'.format(event_name, self.curr_mapping['project_name'], str(sync_date.date()))
+                send_message(msg = msg, channel = self.channel, slack_token = slack_token)
                 msg += '``` Exception: {0}```'.format(str(e))
                 self.err(msg)
                 failed_events.append(event_name)
                 max_attempts -= 1
             except Exception as e:
-                msg = "Something went wrong! Could not process event {0} for project {1}.``` Exception: {2}```".format(event_name, self.curr_mapping['project_name'], str(e))
-                send_message(msg = msg, channel = channel, slack_token = slack_token)
+                msg = "Something went wrong! Could not process event *{0}* for project *{1}*.``` Exception: {2}```".format(event_name, self.curr_mapping['project_name'], str(e))
+                send_message(msg = msg, channel = self.channel, slack_token = slack_token)
                 self.err(msg)
                 failed_events.append(event_name)
                 max_attempts -= 2
@@ -105,6 +105,8 @@ class APIMigrate:
         end_date = get_date_from_days(end_day, self.tz_info)
         event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
         while start_date <= end_date:
+            msg = "Migration started for *{1}* events from database *{2}* to *{3}* for date: *{0}*".format(str(start_date), self.curr_mapping['project_name'], self.db['source']['db_name'], self.db['destination']['destination_type'])
+            send_message(msg, self.channel, slack_token)
             self.process_clevertap_events( event_names, start_date, 3)
             start_date += timedelta(1)
 
