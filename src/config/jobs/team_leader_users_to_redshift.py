@@ -36,7 +36,10 @@ mapping = {
             },
             'buffer_updation_lag':{
                 'hours': 2,
-            }
+            },
+            'grace_updation_lag': {
+                'hours': 2
+            },
         },
     ]
 }
