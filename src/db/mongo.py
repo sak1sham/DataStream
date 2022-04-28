@@ -401,7 +401,7 @@ class MongoMigrate:
         '''
         docu_update = []
         collection_encr = get_data_from_encr_db()
-        migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job)
+        migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job + datetime.timedelta(minute=1))
         self.inform(message = 'Updating all records updated between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
         all_documents = []
         ## Bookmark is that field in the document (dictionary) which identifies the timestamp when the record was updated
