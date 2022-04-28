@@ -59,9 +59,7 @@ def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] =
     for key, _ in docu.items():
         if(key == '_id'):
             docu[key] = str(docu[key])
-        elif(isinstance(docu[key], list)):
-            docu[key] = json.dumps(docu[key])
-        elif(isinstance(docu[key], dict)):
+        elif(isinstance(docu[key], list) or isinstance(docu[key], dict)):
             docu[key] = json.dumps(docu[key])
         elif(key in schema.keys()):
             if(schema[key] == 'int'):
