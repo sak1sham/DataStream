@@ -16,6 +16,7 @@ datetype = NewType("datetype", datetime.datetime)
 import os
 from dotenv import load_dotenv
 load_dotenv()
+import json
 
 from migration_mapping import get_mapping
 from test_util import *
@@ -23,10 +24,8 @@ from slack_notify import send_message
 from testing_logger import logger
 
 def convert_to_str(x) -> str:
-    if(isinstance(x, list)):
-        return convert_list_to_string(x)
-    elif(isinstance(x, dict)):
-        return convert_json_to_string(x)
+    if(isinstance(x, list) or isinstance(x, dict)):
+        return json.dumps(x)
     elif(isinstance(x, datetime.datetime)):
         x = convert_to_datetime(x)
         return x.strftime("%Y/%m/%dT%H:%M:%S")

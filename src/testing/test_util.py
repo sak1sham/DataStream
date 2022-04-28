@@ -16,31 +16,7 @@ def confidence(N: int = 10):
     percent = float(95.0 + 0.25 * log(N, 10))
     return percent/100.0
 
-def convert_list_to_string(l: List[Any]) -> str:
-    '''
-        Recursively convert lists and nested lists to strings
-        Input: list
-        Output: stringified list: str
-    '''
-    if(l is None):
-        return None
-    val = "["
-    for item in l:
-        if(isinstance(item, list) or isinstance(item, set) or isinstance(item, tuple)):
-            item = convert_list_to_string(list(item))
-        elif(isinstance(item, bool) or isinstance(item, float) or isinstance(item, complex) or isinstance(item, int)):
-            item = str(item)
-        elif(isinstance(item, dict)):
-            item = json.dumps(item)
-        elif(isinstance(item, datetime.datetime)):
-            item = item.strftime(std_datetime_format)
-        else:
-            item = str(item)
-        val = val + item + ", "
-    if(len(val) > 1):
-        val = val[:-2]
-    val = val + ']'
-    return val
+
 def utc_to_local(utc_dt: datetype = None, tz_: Any = pytz.utc) -> datetype:
     local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(tz_)
     return tz_.normalize(local_dt)
@@ -67,28 +43,6 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
             return pd.Timestamp(None)
 
 
-def convert_json_to_string(x: Dict[str, Any]) -> str:
-    '''
-        Recursively convert json and nested json objects to strings
-        Input: dict
-        Output: stringified dict: str
-    '''
-    if(x is None):
-        return x
-    for item, value in x.items():
-        if(isinstance(value, list) or isinstance(value, set) or isinstance(value, tuple)):
-            x[item] = convert_list_to_string(list(x[item]))
-        elif(isinstance(value, bool) or isinstance(value, float) or isinstance(value, complex) or isinstance(value, int)):
-            x[item] = str(x[item])
-        elif(isinstance(value, dict)):
-            x[item] = convert_json_to_string(x[item])
-        elif(isinstance(value, datetime.datetime)):
-            x[item] = x[item].strftime(std_datetime_format)
-        else:
-            x[item] = str(x[item])
-    return json.dumps(x)
-
-
 def evaluate_cron(expression: str) -> List[str]:
     '''
         order of values:
@@ -106,10 +60,8 @@ def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] =
     for key, _ in docu.items():
         if(key == '_id'):
             docu[key] = str(docu[key])
-        elif(isinstance(docu[key], list)):
-            docu[key] = convert_list_to_string(docu[key])
-        elif(isinstance(docu[key], dict)):
-            docu[key] = convert_json_to_string(docu[key])
+        elif(isinstance(docu[key], list) or isinstance(docu[key], dict)):
+            docu[key] = json.dumps(docu[key])
         elif(key in schema.keys()):
             if(schema[key] == 'int'):
                 try:
@@ -180,10 +132,8 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
 
 
 def convert_jsonb_to_string(x: Any) -> str:
-    if(isinstance(x, list)):
-        return convert_list_to_string(x)
-    elif(isinstance(x, dict)):
-        return convert_json_to_string(x)
+    if(isinstance(x, list) or isinstance(x, dict)):
+        return json.dumps(x)
     else:
         try:
             x = str(x)

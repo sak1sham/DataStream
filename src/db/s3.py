@@ -1,9 +1,8 @@
-from re import M, S
 import pandas as pd
 import pymongo
 import awswrangler as wr
 
-from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, convert_to_utc, utc_to_local, get_athena_dtypes
+from helper.util import convert_to_datetime, convert_to_dtype, convert_to_utc, utc_to_local, get_athena_dtypes
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job
 from helper.exceptions import *
 from helper.logger import logger
@@ -12,6 +11,7 @@ from dst.main import DMS_exporter
 import datetime
 import hashlib
 import pytz
+import json
 from typing import List, Dict, Any, NewType, Tuple
 
 dftype = NewType("dftype", pd.DataFrame)
@@ -52,7 +52,7 @@ class S3Migrate:
             encr = {
                 'table': self.curr_mapping['unique_id'],
                 'map_id': df.iloc[i].unique_migration_record_id,
-                'record_sha': hashlib.sha256(convert_list_to_string(df.loc[i, :].values.tolist()).encode()).hexdigest()
+                'record_sha': hashlib.sha256(json.dumps(df.loc[i, :].values.tolist()).encode()).hexdigest()
             }
             previous_records = collection_encr.find_one({'table': self.curr_mapping['unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
             if(previous_records):

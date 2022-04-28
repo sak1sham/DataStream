@@ -1,4 +1,4 @@
-from helper.util import convert_list_to_string, convert_to_datetime, convert_to_dtype, get_athena_dtypes
+from helper.util import convert_to_datetime, convert_to_dtype, get_athena_dtypes
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb, save_recovery_data, get_recovery_data, delete_recovery_data
 from helper.exceptions import *
 from helper.logger import logger
@@ -14,6 +14,7 @@ import datetime
 import hashlib
 import pytz
 from typing import List, Dict, Any, NewType, Tuple
+import json
 
 dftype = NewType("dftype", pd.DataFrame)
 collectionType =  NewType("collectionType", pymongo.collection.Collection)
@@ -86,7 +87,7 @@ class PGSQLMigrate:
             encr = {
                 'table': self.curr_mapping['unique_id'],
                 'map_id': df.iloc[i].unique_migration_record_id,
-                'record_sha': hashlib.sha256(convert_list_to_string(df.loc[i, :].values.tolist()).encode()).hexdigest()
+                'record_sha': hashlib.sha256(json.dumps(df.loc[i, :].values.tolist()).encode()).hexdigest()
             }
             previous_records = collection_encr.find_one({'table': self.curr_mapping['unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
             if(previous_records):
