@@ -407,6 +407,22 @@ class MongoMigrate:
         ## Bookmark is that field in the document (dictionary) which identifies the timestamp when the record was updated
         ## If bookmark field is not proper (can either be string, or integer timestamp, or datetime), we set improper_bookmarks as True, and can't query inside mongodb collection using that field directly
         ## In case of improper_bookmarks = True, we need to convert that field into a datetime.datetime datatype and then compare
+        last_run_c_job = self.last_run_cron_job
+        if('grace_updation_lag' in self.curr_mapping.keys() and self.curr_mapping['grace_updation_lag']):
+            '''
+                parameter to pass to double-check for any updations missed.
+            '''
+            days = 0
+            hours = 0
+            minutes = 0
+            if('days' in self.curr_mapping['grace_updation_lag'].keys()):
+                days = self.curr_mapping['grace_updation_lag']['days']
+            if('hours' in self.curr_mapping['grace_updation_lag'].keys()):
+                hours = self.curr_mapping['grace_updation_lag']['hours']
+            if('minutes' in self.curr_mapping['grace_updation_lag'].keys()):
+                minutes = self.curr_mapping['grace_updation_lag']['minutes']
+            last_run_c_job = last_run_c_job - datetime.timedelta(days=days, hours=hours, minutes=minutes)
+        
         if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and not improper_bookmarks):
             ## Return all documents which are greater than and equal to ('$gte') the time when last job was performed
             ## and less than ('$lt') the starting time of current job
@@ -415,7 +431,7 @@ class MongoMigrate:
                 "$and":[
                     {
                         self.curr_mapping['bookmark']: {
-                            "$gt": self.last_run_cron_job,
+                            "$gt": last_run_c_job,
                             "$lte": self.curr_run_cron_job,
                         }
                     },

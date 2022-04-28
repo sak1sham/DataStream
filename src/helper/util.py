@@ -125,7 +125,7 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
         elif(tp == 'bool'):
             df[col] = df[col].astype(bool)
         else:
-            df[col] = df[col].astype(str)
+            df[col] = df[col].fillna('').astype(str)
     if(df.shape[0]):
         df = df.reindex(sorted(df.columns), axis=1)
     return df
@@ -171,7 +171,7 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 dtype = schema[col].lower()
                 if(dtype == 'jsonb' or dtype == 'json'):
                     df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
-                    df[col] = df[col].astype(str, copy=False, errors='ignore')
+                    df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
                     df[col] = df[col].apply(lambda x: convert_to_datetime(x, tz_))
                 elif(dtype == 'boolean' or dtype == 'bool'):
@@ -181,15 +181,15 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
                     df[col] = pd.to_numeric(df[col], errors='coerce').astype('float64', copy=False, errors='ignore')
                 elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
-                    df[col] = df[col].astype(str, copy=False, errors='ignore')
+                    df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
                 elif('range' in dtype):
-                    df[col] = df[col].apply(convert_range_to_str).astype(str, copy=False, errors='ignore')
+                    df[col] = df[col].apply(convert_range_to_str).fillna('').astype(str, copy=False, errors='ignore')
                 elif('interval' in dtype):
-                    df[col] = df[col].astype(str, copy=False, errors='ignore')
+                    df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
                 else:
-                    df[col] = df[col].astype(str, copy=False, errors='ignore')
+                    df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
             else:
-                df[col] = df[col].astype(str, copy=False, errors='ignore')
+                df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
         df = df.reindex(sorted(df.columns), axis=1)
     return df
 
