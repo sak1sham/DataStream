@@ -33,6 +33,9 @@ mapping = {
                 'team_leader_id': 3036,
                 'notes': 3036,
                 'cx_delete_reason': 3036,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

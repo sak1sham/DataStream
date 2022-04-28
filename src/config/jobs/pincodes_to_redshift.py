@@ -32,6 +32,9 @@ mapping = {
                 'circle_name': 3036,
                 'region_name': 3036,
                 'division_name': 3036,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

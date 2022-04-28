@@ -89,6 +89,9 @@ mapping = {
                 'product_name_en': 3036,
                 'product_name_hi': 3036,
                 'short_name_en': 3036,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

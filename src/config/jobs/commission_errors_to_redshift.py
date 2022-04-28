@@ -28,6 +28,9 @@ mapping = {
             'lob_fields_length': {
                 'order_json': 65535,
                 'error': 3036
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

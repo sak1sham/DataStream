@@ -27,6 +27,9 @@ mapping = {
             'batch_size': 10000,
             'lob_fields_length': {
                 'idfa': 3036,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

@@ -32,6 +32,9 @@ mapping = {
                 'campaign_description': 3036,
                 'campaign_type': 3036,
                 'campaign_name': 3036,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

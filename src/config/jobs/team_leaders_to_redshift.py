@@ -93,6 +93,9 @@ mapping = {
                 'leader_shop': 4048,
                 'joining_reason': 4048,
                 'id': 4048,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

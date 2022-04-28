@@ -58,6 +58,9 @@ mapping = {
                 'advertising_campaign': 3036,
                 'user_name': 7084,
                 'image': 3036,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

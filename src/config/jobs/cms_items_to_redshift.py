@@ -77,6 +77,9 @@ mapping = {
                 'pdu_type': 3036,
 
             },
+            'buffer_updation_lag':{
+                'hours': 2,
+            }
         },
     ]
 }

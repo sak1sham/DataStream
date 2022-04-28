@@ -32,6 +32,9 @@ mapping = {
                 'type': 3036,
                 'spoke_name': 3036,
                 'transition': 3036,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

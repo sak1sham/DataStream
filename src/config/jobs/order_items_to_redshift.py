@@ -60,6 +60,9 @@ mapping = {
             },
             'grace_updation_lag': {
                 'days': 1
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

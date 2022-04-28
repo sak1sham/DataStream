@@ -33,6 +33,9 @@ mapping = {
                 'run_result': 65535,
                 'errors': 10240,
                 'validation_error': 10240,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]

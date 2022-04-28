@@ -53,6 +53,9 @@ mapping = {
                 'db_payment_model': 3036,
                 'db_app_version': 3036,
                 'db_last_lat': 3036,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             }
         },
     ]
