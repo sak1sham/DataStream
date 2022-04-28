@@ -93,7 +93,6 @@ class ClevertapManager(EventsAPIManager):
     def get_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], sync_date: datetime, event_cursor: str = None):
         if not event_cursor:
             sync_date = get_yyyymmdd_from_date(sync_date)
-            logger.inform(curr_mapping['unique_id'], curr_mapping['unique_id']+": started {2} event {0} sync for date: {1}".format(event_name, str(sync_date), self.project_name))
             event_cursor = self.get_event_cursor(event_name, sync_date, sync_date)
         cursor_data = self.get_records_for_cursor(event_cursor)
         total_records = 0
