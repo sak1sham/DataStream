@@ -13,7 +13,6 @@ mapping = {
         'user': 'cmadmin',
         'password': 'kgDzH6Zy5xZ6HHx',
         's3_bucket_name': 'database-migration-service-prod',
-        'schema': 'dms_test'
     },
     'tables': [
         {
