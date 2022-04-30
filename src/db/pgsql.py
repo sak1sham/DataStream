@@ -31,6 +31,7 @@ class PGSQLMigrate:
         self.last_run_cron_job = pd.Timestamp(None)
         self.n_insertions = 0
         self.n_updations = 0
+        self.col_dtypes = {}
     
 
     def inform(self, message: str = None, save: bool = False) -> None:
@@ -242,6 +243,8 @@ class PGSQLMigrate:
                 processed_data['df_insert'] = pd.DataFrame({})
             if('df_update' not in processed_data.keys()):
                 processed_data['df_update'] = pd.DataFrame({})
+            if('dtypes' not in processed_data.keys()):
+                processed_data['dtypes'] = get_athena_dtypes(self.col_dtypes)
             if('lob_fields_length' in self.curr_mapping.keys() and self.curr_mapping['lob_fields_length']):
                 processed_data['lob_fields_length'] = self.curr_mapping['lob_fields_length']
             if('col_rename' in self.curr_mapping.keys() and self.curr_mapping['col_rename']):
@@ -338,7 +341,7 @@ class PGSQLMigrate:
                 password = self.db['source']['password']
             )
             try:
-                col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
+                self.col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
                 with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
@@ -358,7 +361,7 @@ class PGSQLMigrate:
                                 ## In Dumping/mirroring mode, resume mode is not supported
                                 ## Processes the data in the batch and save that batch
                                 ## If any error is encountered, DMS needs to restart
-                                processed_data = self.dumping_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
+                                processed_data = self.dumping_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes)
                                 self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)
                                 processed_data = {}
 
@@ -366,7 +369,7 @@ class PGSQLMigrate:
                                 ## In Logging mode, we first process and save the data of the batch
                                 ## After saving every batch, we save the record_id of the last migrated record
                                 ## resume mode is thus supported.
-                                processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes, mode = 'logging')
+                                processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, mode = 'logging')
                                 killer = NormalKiller()
                                 if(self.curr_mapping['cron'] == 'self-managed'):
                                     killer = GracefulKiller()
@@ -402,7 +405,7 @@ class PGSQLMigrate:
                                     ## In syncing-insertion mode, we first process and save the data of the batch
                                     ## After saving every batch, we save the record_id of the last migrated record
                                     ## resume mode is thus supported.
-                                    processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes, mode = 'syncing')
+                                    processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, mode = 'syncing')
                                     killer = NormalKiller()
                                     if(self.curr_mapping['cron'] == 'self-managed'):
                                         killer = GracefulKiller()
@@ -438,12 +441,13 @@ class PGSQLMigrate:
                                     ## Then, after considerable number of records are found that needs to be updated, update them collectively to save time.
                                     ## Resume operation is automatically supported (last_run_cron_job is changes after job is successful, if not, then the updation will start again for records updated after previous job)
                                     processed_data_u = {}
-                                    processed_data_u = self.updating_data(df = data_df, table_name = table_name, col_dtypes = col_dtypes)
+                                    processed_data_u = self.updating_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes)
                                     if(processed_data_u):
                                         if(not updated_in_destination):
                                             processed_data['df_update'] = processed_data['df_update'].append([processed_data_u['df_update']])
                                         else:
                                             processed_data['df_update'] = processed_data_u['df_update']
+                                            processed_data['dtypes'] = processed_data_u['dtypes']
                                         self.inform(message="Found " + str(processed_data['df_update'].shape[0]) + " updations upto now.")
                                     if(processed_data['df_update'].shape[0] >= self.batch_size):
                                         self.save_data(processed_data = processed_data, c_partition = self.partition_for_parquet)

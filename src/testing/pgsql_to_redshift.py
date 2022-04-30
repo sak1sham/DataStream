@@ -212,7 +212,8 @@ class SqlTester():
                             try:
                                 assert self.check_match(row, redshift_record[0], column_dtypes)
                             except Exception as e:
-                                logger.err("Assertion Error found.")
+                                logger.err(row[self.primary_key])
+                                logger.err(traceback.format_exc())
                                 self.count += 1
                     logger.inform("Tested {0} records.".format(data_df.shape[0]))
         return self.count

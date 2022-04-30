@@ -60,12 +60,13 @@ class s3Saver:
                 schema_evolution = True,
             )
             self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))
-
+        
+        not_found = []
         n_updations = processed_data['df_update'].shape[0]
         if(n_updations > 0):
             self.inform(message=("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."))
             processed_data['df_update'] = convert_heads_to_lowercase(processed_data['df_update'])
-            dfs_u = [processed_data['df_update']]
+            dfs_u = [processed_data['df_update'].copy()]
             if(self.partition_cols and len(self.partition_cols) > 0):
                 print(processed_data['df_update'].groupby(self.partition_cols).size())
                 dfs_u = [x for _, x in processed_data['df_update'].groupby(self.partition_cols)]
@@ -98,8 +99,30 @@ class s3Saver:
                             ## This partition-batch is complete now. Go and handle the next set of partition-batches to be updated
                             break
                 if(df_u.shape[0] > 0):
-                    self.warn("Not all records could be updated, because some records could not be found.")
-            self.inform(message=(str(n_updations) + " updations done."), save=True)
+                    self.warn("Not all records could be updated, because {0} records could not be found. Will be trying to insert them.".format(df_u.shape[0]))
+                    not_found.extend(df_u[primary_keys[0]].tolist())
+            self.inform(message="{0} updations done.".format(n_updations-len(not_found)), save=True)
+            
+            if(len(not_found) > 0):
+                file_name = self.s3_location + processed_data['name'] + "/"
+                records_update_insert = processed_data["df_update"][processed_data["df_update"][primary_keys[0]].isin(not_found)]
+                records_update_insert = convert_heads_to_lowercase(records_update_insert)
+                self.inform(message="Attempting to insert {0} bytes.".format(records_update_insert.memory_usage(index=True).sum()))
+                processed_data['dtypes'] = convert_heads_to_lowercase(processed_data["dtypes"])
+                wr.s3.to_parquet(
+                    df = records_update_insert,
+                    path = file_name,
+                    compression='snappy',
+                    mode = 'append',
+                    database = self.database,
+                    table = self.name_,
+                    dtype = processed_data['dtypes'],
+                    description = self.description,
+                    dataset = True,
+                    partition_cols = self.partition_cols,
+                    schema_evolution = True,
+                )
+                self.inform(message="Inserted {0} records which were not present before.".format(records_update_insert.shape[0]))
 
 
 

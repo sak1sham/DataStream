@@ -699,6 +699,8 @@ class MongoMigrate:
                 processed_collection['df_insert'] = pd.DataFrame({})
             if('df_update' not in processed_collection.keys()):
                 processed_collection['df_update'] = pd.DataFrame({})
+            if('dtypes' not in processed_collection.keys()):
+                processed_collection['dtypes'] = get_athena_dtypes(self.curr_mapping['fields'])
             if('lob_fields_length' in self.curr_mapping.keys() and self.curr_mapping['lob_fields_length']):
                 processed_collection['lob_fields_length'] = self.curr_mapping['lob_fields_length']
             if('col_rename' in self.curr_mapping.keys() and self.curr_mapping['col_rename']):

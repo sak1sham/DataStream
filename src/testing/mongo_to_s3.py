@@ -139,6 +139,8 @@ class MongoTester():
                 try:
                     assert self.check_match(record, athena_record[0])
                 except Exception as e:
+                    logger.err(traceback.format_exc())
+                    logger.err(record['_id'])
                     logger.err("Assertion Error found.")
                     self.count += 1
         logger.inform("Tested {0} records.".format(n_recs))
