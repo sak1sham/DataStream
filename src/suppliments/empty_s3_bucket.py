@@ -23,12 +23,12 @@ if __name__ == "__main__":
                 count += 1
             logger.inform(s = "Deleted {0} objects from bucket {1}.".format("{:,}".format(count), args[0]))
             if('notify' in settings.keys() and settings['notify']):
-                send_message(msg = "Deleted {0} objects from S3 bucket {1}.".format("{:,}".format(count), args[0]), channel=settings['slack_notif']['channel'], slack_token=settings['slack_notif']['slack_token'])
+                send_message(msg = "Deleted *{0}* objects from S3 bucket *{1}*.".format("{:,}".format(count), args[0]), channel=settings['slack_notif']['channel'], slack_token=settings['slack_notif']['slack_token'])
                 logger.inform(s = "Notification sent.")
         except Exception as e:
             logger.err(traceback.format_exc())
             if('notify' in settings.keys() and settings['notify']):
-                send_message(msg = "Caught an exception while empyting bucket {0}:\n```{1}```".format(args[0], traceback.format_exc()), channel=settings['slack_notif']['channel'], slack_token=settings['slack_notif']['slack_token'])
+                send_message(msg = "Caught an exception while empyting bucket *{0}*:\n```{1}```".format(args[0], traceback.format_exc()), channel=settings['slack_notif']['channel'], slack_token=settings['slack_notif']['slack_token'])
                 logger.inform(s = "Notification sent.")
     else:
         logger.inform(s = "Please specify a bucket name.")
