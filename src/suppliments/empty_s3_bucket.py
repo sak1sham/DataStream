@@ -14,11 +14,14 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     if(len(args) > 0):
         try:
+            if('notify' in settings.keys() and settings['notify']):
+                send_message(msg = "Started deleting objects from S3 bucket: *{0}*.".format(args[0]), channel=settings['slack_notif']['channel'], slack_token=settings['slack_notif']['slack_token'])
+                logger.inform(s = "Starting notification sent.")
             logger.inform(s = "Deleting data from bucket {0}".format(args[0]))
             # "aws-athena-query-results-414085459896-ap-south-1"
             path = "s3://{0}".format(args[0])
             logger.inform(s = "Deleting data from path {0}".format(path))
-            objects_for_deletion = wr.s3.list_objects(path=path)
+            objects_for_deletion = wr.s3.list_objects(path=path, chunked=True)
             count = 0
             for obj in objects_for_deletion:
                 wr.s3.delete_objects(path=obj)
