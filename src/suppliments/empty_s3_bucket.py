@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import traceback
 import time
+import datetime
 
 from settings import settings
 from slack_notify import send_message
@@ -28,7 +29,8 @@ if __name__ == "__main__":
                 count += 1
             logger.inform(s = "Deleted {0} objects from bucket {1}.".format("{:,}".format(count), args[0]))
             if('notify' in settings.keys() and settings['notify']):
-                send_message(msg = "Deleted *{0}* objects from S3 bucket *{1}*\nTime taken:{2}.".format("{:,}".format(count), args[0], time.time()-start), channel=settings['slack_notif']['channel'], slack_token=settings['slack_notif']['slack_token'])
+                time_taken = str(datetime.timedelta(seconds=int(time.time()-start)))
+                send_message(msg = "Deleted *{0}* objects from S3 bucket *{1}*\nTime taken: {2}.".format("{:,}".format(count), args[0], time_taken), channel=settings['slack_notif']['channel'], slack_token=settings['slack_notif']['slack_token'])
                 logger.inform(s = "Notification sent.")
         except Exception as e:
             logger.err(traceback.format_exc())
