@@ -115,6 +115,7 @@ def delete_metadata_from_mongodb(job_id: str = None) -> None:
     db = get_data_from_encr_db()
     db.delete_many({'last_migrated_record_for_id': job_id})
     db.delete_many({'last_run_cron_job_for_id': job_id})
+    db.delete_many({'recovery_record_for_id': job_id})
     db.delete_many({'table': job_id})
     db.delete_many({'collection': job_id})
 
