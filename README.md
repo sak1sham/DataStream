@@ -41,3 +41,9 @@ This system can convert common datetime string columns to datetime columns.
 2. update the path of the new docker file created in github workflows
 3. create a new workflow file with different name and app name in the file
 4. update the environment variables in the deployment/env/prod/config.production.yaml
+
+
+## Visualizing jobs through DMS Dashboard
+1. ```pip install streamlit```
+2. ```cd src```
+3. ```streamlit run dashboard.py```

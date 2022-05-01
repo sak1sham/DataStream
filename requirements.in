@@ -15,3 +15,4 @@ redshift-connector==2.0.904
 slackclient==2.9.3
 kafka-python==2.0.2
 boto3==1.21.29
+streamlit==1.8.1
