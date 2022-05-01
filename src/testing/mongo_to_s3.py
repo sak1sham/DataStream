@@ -147,7 +147,7 @@ class MongoTester():
 
 if __name__ == "__main__":
     try:
-        n_test = 50
+        n_test = 1000
         records_per_batch = 1000
         id = ''
         if(len(sys.argv) > 1):
