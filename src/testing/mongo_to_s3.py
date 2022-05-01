@@ -55,7 +55,7 @@ class MongoTester():
         curs = list(curs)
         return curs[0]['timing']
 
-    def count_docs(self):
+    def count_docs(self) -> int:
         if(self.N_mongo == -1):
             client = MongoClient(self.url, tlsCAFile=certificate)
             db = client[self.db]
@@ -159,7 +159,8 @@ if __name__ == "__main__":
             start = time.time()
             obj = MongoTester(url=mapping['source']['url'], db = mapping['source']['db_name'], id_ = id + "_DMS_" + col['collection_name'], col = col['collection_name'], col_map = col, primary_key = '_id', test_N=records_per_batch)
             logger.inform("Testing " +  str(col['collection_name']))
-            for iter in range(0, n_test):
+            max_checks = max(1, (obj.count_docs())//records_per_batch)
+            for iter in range(0, min(n_test, max_checks)):
                 logger.inform("Iteration: " + str(iter))
                 obj.test_mongo()
             mismatch = obj.count
