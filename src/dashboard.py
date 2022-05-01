@@ -55,6 +55,17 @@ class Metadata():
             ret_metadata[name] = [last_run_cron_time, last_migrated_record, recovery_data]
         
         return ret_metadata
+    
+
+    def delete_metadata_from_mongodb(self, unique_id: str = None) -> None:
+        '''
+            Delete all records from mongodb temporary data
+        '''
+        self.metadata_col.delete_many({'last_migrated_record_for_id': unique_id})
+        self.metadata_col.delete_many({'last_run_cron_job_for_id': unique_id})
+        self.metadata_col.delete_many({'recovery_record_for_id': unique_id})
+        self.metadata_col.delete_many({'table': unique_id})
+        self.metadata_col.delete_many({'collection': unique_id})
 
 
 if __name__ == "__main__":
@@ -65,15 +76,16 @@ if __name__ == "__main__":
             job_list.append(file[:-3])
     job_list.sort()
     st.write('# Data Migration Service')
-    option = st.selectbox(
+    job_id_selected = st.selectbox(
         "Please select a job id from the following:",
         tuple(job_list)
     )
-    st.write('You selected:', option)
+    st.write('You selected:', job_id_selected)
     metadata = Metadata()
-    job_data = metadata.get_metadata(job_id=str(option))
+    job_data = metadata.get_metadata(job_id=str(job_id_selected))
     datetime_format = '%A %d %B, %Y @ %I:%M:%S %p IST'
     for key, val in job_data.items():
+        unique_id = job_id_selected + "_DMS_" + key
         last_run_cron_job = val[0]
         last_migrated_record = val[1]
         recovery_data = val[2]
@@ -88,6 +100,13 @@ if __name__ == "__main__":
             st.write("Last job stopped unexpectedly at ", recovery_data['timing'].strftime(datetime_format))
         if(not (last_migrated_record or last_run_cron_job or recovery_data)):
             st.write("This job never started.")
+        else:
+            unique_confirmation_key = "Delete_confirmation_for" + key
+            unique_button_key = "Delete_button_for" + key
+            deletion_confirmation = st.text_input('Type \'Permanently Delete Metadata\' in the following box', key=unique_confirmation_key)
+            if st.button('Delete all Metadata for this mapping', key=unique_button_key) and deletion_confirmation == 'Permanently Delete Metadata':
+                metadata.delete_metadata_from_mongodb(job_id_selected + "_DMS_" + key)
+                st.write('Deleted metadata for ', unique_id)
         show_metadata = st.checkbox(label="Show metadata", value=False, key=key)
         if(show_metadata):
             st.write(job_data)
