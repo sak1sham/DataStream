@@ -21,9 +21,6 @@ mapping = {
             'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'to_partition': True,
-            'partition_col': 'created_at',
-            'partition_col_format': 'datetime',
             'batch_size': 10000,
             'lob_fields_length': {
                 'order_json': 65535,

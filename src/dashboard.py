@@ -90,16 +90,15 @@ if __name__ == "__main__":
         last_migrated_record = val[1]
         recovery_data = val[2]
         st.write('##', key)
-        if(last_migrated_record):
-            st.write("Last inserted primary key: ", last_migrated_record['record_id'])
         if(last_run_cron_job):
             st.write("Job started at " + last_run_cron_job['timing'].strftime(datetime_format))
         if(last_migrated_record):
-            st.write("Insertions completed at " + last_migrated_record['timing'].strftime(datetime_format))
+            st.write("Last inserted primary key: ", last_migrated_record['record_id'])
+            st.write("Last insertion done on " + last_migrated_record['timing'].strftime(datetime_format))
         if(recovery_data):
             st.write("Last job stopped unexpectedly at ", recovery_data['timing'].strftime(datetime_format))
         if(not (last_migrated_record or last_run_cron_job or recovery_data)):
-            st.write("This job never started.")
+            st.write("No data to show for this job.")
         else:
             unique_confirmation_key = "Delete_confirmation_for" + key
             unique_button_key = "Delete_button_for" + key
