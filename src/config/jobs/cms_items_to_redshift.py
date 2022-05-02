@@ -27,6 +27,9 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'col_rename': {
+                'tag': 'tag_'
+            },
             'lob_fields_length': {
                 'sub_category': 65535,
                 'original_images': 65535,
@@ -73,6 +76,12 @@ mapping = {
                 'category_entity_id': 3036,
                 'pdu_type': 3036,
 
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'hours': 2
             },
         },
     ]

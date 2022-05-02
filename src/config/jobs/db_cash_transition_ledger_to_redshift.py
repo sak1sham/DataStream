@@ -34,7 +34,13 @@ mapping = {
                 'route_id': 3036,
                 'transition': 3036,
                 'db_phone': 3036,
-            }
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'hours': 2
+            },
         },
     ]
 }

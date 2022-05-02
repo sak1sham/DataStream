@@ -1,6 +1,5 @@
 import psycopg2
 import awswrangler as wr
-import unittest
 import datetime
 from typing import NewType
 import pytz
@@ -8,9 +7,14 @@ from pymongo import MongoClient
 import sys
 import redshift_connector
 import numpy as np
+import time 
+import traceback
+from typing import Dict, Any
 
 from test_util import *
 from migration_mapping import get_mapping
+from slack_notify import send_message
+from testing_logger import logger
 
 import os
 from dotenv import load_dotenv
@@ -20,16 +24,18 @@ load_dotenv()
 datetype = NewType("datetype", datetime.datetime)
 certificate = 'config/rds-combined-ca-bundle.pem'
 
-class SqlTester(unittest.TestCase):
-    id_ = ''
-    url = ''
-    db = ''
-    table = ''
-    test_N = 1000
-    table_map = {}
-    primary_key = ''
-    tz_info = pytz.timezone("Asia/Kolkata")
-    N = 1
+class SqlTester():
+    def __init__(self, id_: str = '', url: str = '', db: Dict = {}, table: Dict = {}, test_N: int = 1000, table_map: Dict = {}, primary_key: str = '', tz_info: Any = pytz.timezone("Asia/Kolkata"), N: int = 1):
+        self.id_ = id_
+        self.url = url
+        self.db = db
+        self.table = table
+        self.test_N = test_N
+        self.table_map = table_map
+        self.primary_key = primary_key
+        self.tz_info = tz_info
+        self.N = N
+        self.count = 0
     
     def get_last_run_cron_job(self):
         client_encr = MongoClient(os.getenv('ENCR_MONGO_URL'), tlsCAFile=certificate)
@@ -94,10 +100,10 @@ class SqlTester(unittest.TestCase):
 
                     assert record[key] == redshift_record[redshift_key]
             except Exception as e:
-                print(key)
-                print(record[self.primary_key])
-                print("Source: ", record[key])
-                print("Destination: ", redshift_record[redshift_key])
+                logger.err(str(key))
+                logger.err(str(record[self.primary_key]))
+                logger.err("Source: " + str(record[key]))
+                logger.err("Destination: " + str(redshift_record[redshift_key]))
                 raise
         return True
 
@@ -128,12 +134,12 @@ class SqlTester(unittest.TestCase):
                     df[parq_col] = df[col].astype(str)
                 elif(col_form == 'int'):
                     self.partition_for_parquet.extend([parq_col])
-                    df[parq_col] = df[col].astype(int)
+                    df[parq_col] = df[col].fillna(0).astype(int)
         return df
 
 
-    def test_pgsql(self):
-        print(self.id_)
+    def test_pgsql(self) -> int:
+        self.count = 0
         if(self.table_map['mode'] != 'dumping'):
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
@@ -142,13 +148,18 @@ class SqlTester(unittest.TestCase):
                 password = self.db['source']['password']
             )
             column_dtypes = self.get_column_dtypes(conn=conn, curr_table_name=self.table)
+            if('col_rename' in table.keys() and table['col_rename']):
+                for key, val in table['col_rename'].items():
+                    if(key in column_dtypes.keys()):
+                        column_dtypes[val] = column_dtypes[key]
+                        column_dtypes.pop(key)
             last_migrated_record = self.last_migrated_record()
             if (self.primary_key == ''):
                 return
             
             lim = self.N * self.test_N
             sql_stmt = "SELECT * FROM {0} ORDER BY RANDOM() LIMIT {1}".format(self.table, lim)
-            print(sql_stmt)
+            logger.inform(sql_stmt)
             data_df = pd.DataFrame({})
             with conn.cursor('test-cursor-name', scrollable=True) as curs:
                 curs.execute(sql_stmt)
@@ -162,6 +173,8 @@ class SqlTester(unittest.TestCase):
                     data_df = pd.DataFrame(ret, columns = columns)
                     
                     ## Adding partitions and a primary key "unique_migration_record_id" for every record
+                    if('col_rename' in table.keys() and table['col_rename']):
+                        data_df.rename(columns=table['col_rename'], inplace=True)
                     self.add_partitions(data_df)
                     self.primary_key = self.primary_key.lower()
                     data_df['unique_migration_record_id'] = data_df[self.primary_key]
@@ -172,7 +185,9 @@ class SqlTester(unittest.TestCase):
                     prev_time = pytz.utc.localize(self.get_last_run_cron_job())
                     if(data_df.shape[0]):
                         if('bookmark' in self.table_map.keys() and self.table_map['bookmark']):
-                            data_df = data_df[data_df[self.table_map['bookmark']].apply(lambda x: convert_to_datetime(x=x)) <=  prev_time]
+                            data_df_NaT = data_df[data_df[self.table_map['bookmark']].isnull()]
+                            data_df_old = data_df[data_df[self.table_map['bookmark']].apply(lambda x: convert_to_datetime(x=x, tz_ = pytz.timezone('Asia/Kolkata'))) <  prev_time]
+                            data_df = pd.concat([data_df_NaT, data_df_old])
                         
                         str_id = ""
                         for _, row in data_df.iterrows():
@@ -193,32 +208,56 @@ class SqlTester(unittest.TestCase):
                         )
                         
                         for _, row in data_df.iterrows():
-                            athena_record = df.loc[df['unique_migration_record_id'] == row['unique_migration_record_id']].to_dict(orient='records')
-                            assert self.check_match(row, athena_record[0], column_dtypes)
-                    print("Tested {0} records.".format(data_df.shape[0]))
-
+                            redshift_record = df.loc[df['unique_migration_record_id'] == row['unique_migration_record_id']].to_dict(orient='records')
+                            try:
+                                assert self.check_match(row, redshift_record[0], column_dtypes)
+                            except Exception as e:
+                                logger.err(row[self.primary_key])
+                                logger.err(traceback.format_exc())
+                                self.count += 1
+                    logger.inform("Tested {0} records.".format(data_df.shape[0]))
+        return self.count
 
 if __name__ == "__main__":
-    N = 200
-    id = ''
-    if(len(sys.argv) > 1):
-        id = sys.argv.pop()
-    mapping = get_mapping(id)
-    if('username' not in mapping['source'].keys()):
-        mapping['source']['username'] = ''
-        mapping['source']['password'] = ''
-    if(mapping['source']['source_type'] == 'sql'):
-        if('tables' not in mapping.keys()):
-            mapping['tables'] = []
-        for table in mapping['tables']:
-            print("Testing", table['table_name'])
-            SqlTester.N = N
-            SqlTester.url = mapping['source']['url']
-            SqlTester.db = mapping
-            SqlTester.id_ = id + "_DMS_" + table['table_name']
-            SqlTester.table = table['table_name']
-            SqlTester.table_map = table
-            if 'primary_key' in table.keys():
-                SqlTester.primary_key = table['primary_key']
-        unittest.main(exit=False, warnings='ignore')
+    try:
+        N = 1000
+        records_per_batch = 1000
+        id = ''
+        if(len(sys.argv) > 1):
+            id = sys.argv.pop()
+        mapping = get_mapping(id)
+        if('username' not in mapping['source'].keys()):
+            mapping['source']['username'] = ''
+            mapping['source']['password'] = ''
+        if(mapping['source']['source_type'] == 'sql'):
+            if('tables' not in mapping.keys()):
+                mapping['tables'] = []
+            for table in mapping['tables']:
+                start = time.time()
+                obj = SqlTester(N=N, url=mapping['source']['url'], db = mapping, id_ = id + "_DMS_" + table['table_name'], table = table['table_name'], table_map = table, primary_key = table['primary_key'], test_N=records_per_batch)
+                logger.inform("Testing " + str(table['table_name']))
+                mismatch = obj.test_pgsql()
+                end = time.time()
+                time_taken = str(datetime.timedelta(seconds=int(end-start)))
+                if('notify' in settings.keys() and settings['notify']):
+                    msg = "Testing completed for *{0}* from database *{1}* ({2}) with desination {3}.\nTested {4} random records\nTotal time taken {5}\nFound {6} mismatches".format(table['table_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], N*records_per_batch, str(time_taken), mismatch)
+                    try:
+                        slack_token = settings['slack_notif']['slack_token']
+                        channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
+                        send_message(msg = msg, channel = channel, slack_token = slack_token)
+                        logger.inform("Testing notification sent successfully.")
+                    except Exception as e:
+                        logger.err(traceback.format_exc())
+                        logger.err("Unable to connect to slack and send the notification.")
+    except Exception as e:
+        if('notify' in settings.keys() and settings['notify']):
+            msg = "Testing failed for *{0}* from database *{1}* ({2}) with desination {3} with following exception:\n```{4}```".format(table['table_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], traceback.format_exc())
+            try:
+                slack_token = settings['slack_notif']['slack_token']
+                channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
+                send_message(msg = msg, channel = channel, slack_token = slack_token)
+                logger.inform("Testing notification sent successfully.")
+            except Exception as e:
+                logger.err(traceback.format_exc())
+                logger.err("Unable to connect to slack and send the notification.")
     

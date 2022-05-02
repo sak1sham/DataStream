@@ -204,12 +204,3 @@ class KafkaMigrate:
                 self.err(error=('Consumer exception', e))
         except Exception as e:
             self.err(error=("Got some error in Kafka Consumer.", e))
-
-'''
-kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic test_2
-kafka-console-producer --broker-list localhost:9092 --topic
-kafka-console-consumer --bootstrap-server localhost:9092 --topic test1 --from-beginning
-
-[{"Name": "John", "Marks": 80, "Class": 12},{"Name": "John II", "Marks": 90, "Class": 10}]
-[{"msg": "hi"}, {"msg": "hey"}]
-'''

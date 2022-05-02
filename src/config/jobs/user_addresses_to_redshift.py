@@ -51,7 +51,13 @@ mapping = {
                 'state': 4048,
                 'geohash': 4048,
                 'city': 4048,
-            }
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'hours': 2
+            },
         },
     ]
 }

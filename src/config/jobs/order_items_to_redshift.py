@@ -58,6 +58,12 @@ mapping = {
                 'order_item_state': 3036,
                 'slug': 3036,
             },
+            'grace_updation_lag': {
+                'days': 1
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            }
         },
     ]
 }

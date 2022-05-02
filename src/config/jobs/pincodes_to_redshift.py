@@ -13,7 +13,6 @@ mapping = {
         'user': 'cmadmin',
         'password': 'kgDzH6Zy5xZ6HHx',
         's3_bucket_name': 'database-migration-service-prod',
-        'schema': 'dms_test'
     },
     'tables': [
         {
@@ -32,7 +31,13 @@ mapping = {
                 'circle_name': 3036,
                 'region_name': 3036,
                 'division_name': 3036,
-            }
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'hours': 2
+            },
         },
     ]
 }

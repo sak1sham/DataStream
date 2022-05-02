@@ -38,7 +38,13 @@ mapping = {
                 'output_key': 3036,
                 'upload_key': 3036,
                 'rollback_function': 3036,
-            }
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'hours': 2
+            },
         },
     ]
 }

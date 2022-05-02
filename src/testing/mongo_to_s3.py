@@ -1,6 +1,5 @@
 from pymongo import MongoClient
 import awswrangler as wr
-import unittest
 import math
 import random
 import datetime
@@ -8,21 +7,25 @@ from typing import NewType
 from bson import ObjectId
 from dotenv import load_dotenv
 import sys
-from migration_mapping import get_mapping
+import time 
+import traceback
+from typing import Dict, Any
 load_dotenv()
 import pytz
 datetype = NewType("datetype", datetime.datetime)
-
+import os
 from dotenv import load_dotenv
 load_dotenv()
+import json
 
+from migration_mapping import get_mapping
 from test_util import *
+from slack_notify import send_message
+from testing_logger import logger
 
 def convert_to_str(x) -> str:
-    if(isinstance(x, list)):
-        return convert_list_to_string(x)
-    elif(isinstance(x, dict)):
-        return convert_json_to_string(x)
+    if(isinstance(x, list) or isinstance(x, dict)):
+        return json.dumps(x)
     elif(isinstance(x, datetime.datetime)):
         x = convert_to_datetime(x)
         return x.strftime("%Y/%m/%dT%H:%M:%S")
@@ -31,25 +34,28 @@ def convert_to_str(x) -> str:
 
 certificate = 'config/rds-combined-ca-bundle.pem'
 
-class MongoTester(unittest.TestCase):
-    id_ = ''
-    url = ''
-    db = ''
-    col = ''
-    test_N = 2000
-    col_map = {}
-    tz_info = pytz.timezone('Asia/Kolkata')
-    N_mongo = -1
-
+class MongoTester():
+    def __init__(self, id_: str = '', url: str = '', db: Dict = {}, col: Dict = {}, test_N: int = 1000, col_map: Dict = {}, primary_key: str = '', tz_info: Any = pytz.timezone("Asia/Kolkata")):
+        self.id_ = id_
+        self.url = url
+        self.db = db
+        self.col = col
+        self.test_N = test_N
+        self.col_map = col_map
+        self.primary_key = primary_key
+        self.tz_info = tz_info
+        self.N_mongo = -1
+        self.count = 0
+    
     def get_last_run_cron_job(self):
-        client_encr = MongoClient('mongodb://manish:ACVVCH7t7rqd8kB8@cohortx.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false', tlsCAFile=certificate)
-        db_encr = client_encr['dms_migration_updates']
-        collection_encr = db_encr['dms_migration_info']
+        client_encr = MongoClient(os.getenv('ENCR_MONGO_URL'), tlsCAFile=certificate)
+        db_encr = client_encr[os.getenv('DB_NAME')]
+        collection_encr = db_encr[os.getenv('COLLECTION_NAME')]
         curs = collection_encr.find({'last_run_cron_job_for_id': self.id_})
         curs = list(curs)
         return curs[0]['timing']
 
-    def count_docs(self):
+    def count_docs(self) -> int:
         if(self.N_mongo == -1):
             client = MongoClient(self.url, tlsCAFile=certificate)
             db = client[self.db]
@@ -57,15 +63,6 @@ class MongoTester(unittest.TestCase):
             self.N_mongo = collection.count_documents({})
         return self.N_mongo
     
-    def abc_test_count(self):
-        N = self.count_docs()
-        if(N > 0):
-            query = 'SELECT COUNT(*) as count FROM ' + self.col + ';'
-            df = wr.athena.read_sql_query(sql = query, database = "mongo" + "_" + self.db.replace('.', '_').replace('-', '_'))
-            athena_count = int(df.iloc[0]['count'])
-            assert athena_count >= int(confidence(N) * N)
-            assert athena_count <= N
-
     def check_match(self, record, athena_record) -> bool:
         try:
             for key in record.keys():
@@ -93,15 +90,14 @@ class MongoTester(unittest.TestCase):
                         else:
                             assert convert_to_str(record[key]) == athena_record[athena_key]
                     except:
-                        print(key)
-                        print('record[key]', record[key], "of type", type(record[key]))
-                        print('athena_record[athena_key]', athena_record[key.lower()], "of type", type(athena_record[key.lower()]))
-                        print("\n\n\n\n\n")
+                        logger.err(key)
+                        logger.err(str(record['_id']))
+                        logger.err('Source: ' + str(record[key]))
+                        logger.err('Destination: ' + str(athena_record[key.lower()]))
                         raise
             return True
         except Exception as e:
-            print(e)
-            print(record['_id'])
+            logger.err(e)
 
     def test_mongo(self):
         client = MongoClient(self.url, tlsCAFile=certificate)
@@ -121,8 +117,9 @@ class MongoTester(unittest.TestCase):
         str_id = ""
         for records in curs:
             str_id += "\'" + str(records['_id']) + "\',"
-        
-        if(len(curs)):
+
+        n_recs = len(curs)
+        if(n_recs):
             query = 'SELECT * FROM ' + self.col + ' WHERE _id in (' + str_id[:-1] + ');'
             database = "mongo" + "_" + self.db.replace('.', '_').replace('-', '_')
             df = wr.athena.read_sql_query(sql = query, database = database)
@@ -130,31 +127,64 @@ class MongoTester(unittest.TestCase):
                 if('bookmark' in self.col_map.keys() and self.col_map['bookmark']):
                     if('improper_bookmarks' in self.col_map.keys() and not self.col_map['improper_bookmarks']):
                         if(pytz.utc.localize(record[self.col_map['bookmark']]) > prev_time):
-                            print('Record updated later.')
+                            n_recs -= 1
+                            logger.inform('Record updated later.')
                             continue
                     else:
                         if(convert_to_datetime(record[self.col_map['bookmark']], pytz.utc) > prev_time):
-                            print("Record updated later.")
+                            n_recs -= 1
+                            logger.inform("Record updated later.")
                             continue
                 athena_record = df.loc[df['_id'] == str(record['_id'])].to_dict(orient='records')
-                assert self.check_match(record, athena_record[0])
-
+                try:
+                    assert self.check_match(record, athena_record[0])
+                except Exception as e:
+                    logger.err(traceback.format_exc())
+                    logger.err(record['_id'])
+                    logger.err("Assertion Error found.")
+                    self.count += 1
+        logger.inform("Tested {0} records.".format(n_recs))
 
 if __name__ == "__main__":
-    n_test = 20
-    id = ''
-    if(len(sys.argv) > 1):
-        id = sys.argv.pop()
-    mapping = get_mapping(id)
-    if('collections' not in mapping.keys()):
-        mapping['collections'] = []
-    for col in mapping['collections']:
-        print("Testing", col['collection_name'])
-        MongoTester.url = mapping['source']['url']
-        MongoTester.db = mapping['source']['db_name']
-        MongoTester.id_ = id + "_DMS_" + col['collection_name']
-        MongoTester.col = col['collection_name']
-        MongoTester.col_map = col  
-        for iter in range(0, n_test):
-            print("iteration:", iter)
-            unittest.main(exit=False, warnings='ignore')
+    try:
+        n_test = 1000
+        records_per_batch = 1000
+        id = ''
+        if(len(sys.argv) > 1):
+            id = sys.argv.pop()
+        mapping = get_mapping(id)
+        if('collections' not in mapping.keys()):
+            mapping['collections'] = []
+        for col in mapping['collections']:
+            start = time.time()
+            obj = MongoTester(url=mapping['source']['url'], db = mapping['source']['db_name'], id_ = id + "_DMS_" + col['collection_name'], col = col['collection_name'], col_map = col, primary_key = '_id', test_N=records_per_batch)
+            logger.inform("Testing " +  str(col['collection_name']))
+            max_checks = max(1, (obj.count_docs())//records_per_batch)
+            for iter in range(0, min(n_test, max_checks)):
+                logger.inform("Iteration: " + str(iter))
+                obj.test_mongo()
+            mismatch = obj.count
+            end = time.time()
+            time_taken = str(datetime.timedelta(seconds=int(end-start)))
+            if('notify' in settings.keys() and settings['notify']):
+                msg = "Testing completed for *{0}* from database *{1}* ({2}) with desination {3}.\nTested {4} random records\nTotal time taken {5}\nFound {6} mismatches".format(col['collection_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], n_test*records_per_batch, str(time_taken), mismatch)
+                try:
+                    slack_token = settings['slack_notif']['slack_token']
+                    channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
+                    send_message(msg = msg, channel = channel, slack_token = slack_token)
+                    logger.inform("Testing notification sent successfully.")
+                except Exception as e:
+                    logger.err(traceback.format_exc())
+                    logger.err("Unable to connect to slack and send the notification.")
+    except Exception as e:
+        if('notify' in settings.keys() and settings['notify']):
+            msg = "Testing failed for *{0}* from database *{1}* ({2}) with desination {3} with following exception:\n```{4}```".format(col['collection_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], traceback.format_exc())
+            try:
+                slack_token = settings['slack_notif']['slack_token']
+                channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
+                send_message(msg = msg, channel = channel, slack_token = slack_token)
+                logger.inform("Testing notification sent successfully.")
+            except Exception as e:
+                logger.err(traceback.format_exc())
+                logger.err("Unable to connect to slack and send the notification.")
+    

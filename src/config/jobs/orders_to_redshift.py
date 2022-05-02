@@ -76,7 +76,13 @@ mapping = {
                 'order_error': 3036,
                 'coupon_code': 3036,
                 'razorpay_signature': 3036,
-            }
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'hours': 2
+            },
         },
     ]
 }

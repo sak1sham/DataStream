@@ -31,7 +31,13 @@ mapping = {
                 'device_info': 65535,
                 'idfa': 3036,
                 'unique_device_id': 3036,
-            }
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'hours': 2
+            },
         },
     ]
 }

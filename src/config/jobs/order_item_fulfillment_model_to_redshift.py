@@ -29,7 +29,13 @@ mapping = {
             'batch_size': 10000,
             'lob_fields_length': {
                 'fulfillment_model': 10240
-            }
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'hours': 2
+            },
         },
     ]
 }

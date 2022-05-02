@@ -40,7 +40,13 @@ mapping = {
                 'child_link_cx': 3036,
                 'category_image_active': 3036,
                 'category_image_non_active': 3036,
-            }
-        },
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'hours': 2
+            },
+        }
     ]
 }

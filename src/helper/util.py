@@ -13,7 +13,6 @@ dftype = NewType("dftype", pd.DataFrame)
 
 std_datetime_format = "%Y/%m/%dT%H:%M:%S"
 
-
 def convert_list_to_string(l: List[Any]) -> str:
     '''
         Recursively convert lists and nested lists to strings
@@ -88,7 +87,7 @@ def convert_json_to_string(x: Dict[str, Any]) -> str:
         else:
             x[item] = str(x[item])
     return json.dumps(x)
-
+    
 
 def evaluate_cron(expression: str) -> List[str]:
     '''
@@ -108,10 +107,8 @@ def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] =
     for key, _ in docu.items():
         if(key == '_id'):
             docu[key] = str(docu[key])
-        elif(isinstance(docu[key], list)):
-            docu[key] = convert_list_to_string(docu[key])
-        elif(isinstance(docu[key], dict)):
-            docu[key] = convert_json_to_string(docu[key])
+        elif(isinstance(docu[key], list) or isinstance(docu[key], dict)):
+            docu[key] = json.dumps(docu[key])
         elif(key in schema.keys()):
             if(schema[key] == 'int'):
                 try:
@@ -176,17 +173,15 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
         elif(tp == 'bool'):
             df[col] = df[col].astype(bool)
         else:
-            df[col] = df[col].astype(str)
+            df[col] = df[col].fillna('').astype(str)
     if(df.shape[0]):
         df = df.reindex(sorted(df.columns), axis=1)
     return df
 
 
 def convert_jsonb_to_string(x: Any) -> str:
-    if(isinstance(x, list)):
-        return convert_list_to_string(x)
-    elif(isinstance(x, dict)):
-        return convert_json_to_string(x)
+    if(isinstance(x, list) or isinstance(x, dict)):
+        return json.dumps(x)
     else:
         try:
             x = str(x)
@@ -223,8 +218,8 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
             if(col in schema.keys()):
                 dtype = schema[col].lower()
                 if(dtype == 'jsonb' or dtype == 'json'):
-                    df[col] = df[col].apply(lambda x: convert_jsonb_to_string(x))
-                    df[col] = df[col].astype(str, copy=False, errors='ignore')
+                    df[col] = df[col].fillna('').apply(lambda x: convert_jsonb_to_string(x))
+                    df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
                     df[col] = df[col].apply(lambda x: convert_to_datetime(x, tz_))
                 elif(dtype == 'boolean' or dtype == 'bool'):
@@ -234,15 +229,15 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                 elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
                     df[col] = pd.to_numeric(df[col], errors='coerce').astype('float64', copy=False, errors='ignore')
                 elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
-                    df[col] = df[col].astype(str, copy=False, errors='ignore')
+                    df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
                 elif('range' in dtype):
-                    df[col] = df[col].apply(convert_range_to_str).astype(str, copy=False, errors='ignore')
+                    df[col] = df[col].apply(convert_range_to_str).fillna('').astype(str, copy=False, errors='ignore')
                 elif('interval' in dtype):
-                    df[col] = df[col].astype(str, copy=False, errors='ignore')
+                    df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
                 else:
-                    df[col] = df[col].astype(str, copy=False, errors='ignore')
+                    df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
             else:
-                df[col] = df[col].astype(str, copy=False, errors='ignore')
+                df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
         df = df.reindex(sorted(df.columns), axis=1)
     return df
 

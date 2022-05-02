@@ -34,10 +34,21 @@ class RedshiftSaver:
             self.table_list.extend(processed_data['name']) 
         self.name_ = processed_data['name']
         file_name = self.s3_location + self.name_ + "/"
+        
         if 'filename' in processed_data:
             file_name += str(processed_data['filename']) + "/"
+        
         varchar_lengths = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
+        
+        if('col_rename' in processed_data and processed_data['col_rename']):
+            for key, val in processed_data['col_rename'].items():
+                if(key in varchar_lengths.keys()):
+                    varchar_lengths[val] = varchar_lengths[key]
+                    varchar_lengths.pop(key)
+        
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
+            if('col_rename' in processed_data and processed_data['col_rename']):
+                processed_data['df_insert'].rename(columns = processed_data['col_rename'], inplace = True)
             self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
             if(self.is_small_data):
                 wr.redshift.to_sql(
@@ -63,8 +74,11 @@ class RedshiftSaver:
                     varchar_lengths_default = 512
                 )
             self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))    
+        
         if('df_update' in processed_data and processed_data['df_update'].shape[0] > 0):
             self.inform(message=("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."))
+            if('col_rename' in processed_data and processed_data['col_rename']):
+                processed_data['df_update'].rename(columns = processed_data['col_rename'], inplace = True)
             # is_dump = False, and primary_keys will be present.
             if(self.is_small_data):
                 wr.redshift.to_sql(
