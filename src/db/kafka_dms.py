@@ -25,7 +25,7 @@ class KafkaMigrate:
         self.primary_key = 0
         self.get_table_name, self.process_dict = get_kafka_mapping_functions(self.db['id'])
         self.table_name = self.curr_mapping['topic_name']
-        self.batch_size = 550
+        self.batch_size = 10000
         redis_host = db['redis']['host']
         redis_port = db['redis']['port']
         redis_password = db['redis']['password']
@@ -183,7 +183,7 @@ class KafkaMigrate:
             self.inform(message="Preprocessing done.", save=True)
             try:
                 while(1):
-                    recs = consumer.poll(timeout_ms=1000000, max_records=200)
+                    recs = consumer.poll(timeout_ms=1000000, max_records=self.batch_size)
                     if(not recs):
                         self.inform('No more records found. Stopping the script.')
                         break
