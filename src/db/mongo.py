@@ -496,7 +496,7 @@ class MongoMigrate:
         return {'name': self.curr_mapping['collection_name'], 'df_insert': pd.DataFrame({}), 'df_update': ret_df_update, 'dtypes': dtypes}
 
 
-    def buffer_updating_data(self, start: int = 0, end: int = 0, improper_bookmarks: bool = False, buffer_hours: int = 0, buffer_minutes: int = 0, buffer_seconds: int = 0) -> Dict[str, Any]:
+    def buffer_updating_data(self, start: int = 0, end: int = 0, improper_bookmarks: bool = False, buffer_days: int = 0, buffer_hours: int = 0, buffer_minutes: int = 0) -> Dict[str, Any]:
         '''
             This function finds all records which are updated at the source, and but their bookmark changed later. It returns a set of records to be overwritten at destination.
                 1. When we are updating data, no need to capture new records, only old records are to be processed
@@ -511,7 +511,7 @@ class MongoMigrate:
         '''
         docu_update = []
         collection_encr = get_data_from_encr_db()
-        check_time1 = ObjectId.from_datetime(self.curr_run_cron_job - datetime.timedelta(hours=buffer_hours, minutes=buffer_minutes, seconds=buffer_seconds))
+        check_time1 = ObjectId.from_datetime(self.curr_run_cron_job - datetime.timedelta(days=buffer_days, hours=buffer_hours, minutes=buffer_minutes))
         check_time2 = ObjectId.from_datetime(self.curr_run_cron_job)
         self.inform(message = 'Updating all records updated between {0} and {1}'.format(check_time1.generation_time, check_time2.generation_time))
         all_documents = []
@@ -776,11 +776,11 @@ class MongoMigrate:
     
         ## NOW, CHECK FOR BUFFER UPDATION LAG
         if('buffer_updation_lag' in self.curr_mapping.keys() and self.curr_mapping['buffer_updation_lag']):
+            buffer_days = self.curr_mapping['buffer_updation_lag']['days'] if 'days' in self.curr_mapping['buffer_updation_lag'].keys() and self.curr_mapping['buffer_updation_lag']['days'] else 0
             buffer_hours = self.curr_mapping['buffer_updation_lag']['hours'] if 'hours' in self.curr_mapping['buffer_updation_lag'].keys() and self.curr_mapping['buffer_updation_lag']['hours'] else 0
             buffer_minutes = self.curr_mapping['buffer_updation_lag']['minutes'] if 'minutes' in self.curr_mapping['buffer_updation_lag'].keys() and self.curr_mapping['buffer_updation_lag']['minutes'] else 0
-            buffer_seconds = self.curr_mapping['buffer_updation_lag']['seconds'] if 'seconds' in self.curr_mapping['buffer_updation_lag'].keys() and self.curr_mapping['buffer_updation_lag']['seconds'] else 0
 
-            self.inform("Starting updation-check for newly inserted records which were updated in the {0} hours, {1} minutes and {2} minutes before the job started.".format(buffer_hours, buffer_minutes, buffer_seconds))
+            self.inform("Starting updation-check for newly inserted records which were updated in the {0} days, {1} hours and {2} minutes before the job started.".format(buffer_days, buffer_hours, buffer_minutes))
             start = 0
             updated_in_destination = True
             processed_collection = {}
@@ -791,7 +791,7 @@ class MongoMigrate:
                 if('improper_bookmarks' not in self.curr_mapping.keys()):
                     self.curr_mapping['improper_bookmarks'] = True
                 processed_collection_u = {}
-                processed_collection_u = self.buffer_updating_data(start=start, end=end, improper_bookmarks=self.curr_mapping['improper_bookmarks'], buffer_hours=buffer_hours, buffer_minutes=buffer_minutes, buffer_seconds=buffer_seconds)
+                processed_collection_u = self.buffer_updating_data(start=start, end=end, improper_bookmarks=self.curr_mapping['improper_bookmarks'], buffer_days=buffer_days, buffer_hours=buffer_hours, buffer_minutes=buffer_minutes)
                 '''
                     self.updating_data() returns either None or Dict[str, Any]
                     None is returned when no more records need to be checked for updations and all updations have been identified.
