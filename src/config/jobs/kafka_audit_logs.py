@@ -37,7 +37,7 @@ mapping = {
             'col_rename': {
                 'date': 'created_at',
             }
-        }
+        },
     ],
     'testing': {
         'test_type': 'sql',
