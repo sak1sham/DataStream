@@ -59,7 +59,8 @@ class APIMigrate:
             msg += 'for *{0}*. Will remigrate these events automatically'.format(self.curr_mapping['project_name'])
             send_message(msg = msg, channel = self.channel, slack_token = slack_token)
 
-        failed_events = []
+        api_failed_events = []
+        other_failed_events = []
         for event_name in event_names:
             total_fetch_events = 0
             transformed_total_events = 0
@@ -82,19 +83,20 @@ class APIMigrate:
                         transformed_total_events += int(processed_data_df.shape[0])
                     have_more_data = True if processed_data and processed_data['event_cursor'] else False
             except APIRequestError as e:
-                msg = 'Error while fetching data for event: *{0}* for app *{1}* from source on *{2}*.'.format(event_name, self.curr_mapping['project_name'], str(sync_date.date()))
+                msg = 'Error while fetching data for event: *{0}* for app *{1}* from source on *{2}*.'.format(event_name, self.curr_mapping['project_name'], str(sync_date))
                 send_message(msg = msg, channel = self.channel, slack_token = slack_token)
                 msg += '``` Exception: {0}```'.format(str(e))
                 self.err(msg)
-                failed_events.append(event_name)
-                max_attempts -= 1
+                api_failed_events.append(event_name)
             except Exception as e:
                 msg = "Something went wrong! Could not process event *{0}* for project *{1}*.``` Exception: {2}```".format(event_name, self.curr_mapping['project_name'], str(e))
                 send_message(msg = msg, channel = self.channel, slack_token = slack_token)
                 self.err(msg)
-                failed_events.append(event_name)
-                max_attempts -= 2
-        self.process_clevertap_events(failed_events, sync_date, max_attempts)
+                other_failed_events.append(event_name)
+        if len(api_failed_events) > 0:
+            self.process_clevertap_events(api_failed_events, sync_date, max_attempts-1)
+        if len(other_failed_events) > 0:
+            self.process_clevertap_events(other_failed_events, sync_date, max_attempts-2)
 
     def presetup_clevertap_process(self) -> None:
         start_day = self.curr_mapping.get('start_day', -1)

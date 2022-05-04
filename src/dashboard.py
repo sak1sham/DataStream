@@ -108,4 +108,4 @@ if __name__ == "__main__":
                 st.write('Deleted metadata for ', unique_id)
         show_metadata = st.checkbox(label="Show metadata", value=False, key=key)
         if(show_metadata):
-            st.write(job_data)
+            st.write(val)

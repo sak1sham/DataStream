@@ -4,7 +4,6 @@ import json
 import datetime
 from typing import NewType, Any, Dict
 from kafka import KafkaConsumer
-import redis
 
 from config.migration_mapping import get_kafka_mapping_functions
 from helper.util import *
@@ -25,12 +24,7 @@ class KafkaMigrate:
         self.primary_key = 0
         self.get_table_name, self.process_dict = get_kafka_mapping_functions(self.db['id'])
         self.table_name = self.curr_mapping['topic_name']
-        self.batch_size = 10000
-        redis_host = db['redis']['host']
-        redis_port = db['redis']['port']
-        redis_password = db['redis']['password']
-        self.redis_db = redis.StrictRedis(host=redis_host, port=redis_port, password=redis_password, decode_responses=True)
-        self.redis_key = self.curr_mapping['unique_id']
+        self.batch_size = 1000
 
     def get_kafka_connection(self, topic, kafka_group, kafka_server, KafkaPassword, KafkaUsername, enable_auto_commit = True):
         if "aws" in kafka_server:
@@ -187,25 +181,18 @@ class KafkaMigrate:
                     if(not recs):
                         self.inform('No more records found. Stopping the script.')
                         break
-                    n_count = 0
-                    for _, records in recs.items():
-                        for message in records:
-                            n_count += 1
-                            self.redis_db.rpush(self.redis_key, json.dumps(message.value))
-                    self.inform("Inserted {0} records in redis.".format(n_count))
-
-                    if(self.redis_db.llen(self.redis_key) >= self.batch_size):
-                        list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
-                        self.inform("Found {0} records from kafka, migrating.".format(self.batch_size))
+                    else:
+                        n_records = 0
                         segregated_recs = {}
-                        for val in list_records:
-                            val = json.loads(val)
-                            val_table_name = self.get_table_name(val)
-                            if(val_table_name not in segregated_recs.keys()):
-                                segregated_recs[val_table_name] = [self.process_dict(val)]
-                            else:
-                                segregated_recs[val_table_name].append(self.process_dict(val))
-                        
+                        for _, records in recs.items():
+                            for message in records:
+                                n_records += 1
+                                message_table_name = self.get_table_name(message.value)
+                                if(message_table_name not in segregated_recs.keys()):
+                                    segregated_recs[message_table_name] = [self.process_dict(message.value)]
+                                else:
+                                    segregated_recs[message_table_name].append(self.process_dict(message.value))
+                        self.inform("Read {0} records from kafka".format(n_records))
                         for table_name, recs in segregated_recs.items():
                             converted_df = pd.DataFrame(recs)
                             processed_data = self.process_table(df=converted_df)
