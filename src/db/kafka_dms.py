@@ -182,15 +182,8 @@ class KafkaMigrate:
             self.preprocess()
             self.inform(message="Preprocessing done.", save=True)
             try:
-                while(1):
-                    # recs = consumer.poll(timeout_ms=100000000000, max_records=self.batch_size)
-                    # for _, records in recs.items():
-                    #     for message in records:
-                    #         self.redis_db.rpush(self.redis_key, json.dumps(message.value))
-
-                    for message in consumer:
-                        self.redis_db.rpush(self.redis_key, json.dumps(message.value))
-
+                for message in consumer:
+                    self.redis_db.rpush(self.redis_key, json.dumps(message.value))
                     if(self.redis_db.llen(self.redis_key) >= self.batch_size):
                         list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
                         self.inform("Found {0} records from kafka, migrating.".format(self.batch_size))
@@ -209,6 +202,7 @@ class KafkaMigrate:
                             processed_data['name'] = table_name
                             self.save_data(processed_data=processed_data)
                             self.inform(message="Data saved")
+                            
             except Exception as e:
                 self.inform(traceback.format_exc())
                 self.err(error=('Consumer exception', e))
