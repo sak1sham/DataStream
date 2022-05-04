@@ -183,16 +183,13 @@ class KafkaMigrate:
             self.inform(message="Preprocessing done.", save=True)
             try:
                 while(1):
-                    recs = consumer.poll(timeout_ms=100000000000, max_records=self.batch_size)
-                    if(not recs):
-                        self.inform('No more records found. Stopping the script.')
-                        break
-                    n_count = 0
-                    for _, records in recs.items():
-                        for message in records:
-                            n_count += 1
-                            self.redis_db.rpush(self.redis_key, json.dumps(message.value))
-                    self.inform("Inserted {0} records in redis.".format(n_count))
+                    # recs = consumer.poll(timeout_ms=100000000000, max_records=self.batch_size)
+                    # for _, records in recs.items():
+                    #     for message in records:
+                    #         self.redis_db.rpush(self.redis_key, json.dumps(message.value))
+
+                    for message in consumer:
+                        self.redis_db.rpush(self.redis_key, json.dumps(message.value))
 
                     if(self.redis_db.llen(self.redis_key) >= self.batch_size):
                         list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
