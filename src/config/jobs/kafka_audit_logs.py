@@ -6,7 +6,7 @@ mapping = {
         'source_type': 'kafka',
         'kafka_username': 'kafka-client-user',
         'kafka_password': 'JjZXllrTsb6KgOVM',
-        'consumer_group_id': 'dms_group',
+        'consumer_group_id': 'dms_group_kafka',
         'kafka_server': 'b-2.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-3.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-1.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-4.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-5.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-6.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096',
         'db_name': 'audit_logs'
     },
