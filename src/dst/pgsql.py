@@ -1,25 +1,33 @@
 import awswrangler as wr
-import redshift_connector
-
+import psycopg2
+import pg8000
 from helper.logger import logger
 
 from typing import List, Dict, Any
 import datetime
 from helper.util import utc_to_local
 
-class RedshiftSaver:
-    def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, unique_id: str = "", is_small_data: bool = False) -> None:
-        # s3_location is required as a staging area to push into redshift
-        self.s3_location = "s3://" + db_destination['s3_bucket_name'] + "/Redshift/" + db_source['source_type'] + "/" + db_source['db_name'] + "/"
+class PgSQLSaver:
+    def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, unique_id: str = "") -> None:
+        # s3_location is required as a staging area to push into PgSQL
         self.unique_id = unique_id
-        self.conn = redshift_connector.connect(
-            host = db_destination['host'],
-            database = db_destination['database'],
-            user = db_destination['user'],
+        if('username' not in db_destination.keys() or not db_destination['username']):
+            db_destination['username'] = ''
+        if('password' not in db_destination.keys() or not db_destination['password']):
+            db_destination['password'] = ''
+        self.conn = pg8000.connect(
+            host = db_destination['url'],
+            database = db_destination['db_name'],
+            user = db_destination['username'],
             password = db_destination['password']
         )
+        # self.conn = psycopg2.connect(
+        #     host = db_destination['url'],
+        #     database = db_destination['db_name'],
+        #     user = db_destination['username'],
+        #     password = db_destination['password']
+        # )
         self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else db_source['source_type'] + "_" + db_source['db_name'] + "_dms"
-        self.is_small_data = is_small_data
         self.name_ = ""
         self.table_list = []
 
@@ -33,10 +41,6 @@ class RedshiftSaver:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
             self.table_list.extend(processed_data['name']) 
         self.name_ = processed_data['name']
-        file_name = self.s3_location + self.name_ + "/"
-        
-        if 'filename' in processed_data:
-            file_name += str(processed_data['filename']) + "/"
         
         varchar_lengths = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
         
@@ -50,29 +54,15 @@ class RedshiftSaver:
             if('col_rename' in processed_data and processed_data['col_rename']):
                 processed_data['df_insert'].rename(columns = processed_data['col_rename'], inplace = True)
             self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
-            if(self.is_small_data):
-                wr.redshift.to_sql(
-                    df = processed_data['df_insert'],
-                    con = self.conn,
-                    schema = self.schema,
-                    table = self.name_,
-                    mode = "append",
-                    primary_keys = primary_keys,
-                    varchar_lengths = varchar_lengths,
-                    varchar_lengths_default = 512
-                )
-            else:
-                wr.redshift.copy(
-                    df = processed_data['df_insert'],
-                    con = self.conn,
-                    path = file_name,
-                    schema = self.schema,
-                    table = self.name_,
-                    mode = "append",
-                    primary_keys = primary_keys,
-                    varchar_lengths = varchar_lengths,
-                    varchar_lengths_default = 512
-                )
+            wr.postgresql.to_sql(
+                df = processed_data['df_insert'],
+                con = self.conn,
+                schema = self.schema,
+                table = self.name_,
+                mode = "append",
+                varchar_lengths = varchar_lengths,
+                use_column_names = True
+            )
             self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))    
         
         if('df_update' in processed_data and processed_data['df_update'].shape[0] > 0):
@@ -80,29 +70,16 @@ class RedshiftSaver:
             if('col_rename' in processed_data and processed_data['col_rename']):
                 processed_data['df_update'].rename(columns = processed_data['col_rename'], inplace = True)
             # is_dump = False, and primary_keys will be present.
-            if(self.is_small_data):
-                wr.redshift.to_sql(
-                    df = processed_data['df_update'],
-                    con = self.conn,
-                    schema = self.schema,
-                    table = self.name_,
-                    mode = "upsert",
-                    primary_keys = primary_keys,
-                    varchar_lengths = varchar_lengths,
-                    varchar_lengths_default = 512
-                )
-            else:
-                wr.redshift.copy(
-                    df = processed_data['df_update'],
-                    path = file_name,
-                    con = self.conn,
-                    schema = self.schema,
-                    table = self.name_,
-                    mode = "upsert",
-                    primary_keys = primary_keys,
-                    varchar_lengths = varchar_lengths,
-                    varchar_lengths_default = 512
-                )
+            wr.postgresql.to_sql(
+                df = processed_data['df_update'],
+                con = self.conn,
+                schema = self.schema,
+                table = self.name_,
+                mode = "upsert",
+                upsert_conflict_columns = primary_keys,
+                use_column_names = True,
+                varchar_lengths = varchar_lengths,
+            )
             self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
 
 
@@ -111,13 +88,13 @@ class RedshiftSaver:
         self.inform(query)
         with self.conn.cursor() as cursor:
             cursor.execute(query)
-        self.inform("Deleted " + table_name + " from Redshift schema " + self.schema)
+        self.inform("Deleted " + table_name + " from PgSQL schema " + self.schema)
 
 
     def get_n_cols(self, table_name: str = None) -> int:
         query = 'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{0}\' AND table_name = \'{1}\''.format(self.schema, table_name)
         self.inform(query)
-        df = wr.redshift.read_sql_query(
+        df = wr.postgresql.read_sql_query(
             sql = query,
             con = self.conn
         )
@@ -136,7 +113,7 @@ class RedshiftSaver:
             hours = expiry['hours']
         delete_before_date = today_ - datetime.timedelta(days=days, hours=hours)
         self.inform(message=("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d')))
-        ## Expire function is called only when is_dump = True
+        ## Expire function is called only when Mode = Dumping
         ## i.e. the saved data will have a migration_snapshot_date column
         ## We just have to query using that column to delete old data
         delete_before_date_str = delete_before_date.strftime('%Y-%m-%d %H:%M:%S')

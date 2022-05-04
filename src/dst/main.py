@@ -1,6 +1,7 @@
 from dst.redshift import RedshiftSaver
 from dst.s3 import s3Saver
 from dst.console import ConsoleSaver
+from dst.pgsql import PgSQLSaver
 from helper.exceptions import *
 from typing import List, Dict, Any
 
@@ -20,17 +21,21 @@ class DMS_exporter:
                 self.saver = RedshiftSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid)
             if(mirroring):
                 self.saver.delete_table(table_name=table_name)
+        elif(self.type == 'pgsql'):
+            self.saver = PgSQLSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid)
+            if(mirroring):
+                self.saver.delete_table(table_name=table_name)
         else:
-            raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift")
+            raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift, pgsql")
 
-    def get_n_redshift_cols(self, table_name: str = None) -> int:
-        return self.saver.get_n_redshift_cols(table_name=table_name)
+    def get_n_cols(self, table_name: str = None) -> int:
+        return self.saver.get_n_cols(table_name=table_name)
 
-    def drop_redshift_table(self, table_name: str = None) -> None:
+    def drop_table(self, table_name: str = None) -> None:
         self.saver.delete_table(table_name=table_name)
 
     def save(self, processed_data: Dict[str, Any]= None, primary_keys: List[str] = None, c_partition: List[str] = None) -> None:
-        if(c_partition and self.type != 'redshift'):
+        if(c_partition and self.type not in ['redshift', 'pgsql']):
             self.saver.save(processed_data = processed_data, c_partition = c_partition, primary_keys = primary_keys)
         else:
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
