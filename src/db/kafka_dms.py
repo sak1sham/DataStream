@@ -183,7 +183,7 @@ class KafkaMigrate:
             self.inform(message="Preprocessing done.", save=True)
             try:
                 while(1):
-                    recs = consumer.poll(timeout_ms=1000000, max_records=self.batch_size)
+                    recs = consumer.poll(timeout_ms=100000000000, max_records=self.batch_size)
                     if(not recs):
                         self.inform('No more records found. Stopping the script.')
                         break
