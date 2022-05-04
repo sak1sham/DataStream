@@ -49,6 +49,10 @@ mapping = {
         'field_to_compare': 'created_at',
         'field_format': 'datetime',
     },
+    'redis': {
+        'url': 'redis://cm-app-impressions-live-sa.t8se9i.0001.aps1.cache.amazonaws.com',
+        'password': ''
+    }
 }
 
 
