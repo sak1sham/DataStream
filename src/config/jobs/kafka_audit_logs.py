@@ -50,8 +50,7 @@ mapping = {
         'field_format': 'datetime',
     },
     'redis': {
-        'host': 'localhost',
-        'port': 6379,
+        'url': 'redis://cm-app-impressions-live-sa.t8se9i.0001.aps1.cache.amazonaws.com',
         'password': ''
     }
 }

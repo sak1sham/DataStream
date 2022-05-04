@@ -26,10 +26,12 @@ class KafkaMigrate:
         self.get_table_name, self.process_dict = get_kafka_mapping_functions(self.db['id'])
         self.table_name = self.curr_mapping['topic_name']
         self.batch_size = 10000
-        redis_host = db['redis']['host']
-        redis_port = db['redis']['port']
+        # redis_host = db['redis']['host']
+        # redis_port = db['redis']['port']
+        redis_url = db['redis']['url']
         redis_password = db['redis']['password']
-        self.redis_db = redis.StrictRedis(host=redis_host, port=redis_port, password=redis_password, decode_responses=True)
+        # self.redis_db = redis.StrictRedis(host=redis_host, port=redis_port, password=redis_password, decode_responses=True)
+        self.redis_db = redis.StrictRedis.from_url(url = redis_url, password=redis_password, decode_responses=True)
         self.redis_key = self.curr_mapping['unique_id']
 
     def get_kafka_connection(self, topic, kafka_group, kafka_server, KafkaPassword, KafkaUsername, enable_auto_commit = True):
@@ -171,40 +173,34 @@ class KafkaMigrate:
     
     def process(self) -> None:
         '''
-                This function handles the entire flow of preprocessing, processing and saving data.
-            '''
-        try:
-            '''
-                Consumes the data in kafka
-            '''
-            consumer = self.get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
-            self.inform(message='Started consuming messages.', save=True)
-            self.preprocess()
-            self.inform(message="Preprocessing done.", save=True)
-            try:
-                for message in consumer:
-                    self.redis_db.rpush(self.redis_key, json.dumps(message.value))
-                    if(self.redis_db.llen(self.redis_key) >= self.batch_size):
-                        list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
-                        self.inform("Found {0} records from kafka, migrating.".format(self.batch_size))
-                        segregated_recs = {}
-                        for val in list_records:
-                            val = json.loads(val)
-                            val_table_name = self.get_table_name(val)
-                            if(val_table_name not in segregated_recs.keys()):
-                                segregated_recs[val_table_name] = [self.process_dict(val)]
-                            else:
-                                segregated_recs[val_table_name].append(self.process_dict(val))
+            This function handles the entire flow of preprocessing, processing and saving data.
+        '''
+
+        '''
+            Consumes the data in kafka
+        '''
+        consumer = self.get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
+        self.inform(message='Started consuming messages.', save=True)
+        self.preprocess()
+        self.inform(message="Preprocessing done.", save=True)
+        for message in consumer:
+            self.redis_db.rpush(self.redis_key, json.dumps(message.value))
+            if(self.redis_db.llen(self.redis_key) >= self.batch_size):
+                list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
+                self.inform("Found {0} records from kafka, migrating.".format(self.batch_size))
+                segregated_recs = {}
+                for val in list_records:
+                    val = json.loads(val)
+                    val_table_name = self.get_table_name(val)
+                    if(val_table_name not in segregated_recs.keys()):
+                        segregated_recs[val_table_name] = [self.process_dict(val)]
+                    else:
+                        segregated_recs[val_table_name].append(self.process_dict(val))
+                
+                for table_name, recs in segregated_recs.items():
+                    converted_df = pd.DataFrame(recs)
+                    processed_data = self.process_table(df=converted_df)
+                    processed_data['name'] = table_name
+                    self.save_data(processed_data=processed_data)
+                    self.inform(message="Data saved")
                         
-                        for table_name, recs in segregated_recs.items():
-                            converted_df = pd.DataFrame(recs)
-                            processed_data = self.process_table(df=converted_df)
-                            processed_data['name'] = table_name
-                            self.save_data(processed_data=processed_data)
-                            self.inform(message="Data saved")
-                            
-            except Exception as e:
-                self.inform(traceback.format_exc())
-                self.err(error=('Consumer exception', e))
-        except Exception as e:
-            self.err(error=("Got some error in Kafka Consumer.", e))
