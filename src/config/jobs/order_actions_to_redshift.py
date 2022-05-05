@@ -18,11 +18,9 @@ mapping = {
         {
             'table_name': 'order_actions',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'bookmark': 'updated_at',
-            'improper_bookmarks': False,
             'batch_size': 10000,
             'lob_fields_length': {
                 'action_name': 3036,
