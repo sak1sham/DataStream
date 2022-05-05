@@ -179,7 +179,7 @@ class KafkaMigrate:
         start_time = time.time()
         consumer = self.get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
         end_time = time.time()
-        print("Time diff 1: ", end_time - start_time)
+        self.inform("Time diff 1: ", end_time - start_time)
         self.inform(message='Started consuming messages.', save=True)
         self.preprocess()
         self.inform(message="Preprocessing done.", save=True)
@@ -189,11 +189,11 @@ class KafkaMigrate:
             self.redis_db.rpush(self.redis_key, message.value)
             end_time = time.time()
             time_gap += (end_time - start_time)
-            print("Time taken in fetching one record from consumer to fetching another record from consumer", end_time - start_time)
-            print("Redis length now: ", self.redis_db.llen(self.redis_key))
+            self.inform("Time taken in fetching one record from consumer to fetching another record from consumer", end_time - start_time)
+            self.inform("Redis length now: ", self.redis_db.llen(self.redis_key))
             if(self.redis_db.llen(self.redis_key) >= self.batch_size):
-                print("Redis size has reached batch_size")
-                print("Time taken in redis insertions of 10k records: ", time_gap)
+                self.inform("Redis size has reached batch_size")
+                self.inform("Time taken in redis insertions of 10k records: ", time_gap)
                 list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
                 self.inform("Found {0} records from kafka, migrating.".format(self.batch_size))
                 segregated_recs = {}
@@ -214,5 +214,5 @@ class KafkaMigrate:
                     self.inform(message="Data saved")
 
                 end_time = time.time()
-                print("Time diff in migration to s3: ", end_time - start_time)  
+                self.inform("Time diff in migration to s3: ", end_time - start_time)  
                 break  
