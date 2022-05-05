@@ -176,10 +176,7 @@ class KafkaMigrate:
         '''
             Consumes the data in kafka
         '''
-        start_time = time.time()
         consumer = self.get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
-        end_time = time.time()
-        self.inform("Time diff 1: ", end_time - start_time)
         self.inform(message='Started consuming messages.', save=True)
         self.preprocess()
         self.inform(message="Preprocessing done.", save=True)
@@ -215,4 +212,3 @@ class KafkaMigrate:
 
                 end_time = time.time()
                 self.inform("Time diff in migration to s3: {0}".format(end_time - start_time))
-                break  
