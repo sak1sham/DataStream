@@ -1,5 +1,3 @@
-import awswrangler as wr
-from numpy import double
 import psycopg2
 import pandas as pd
 from typing import List, Dict, Any
@@ -28,6 +26,7 @@ class PgSQLSaver:
         self.table_list = []
 
 
+
     def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_lengths: Dict[str, int] = {}, varchar_lengths_default: int = 512) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
@@ -44,7 +43,7 @@ class PgSQLSaver:
             elif(dtypes[col] == 'bigint'):
                 cols_def = cols_def + "BIGINT"
             elif(dtypes[col] == 'double'):
-                cols_def = cols_def + "DOUBLE"
+                cols_def = cols_def + "DOUBLE PRECISION"
             if(len(primary_keys) > 0 and primary_keys[0] == col):
                 cols_def = cols_def + " PRIMARY KEY"
             cols_def = cols_def + ","
@@ -54,6 +53,7 @@ class PgSQLSaver:
         with self.conn.cursor() as curs:
             curs.execute(sql_query)
             self.conn.commit()
+
 
 
     def pgsql_insert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_lengths: Dict[str, int] = {}, varchar_lengths_default: int = 512) -> None:
@@ -71,15 +71,20 @@ class PgSQLSaver:
             for key, val in dtypes.items():
                 if(val == 'timestamp'):
                     df[key] = df[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isnull(x) else '')
-
+            
             cols_def = ""
             for index, row in df.iterrows():
                 row_def = "("
                 for col in list_cols:
-                    if(col not in dtypes.keys() or dtypes[col] == 'string'):
-                        row_def += "\'{0}\'".format(row[col])
+                    if(pd.isna(row[col])):
+                        row_def += "NULL"
+                    elif(col not in dtypes.keys() or dtypes[col] == 'string'):
+                        row_def += "\'{0}\'".format(row[col].replace("'", "''"))
                     elif(dtypes[col] == 'timestamp'):
-                        row_def += "CAST(\'{0}\' AS TIMESTAMP)".format(row[col])
+                        if(len(row[col]) > 0):
+                            row_def += "CAST(\'{0}\' AS TIMESTAMP)".format(row[col])
+                        else:
+                            row_def += "NULL"
                     elif(dtypes[col] == 'boolean'):
                         if(dtypes[col]):
                             row_def += "True"
@@ -98,6 +103,7 @@ class PgSQLSaver:
                 self.conn.commit()
         except Exception as e:
             raise Exception("Unable to insert records in table.")
+
 
 
 
@@ -121,10 +127,15 @@ class PgSQLSaver:
             for index, row in df.iterrows():
                 row_def = "("
                 for col in list_cols:
-                    if(col not in dtypes.keys() or dtypes[col] == 'string'):
-                        row_def += "\'{0}\'".format(row[col])
+                    if(pd.isna(row[col])):
+                        row_def += "NULL"
+                    elif(col not in dtypes.keys() or dtypes[col] == 'string'):
+                        row_def += "\'{0}\'".format(row[col].replace("'", "''"))
                     elif(dtypes[col] == 'timestamp'):
-                        row_def += "CAST(\'{0}\' AS TIMESTAMP)".format(row[col])
+                        if(len(row[col]) > 0):
+                            row_def += "CAST(\'{0}\' AS TIMESTAMP)".format(row[col])
+                        else:
+                            row_def += "NULL"
                     elif(dtypes[col] == 'boolean'):
                         if(dtypes[col]):
                             row_def += "True"
@@ -151,6 +162,7 @@ class PgSQLSaver:
                 self.conn.commit()
         except Exception as e:
             raise Exception("Unable to insert records in table.")
+
 
 
     def inform(self, message: str = "") -> None:
@@ -244,3 +256,11 @@ class PgSQLSaver:
     
     def close(self):
         self.conn.close()
+
+
+'''
+
+    INSERT INTO TABLE VALUES 
+    (E'Haldiram'S')
+
+'''
