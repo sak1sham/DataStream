@@ -5,7 +5,7 @@ import datetime
 from typing import NewType, Any, Dict
 from kafka import KafkaConsumer
 import redis
-
+import time
 from config.migration_mapping import get_kafka_mapping_functions
 from helper.util import *
 from helper.logger import logger
@@ -25,7 +25,7 @@ class KafkaMigrate:
         self.primary_key = 0
         self.get_table_name, self.process_dict = get_kafka_mapping_functions(self.db['id'])
         self.table_name = self.curr_mapping['topic_name']
-        self.batch_size = 10000
+        self.batch_size = 100
         redis_url = db['redis']['url']
         redis_password = db['redis']['password']
         self.redis_db = redis.StrictRedis.from_url(url = redis_url, password=redis_password, decode_responses=True)
@@ -42,13 +42,13 @@ class KafkaMigrate:
                                 enable_auto_commit=enable_auto_commit,
                                 #  auto_offset_reset='earliest',
                                 group_id=kafka_group,
-                                value_deserializer=lambda m: json.loads(m.decode('utf-8')))
+                                value_deserializer=lambda m: m)
         else:
             return KafkaConsumer(topic,
                                 bootstrap_servers=kafka_server,
                                 enable_auto_commit=enable_auto_commit,
                                 group_id=kafka_group,
-                                value_deserializer=lambda m: json.loads(m.decode('utf-8')))
+                                value_deserializer=lambda m: m)
 
     def inform(self, message: str = None, save: bool = False) -> None:
         logger.inform(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message), save=save)
@@ -176,16 +176,28 @@ class KafkaMigrate:
         '''
             Consumes the data in kafka
         '''
+        start_time = time.time()
         consumer = self.get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
+        end_time = time.time()
+        print("Time diff 1: ", end_time - start_time)
         self.inform(message='Started consuming messages.', save=True)
         self.preprocess()
         self.inform(message="Preprocessing done.", save=True)
+        time_gap = 0
         for message in consumer:
-            self.redis_db.rpush(self.redis_key, json.dumps(message.value))
+            start_time = time.time()
+            self.redis_db.rpush(self.redis_key, message.value)
+            end_time = time.time()
+            time_gap += (end_time - start_time)
+            print("Time taken in fetching one record from consumer to fetching another record from consumer", end_time - start_time)
+            print("Redis length now: ", self.redis_db.llen(self.redis_key))
             if(self.redis_db.llen(self.redis_key) >= self.batch_size):
+                print("Redis size has reached batch_size")
+                print("Time taken in redis insertions of 10k records: ", time_gap)
                 list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
                 self.inform("Found {0} records from kafka, migrating.".format(self.batch_size))
                 segregated_recs = {}
+                start_time = time.time()
                 for val in list_records:
                     val = json.loads(val)
                     val_table_name = self.get_table_name(val)
@@ -200,4 +212,7 @@ class KafkaMigrate:
                     processed_data['name'] = table_name
                     self.save_data(processed_data=processed_data)
                     self.inform(message="Data saved")
-                        
+
+                end_time = time.time()
+                print("Time diff in migration to s3: ", end_time - start_time)  
+                break  
