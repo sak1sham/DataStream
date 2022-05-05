@@ -1,10 +1,9 @@
 import awswrangler as wr
 import redshift_connector
-
-from helper.logger import logger
-
 from typing import List, Dict, Any
 import datetime
+
+from helper.logger import logger
 from helper.util import utc_to_local
 
 class RedshiftSaver:

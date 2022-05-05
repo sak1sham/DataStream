@@ -307,6 +307,7 @@ def extract_value_from_nested_obj(obj: Dict[str, Any] = {}, key: str = ''):
         except KeyError:
             return None
     return value
+
 def convert_heads_to_lowercase(x: Any) -> Any:
     '''
         Convert df.columns to lowercase
