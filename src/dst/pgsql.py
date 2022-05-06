@@ -156,7 +156,6 @@ class PgSQLSaver:
                 up_query = up_query[:-2]
 
             sql_query = "INSERT INTO {0}({1}) VALUES \n{2}\n ON CONFLICT ({3}) DO UPDATE SET {4};".format(table_name, col_names, cols_def, primary_keys[0], up_query)
-            print(sql_query)  
             with self.conn.cursor() as curs:
                 curs.execute(sql_query)
                 self.conn.commit()
