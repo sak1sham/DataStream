@@ -17,7 +17,6 @@ mapping = {
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'to_partition': True,
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
