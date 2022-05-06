@@ -255,11 +255,3 @@ class PgSQLSaver:
     
     def close(self):
         self.conn.close()
-
-
-'''
-
-    INSERT INTO TABLE VALUES 
-    (E'Haldiram'S')
-
-'''
