@@ -24,3 +24,9 @@ class IncorrectMapping(Exception):
 
 class APIRequestError(Exception):
     pass
+
+class SchemaMismatch(Exception):
+    pass
+
+class EmptyDataframe(Exception):
+    pass

@@ -395,8 +395,9 @@ class PGSQLMigrate:
                                         msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
                                         slack_token = settings['slack_notif']['slack_token']
                                         channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
-                                        send_message(msg = msg, channel = channel, slack_token = slack_token)
-                                        self.inform('Notification sent.')
+                                        if('slack_notify' in settings.keys() and settings['slack_notify']):
+                                            send_message(msg = msg, channel = channel, slack_token = slack_token)
+                                            self.inform('Notification sent.')
                                         raise KeyboardInterrupt("Ending gracefully.")
 
                             elif(mode == "syncing"):
@@ -432,8 +433,9 @@ class PGSQLMigrate:
                                         msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
                                         slack_token = settings['slack_notif']['slack_token']
                                         channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
-                                        send_message(msg = msg, channel = channel, slack_token = slack_token)
-                                        self.inform('Notification sent.')
+                                        if('slack_notify' in settings.keys() and settings['slack_notify']):
+                                            send_message(msg = msg, channel = channel, slack_token = slack_token)
+                                            self.inform('Notification sent.')
                                         raise KeyboardInterrupt("Ending gracefully.")
                                 else:
                                     ## UPDATION MODE
@@ -721,7 +723,7 @@ class PGSQLMigrate:
 
 
     def preprocess_table(self, table_name: str = None) -> None:
-        n_columns_redshift = self.saver.get_n_redshift_cols(table_name=table_name)
+        n_columns_destination = self.saver.get_n_cols(table_name=table_name)
         try:
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
@@ -752,9 +754,9 @@ class PGSQLMigrate:
                         n_columns_pgsql += 1
                     elif(col_form == 'int'):
                         n_columns_pgsql += 1
-            if(n_columns_redshift > 0 and n_columns_pgsql != n_columns_redshift):
+            if(n_columns_destination > 0 and n_columns_pgsql != n_columns_destination):
                 self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
-                self.saver.drop_redshift_table(table_name=table_name)
+                self.saver.drop_table(table_name=table_name)
                 delete_metadata_from_mongodb(self.curr_mapping['unique_id'])
                 self.inform("Data is deleted, now starting migration again.")
             else:
@@ -814,7 +816,7 @@ class PGSQLMigrate:
             if(table_name.count('.') >= 2):
                 self.warn(message=("Can not migrate table with table_name: " + table_name))
                 continue
-            if(self.db['destination']['destination_type'] == 'redshift'):
+            if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
                 self.preprocess_table(table_name)
             
             if(self.curr_mapping['mode'] == 'dumping'):

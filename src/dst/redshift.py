@@ -1,10 +1,9 @@
 import awswrangler as wr
 import redshift_connector
-
-from helper.logger import logger
-
 from typing import List, Dict, Any
 import datetime
+
+from helper.logger import logger
 from helper.util import utc_to_local
 
 class RedshiftSaver:
@@ -114,7 +113,7 @@ class RedshiftSaver:
         self.inform("Deleted " + table_name + " from Redshift schema " + self.schema)
 
 
-    def get_n_redshift_cols(self, table_name: str = None) -> int:
+    def get_n_cols(self, table_name: str = None) -> int:
         query = 'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{0}\' AND table_name = \'{1}\''.format(self.schema, table_name)
         self.inform(query)
         df = wr.redshift.read_sql_query(
