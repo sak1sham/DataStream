@@ -5,7 +5,7 @@ load_dotenv()
 settings = {
     'fastapi_server': False,
     'timezone': 'Asia/Kolkata',
-    'notify': False,
+    'notify': True,
     'encryption_store': {
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),
