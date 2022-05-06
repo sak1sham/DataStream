@@ -14,10 +14,14 @@ mapping = {
         {
             'table_name': 'analytics.cl_idfas',
             'cron': 'self-managed',
-            'mode': 'dumping',
+            'mode': 'syncing',
+            'primary_key': 'id',
+            'primary_key_datatype': 'int',
             'to_partition': True,
             'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
+            'bookmark': 'updated_at_for_pipeline',
+            'improper_bookmarks': False,
             'batch_size': 10000,
         },
     ]
