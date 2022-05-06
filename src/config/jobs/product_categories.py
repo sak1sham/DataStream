@@ -18,8 +18,6 @@ mapping = {
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'to_partition': True,
-            'partition_col': 'category_id',
-            'partition_col_format': 'int',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
