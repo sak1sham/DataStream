@@ -74,7 +74,10 @@ cx_app_event_names = [
     'Wallet Ticked', 
     'Cart Pop Opened', 
     'Product Added', 
-    'FPN_CLICKED'
+    'FPN_CLICKED',
+    'Suggestion clicked',
+    'suggestion initiated', 
+    'Suggestion failed'
     ]
 
 cl_app_event_names = [
@@ -130,7 +133,8 @@ cl_app_event_names = [
     'Bottom Tab Click', 
     'CL Refer Landing', 
     'Cx Page Name Clicked', 
-    'Cx Detail Call'
+    'Cx Detail Call',
+    'CL Refer Refer Now'
     ]
 
 cx_web_event_names = [
