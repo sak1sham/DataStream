@@ -14,8 +14,8 @@ mapping = {
         {
             'table_name': 'dispatch_or_received_shipments',
             'cron': 'self-managed',
-            'primary_key': 'scanned_at',
-            'primary_key_datatype': 'datetime',
+            'primary_key': 'shipment_id',
+            'primary_key_datatype': 'int',
             'to_partition': True,
             'partition_col': 'scanned_at',
             'partition_col_format': 'datetime',

@@ -15,6 +15,8 @@ mapping = {
             'table_name': 'inventory_snapshot_wms',
             'cron': 'self-managed',
             'mode': 'logging',
+            'primary_key': 'id',
+            'primary_key_datatype': 'int',
             'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
