@@ -181,14 +181,15 @@ class KafkaMigrate:
         self.preprocess()
         self.inform(message="Preprocessing done.", save=True)
         batch_start_time = time.time()
+        total_redis_insertion_time = 0
         for message in consumer:
             start_time = time.time()
             self.redis_db.rpush(self.redis_key, message.value)
-            self.inform("Time taken to push record to consumer {0}".format(time.time() - start_time))
-            self.inform("Redis length now: {0}".format(self.redis_db.llen(self.redis_key)))
+            total_redis_insertion_time += time.time() - start_time
+            self.inform("Reached {0}/{1}".format(self.redis_db.llen(self.redis_key), self.batch_size))
             if(self.redis_db.llen(self.redis_key) >= self.batch_size):
-                self.inform("Redis size has reached batch_size. Starting migration.")
-                self.inform("Time taken in redis insertions of {0} records: {1} seconds".format(self.batch_size, time.time() - batch_start_time))
+                self.inform("Time taken in (consuming + redis insertions) of {0} records: {1} seconds".format(self.batch_size, time.time() - batch_start_time))
+                self.inform("Time taken in (redis insertions) of {0} records: {1} seconds".format(self.batch_size, total_redis_insertion_time))
                 start_time = time.time()
                 list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
                 segregated_recs = {}
@@ -209,4 +210,5 @@ class KafkaMigrate:
 
                 self.inform("Time taken to migrate a batch to s3: {0} seconds".format(time.time() - start_time))
                 batch_start_time = time.time()
+                total_redis_insertion_time = 0
                 
