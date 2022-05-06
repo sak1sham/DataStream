@@ -15,12 +15,14 @@ mapping = {
         {
             'table_name': 'invoices_data',
             'mode': 'logging',
-            'primary_key': 'order_id',
+            'primary_key': 'invoices_data_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',
             'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
+            'bookmark': 'updated_at_for_pipeline',
+            'improper_bookmarks': False,
             'batch_size': 10000,
         }
     ]
