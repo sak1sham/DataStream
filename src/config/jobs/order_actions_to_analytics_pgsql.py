@@ -8,7 +8,7 @@ mapping = {
     },
     'destination': {
         'destination_type': 'pgsql',
-        'url': '65.0.105.34',
+        'url': '13.233.145.240',
         'db_name': 'dms',
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
@@ -23,8 +23,8 @@ mapping = {
             'batch_size': 10000,
             'lob_fields_length': {
                 'action_name': 3036,
-                'old_value': 3036,
-                'new_value': 3036,
+                'old_value': 65535,
+                'new_value': 65535,
             },
             'grace_updation_lag': {
                 'days': 1
