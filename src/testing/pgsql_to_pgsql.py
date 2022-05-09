@@ -202,9 +202,9 @@ class SqlTester():
                         with conn.cursor("testing", scrollable=True) as cursor:
                             cursor.execute(query)
                             _ = cursor.fetchone()
-                            columns = [desc[0] for desc in cursor.description]
+                            columns_dest = [desc[0] for desc in cursor.description]
                             cursor.scroll(-1)
-                            df = pd.DataFrame(cursor.fetchall(), columns=columns)
+                            df = pd.DataFrame(cursor.fetchall(), columns=columns_dest)
                         conn.close()
                         for _, row in data_df.iterrows():
                             pgsql_record = df.loc[df['unique_migration_record_id'] == row['unique_migration_record_id']].to_dict(orient='records')
@@ -221,7 +221,7 @@ class SqlTester():
 
 if __name__ == "__main__":
     try:
-        N = 1000
+        N = 50
         records_per_batch = 1000
         id = ''
         if(len(sys.argv) > 1):
