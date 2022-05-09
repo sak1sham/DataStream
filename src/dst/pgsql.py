@@ -15,12 +15,21 @@ class PgSQLSaver:
             db_destination['username'] = ''
         if('password' not in db_destination.keys() or not db_destination['password']):
             db_destination['password'] = ''
-        self.conn = psycopg2.connect(
-            host = db_destination['url'],
-            database = db_destination['db_name'],
-            user = db_destination['username'],
-            password = db_destination['password']
-        )
+        self.db_destination = db_destination
+        try:
+            conn = psycopg2.connect(
+                host = self.db_destination['url'],
+                database = self.db_destination['db_name'],
+                user = self.db_destination['username'],
+                password = self.db_destination['password']
+            )
+            conn.close()
+        except Exception as e:
+            self.err("Unable to connect to destination.")
+            raise
+        else:
+            self.inform("Successfully tested connection with destination db.")
+            
         self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else db_source['source_type'] + "_" + db_source['db_name'] + "_dms"
         self.name_ = ""
         self.table_list = []
@@ -50,9 +59,16 @@ class PgSQLSaver:
         cols_def = cols_def[:-1]
 
         sql_query = "CREATE TABLE IF NOT EXISTS {0} ({1}\n);".format(table_name, cols_def)
-        with self.conn.cursor() as curs:
+        conn = psycopg2.connect(
+            host = self.db_destination['url'],
+            database = self.db_destination['db_name'],
+            user = self.db_destination['username'],
+            password = self.db_destination['password']
+        )
+        with conn.cursor() as curs:
             curs.execute(sql_query)
-            self.conn.commit()
+            conn.commit()
+        conn.close()
 
 
 
@@ -98,9 +114,16 @@ class PgSQLSaver:
             cols_def = cols_def[:-2]
 
             sql_query = "INSERT INTO {0}({1}) VALUES \n{2};".format(table_name, col_names, cols_def)
-            with self.conn.cursor() as curs:
+            conn = psycopg2.connect(
+                host = self.db_destination['url'],
+                database = self.db_destination['db_name'],
+                user = self.db_destination['username'],
+                password = self.db_destination['password']
+            )
+            with conn.cursor() as curs:
                 curs.execute(sql_query)
-                self.conn.commit()
+                conn.commit()
+            conn.close()
         except Exception as e:
             raise Exception("Unable to insert records in table.")
 
@@ -156,9 +179,16 @@ class PgSQLSaver:
                 up_query = up_query[:-2]
 
             sql_query = "INSERT INTO {0}({1}) VALUES \n{2}\n ON CONFLICT ({3}) DO UPDATE SET {4};".format(table_name, col_names, cols_def, primary_keys[0], up_query)
-            with self.conn.cursor() as curs:
+            conn = psycopg2.connect(
+                host = self.db_destination['url'],
+                database = self.db_destination['db_name'],
+                user = self.db_destination['username'],
+                password = self.db_destination['password']
+            )
+            with conn.cursor() as curs:
                 curs.execute(sql_query)
-                self.conn.commit()
+                conn.commit()
+            conn.close()
         except Exception as e:
             raise Exception("Unable to insert records in table.")
 
@@ -169,6 +199,9 @@ class PgSQLSaver:
     
     def warn(self, message: str = "") -> None:
         logger.warn(job_id= self.unique_id, s=(self.unique_id + ": " + message))
+
+    def err(self, message: str = "") -> None:
+        logger.err(job_id= self.unique_id, s=self.unique_id + ": " + message)
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
@@ -218,17 +251,32 @@ class PgSQLSaver:
     def delete_table(self, table_name: str = None) -> None:
         query = "DROP TABLE " + self.schema + "." + table_name + ";"
         self.inform(query)
-        with self.conn.cursor() as cursor:
+        conn = psycopg2.connect(
+            host = self.db_destination['url'],
+            database = self.db_destination['db_name'],
+            user = self.db_destination['username'],
+            password = self.db_destination['password']
+        )
+        with conn.cursor() as cursor:
             cursor.execute(query)
+            conn.commit()
+        conn.close()
         self.inform("Deleted " + table_name + " from PgSQL schema " + self.schema)
 
 
     def get_n_cols(self, table_name: str = None) -> int:
         query = 'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{0}\' AND table_name = \'{1}\''.format(self.schema, table_name)
         self.inform(query)
-        with self.conn.cursor() as cursor:
+        conn = psycopg2.connect(
+            host = self.db_destination['url'],
+            database = self.db_destination['db_name'],
+            user = self.db_destination['username'],
+            password = self.db_destination['password']
+        )
+        with conn.cursor() as cursor:
             cursor.execute(query)
             df = pd.DataFrame(cursor.fetchall(), columns=['count'])
+        conn.close()
         return df.iloc[0][0]
 
 
@@ -250,8 +298,15 @@ class PgSQLSaver:
         delete_before_date_str = delete_before_date.strftime('%Y-%m-%d %H:%M:%S')
         for table_name in self.table_list:
             query = "DELETE FROM " + self.schema + "." + table_name + " WHERE migration_snapshot_date <= " + delete_before_date_str + ";"
-            with self.conn.cursor() as cursor:
+            conn = psycopg2.connect(
+                host = self.db_destination['url'],
+                database = self.db_destination['db_name'],
+                user = self.db_destination['username'],
+                password = self.db_destination['password']
+            )
+            with conn.cursor() as cursor:
                 cursor.execute(query)
+            conn.close()
     
     def close(self):
-        self.conn.close()
+        pass
