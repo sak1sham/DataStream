@@ -8,7 +8,7 @@ mapping = {
     },
     'destination': {
         'destination_type': 'pgsql',
-        'url': '13.233.145.240', 
+        'url': '3.108.43.163', 
         'db_name': 'dms',
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
