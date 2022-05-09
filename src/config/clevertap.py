@@ -77,7 +77,10 @@ cx_app_event_names = [
     'FPN_CLICKED',
     'Suggestion clicked',
     'suggestion initiated', 
-    'Suggestion failed'
+    'Suggestion failed',
+    'Walkthrough Completed',
+    'Walkthrough Next',
+    'Walkthrough Stopped'
     ]
 
 cl_app_event_names = [
