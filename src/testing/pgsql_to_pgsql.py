@@ -221,7 +221,7 @@ class SqlTester():
 
 if __name__ == "__main__":
     try:
-        N = 50
+        N = 30
         records_per_batch = 1000
         id = ''
         if(len(sys.argv) > 1):
