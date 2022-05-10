@@ -31,7 +31,7 @@ mapping = {
                 'validation_error': 10240,
             },
             'grace_updation_lag': {
-                'hours': 2
+                'days': 1
             },
             'buffer_updation_lag':{
                 'hours': 2,

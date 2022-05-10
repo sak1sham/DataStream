@@ -68,7 +68,13 @@ mapping = {
             'cron': 'self-managed',
             'to_partition': True,
             'mode': 'syncing',
-            'improper_bookmarks': False
+            'improper_bookmarks': False,
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'days': 1
+            },
         },
         {
             'collection_name': 'support_tickets',
