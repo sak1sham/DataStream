@@ -105,6 +105,20 @@ class MongoTester():
         collection = db[self.col]
         N = self.count_docs()
         prev_time = pytz.utc.localize(self.get_last_run_cron_job())
+        logger.inform("Previous run cron time: " + str(prev_time))
+        compare_datetime = prev_time
+        if('buffer_updation_lag' in self.col_map.keys() and self.col_map['buffer_updation_lag']):
+            days = 0
+            hours = 0
+            minutes = 0
+            if('days' in self.col_map['buffer_updation_lag'].keys() and self.col_map['buffer_updation_lag']['days']):
+                days = self.col_map['buffer_updation_lag']['days']
+            if('hours' in self.col_map['buffer_updation_lag'].keys() and self.col_map['buffer_updation_lag']['hours']):
+                hours = self.col_map['buffer_updation_lag']['hours']
+            if('minutes' in self.col_map['buffer_updation_lag'].keys() and self.col_map['buffer_updation_lag']['minutes']):
+                minutes = self.col_map['buffer_updation_lag']['minutes']
+            compare_datetime = compare_datetime - datetime.timedelta(days=days, hours=hours, minutes=minutes)
+        logger.inform("Testing records before: " + str(compare_datetime))
         last_run_cron_job_id = ObjectId.from_datetime(prev_time)
         query = {
             "_id": {
@@ -126,12 +140,12 @@ class MongoTester():
             for record in curs:
                 if('bookmark' in self.col_map.keys() and self.col_map['bookmark']):
                     if('improper_bookmarks' in self.col_map.keys() and not self.col_map['improper_bookmarks']):
-                        if(pytz.utc.localize(record[self.col_map['bookmark']]) > prev_time):
+                        if(pytz.utc.localize(record[self.col_map['bookmark']]) > compare_datetime):
                             n_recs -= 1
                             logger.inform('Record updated later.')
                             continue
                     else:
-                        if(convert_to_datetime(record[self.col_map['bookmark']], pytz.utc) > prev_time):
+                        if(convert_to_datetime(record[self.col_map['bookmark']], pytz.utc) > compare_datetime):
                             n_recs -= 1
                             logger.inform("Record updated later.")
                             continue

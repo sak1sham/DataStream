@@ -1,18 +1,18 @@
-mapping = {
-    'source': {
-        'source_type': 'sql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-        'db_name': 'wmsdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
-    },
-    'destination': {
-        'destination_type': 's3',
-        's3_bucket_name': 'database-migration-service-prod'
-    },
-    'tables': [
+mapping = { 
+    'source': { 
+        'source_type': 'sql', 
+        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com', 
+        'db_name': 'cmdb', 
+        'username': 'saksham_garg', 
+        'password': '3y5HMs^2qy%&Kma' 
+    }, 
+    'destination': { 
+        'destination_type': 's3', 
+        's3_bucket_name': 'database-migration-service-prod' 
+    }, 
+    'tables': [ 
         {
-            'table_name': 'inventory_transactions',
+            'table_name': 'delivery_boy_routes',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'id',

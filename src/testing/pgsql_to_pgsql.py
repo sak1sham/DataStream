@@ -138,6 +138,21 @@ class SqlTester():
 
     def test_pgsql(self) -> int:
         self.count = 0
+        prev_time = pytz.utc.localize(self.get_last_run_cron_job())
+        logger.inform("Previous run cron time: " + str(prev_time))
+        compare_datetime = prev_time
+        if('buffer_updation_lag' in self.table_map.keys() and self.table_map['buffer_updation_lag']):
+            days = 0
+            hours = 0
+            minutes = 0
+            if('days' in self.table_map['buffer_updation_lag'].keys() and self.table_map['buffer_updation_lag']['days']):
+                days = self.table_map['buffer_updation_lag']['days']
+            if('hours' in self.table_map['buffer_updation_lag'].keys() and self.table_map['buffer_updation_lag']['hours']):
+                hours = self.table_map['buffer_updation_lag']['hours']
+            if('minutes' in self.table_map['buffer_updation_lag'].keys() and self.table_map['buffer_updation_lag']['minutes']):
+                minutes = self.table_map['buffer_updation_lag']['minutes']
+            compare_datetime = compare_datetime - datetime.timedelta(days=days, hours=hours, minutes=minutes)
+        logger.inform("Testing records before: " + str(compare_datetime))
         if(self.table_map['mode'] != 'dumping'):
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
@@ -179,13 +194,11 @@ class SqlTester():
                     convert_to_dtype(data_df, column_dtypes)
                     pgsql_table = str(self.table).replace('.', '_').replace('-', '_')
                     data_df = data_df[data_df[self.primary_key] <= last_migrated_record]
-                    prev_time = pytz.utc.localize(self.get_last_run_cron_job())
-                    logger.inform("Previous run cron time: " + str(prev_time))
                     if(data_df.shape[0]):
                         if('bookmark' in self.table_map.keys() and self.table_map['bookmark']):
                             logger.inform("Before filter: " + str(data_df[self.table_map['bookmark']].max()))
                             data_df_NaT = data_df[data_df[self.table_map['bookmark']].isnull()]
-                            data_df_old = data_df[data_df[self.table_map['bookmark']].apply(lambda x: convert_to_datetime(x=x, tz_ = pytz.timezone('Asia/Kolkata'))) <  prev_time]
+                            data_df_old = data_df[data_df[self.table_map['bookmark']].apply(lambda x: convert_to_datetime(x=x, tz_ = pytz.timezone('Asia/Kolkata'))) <  compare_datetime]
                             data_df = pd.concat([data_df_NaT, data_df_old])
                             logger.inform("After filter: " + str(data_df[self.table_map['bookmark']].max()))
                         str_id = ""
