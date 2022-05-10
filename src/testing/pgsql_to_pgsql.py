@@ -180,6 +180,7 @@ class SqlTester():
                     pgsql_table = str(self.table).replace('.', '_').replace('-', '_')
                     data_df = data_df[data_df[self.primary_key] <= last_migrated_record]
                     prev_time = pytz.utc.localize(self.get_last_run_cron_job())
+                    print("Previous run cron time: ", prev_time)
                     if(data_df.shape[0]):
                         if('bookmark' in self.table_map.keys() and self.table_map['bookmark']):
                             print("Before filter:", data_df[self.table_map['bookmark']].max())
