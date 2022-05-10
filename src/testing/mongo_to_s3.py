@@ -105,6 +105,7 @@ class MongoTester():
         collection = db[self.col]
         N = self.count_docs()
         prev_time = pytz.utc.localize(self.get_last_run_cron_job())
+        logger.inform("Previous run cron time: " + str(prev_time))
         compare_datetime = prev_time
         if('buffer_updation_lag' in self.col_map.keys() and self.col_map['buffer_updation_lag']):
             days = 0
@@ -117,6 +118,7 @@ class MongoTester():
             if('minutes' in self.col_map['buffer_updation_lag'].keys() and self.col_map['buffer_updation_lag']['minutes']):
                 minutes = self.col_map['buffer_updation_lag']['minutes']
             compare_datetime = compare_datetime - datetime.timedelta(days=days, hours=hours, minutes=minutes)
+        logger.inform("Testing records before: " + str(compare_datetime))
         last_run_cron_job_id = ObjectId.from_datetime(prev_time)
         query = {
             "_id": {
