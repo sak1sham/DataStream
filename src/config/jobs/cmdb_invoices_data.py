@@ -1,4 +1,3 @@
-#cannot be run - no primary key
 mapping = {
     'source': {
         'source_type': 'sql',
@@ -14,7 +13,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'invoices_data',
-            'mode': 'logging',
+            'mode': 'syncing',
             'primary_key': 'invoices_data_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',

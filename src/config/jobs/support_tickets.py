@@ -2,7 +2,7 @@ mapping = {
     'source': {
         'source_type': 'sql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-        'db_name': 'wmsdb',
+        'db_name': 'cmdb',
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
@@ -10,9 +10,9 @@ mapping = {
         'destination_type': 's3',
         's3_bucket_name': 'database-migration-service-prod'
     },
-    'tables': [
+    'tables': [            
         {
-            'table_name': 'inventory_transactions',
+            'table_name': 'support_tickets',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'id',
