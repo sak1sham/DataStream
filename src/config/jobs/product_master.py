@@ -19,10 +19,13 @@ mapping = {
             'primary_key_datatype': 'int', 
             'bookmark': 'updated_at_for_pipeline', 
             'improper_bookmarks': False, 
-            'batch_size': 10000, 
-            'buffer_updation_lag': {
-                'hours': 2, 
-            } 
+            'batch_size': 10000,
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'days': 1
+            },
         },
     ]
 }

@@ -12,7 +12,7 @@ mapping = {
     },
     'tables': [
         {
-            'table_name': 'inventory_transaction_view',
+            'table_name': 'inventory_transactions',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'transaction_id',
@@ -23,6 +23,12 @@ mapping = {
             # 'bookmark': 'updated_at',
             # 'improper_bookmarks': False,
             'batch_size': 10000,
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'days': 1
+            },
         },
     ]
 }

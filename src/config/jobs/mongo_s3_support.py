@@ -1,7 +1,7 @@
 mapping = {
     'source': {
         'source_type': 'mongo',
-        'url': 'mongodb://manish:ACVVCH7t7rqd8kB8@supportv2.cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false',
+        'url': 'mongodb://manish:ACVVCH7t7rqd8kB8@supportv2.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false',
         'db_name': 'support-service',
         'certificate_file': 'rds-combined-ca-bundle.pem'
     },
@@ -68,7 +68,13 @@ mapping = {
             'cron': 'self-managed',
             'to_partition': True,
             'mode': 'syncing',
-            'improper_bookmarks': False
+            'improper_bookmarks': False,
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'days': 1
+            },
         },
         {
             'collection_name': 'support_tickets',
