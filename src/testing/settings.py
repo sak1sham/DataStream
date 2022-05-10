@@ -18,7 +18,7 @@ settings = {
     },
     'slack_notif': {
         'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C03BEKSF8BH"
+        'channel': "C03CQFMV8FP"
     },
     'save_logs': False
 }
