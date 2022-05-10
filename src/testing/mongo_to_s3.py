@@ -168,6 +168,8 @@ if __name__ == "__main__":
             time_taken = str(datetime.timedelta(seconds=int(end-start)))
             if('notify' in settings.keys() and settings['notify']):
                 msg = "Testing completed for *{0}* from database *{1}* ({2}) with desination {3}.\nTested {4} random records\nTotal time taken {5}\nFound {6} mismatches".format(col['collection_name'], mapping['source']['db_name'], mapping['source']['source_type'], mapping['destination']['destination_type'], n_test*records_per_batch, str(time_taken), mismatch)
+                if(mismatch > 0):
+                    msg = msg + " <!channel>"
                 try:
                     slack_token = settings['slack_notif']['slack_token']
                     channel = mapping['slack_channel'] if 'slack_channel' in mapping and mapping['slack_channel'] else settings['slack_notif']['channel']
