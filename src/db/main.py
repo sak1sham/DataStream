@@ -3,7 +3,7 @@ from db.pgsql import PGSQLMigrate
 from db.s3 import S3Migrate
 from db.api import APIMigrate
 from db.kafka_dms import KafkaMigrate
-from notifications.slack_notify import send_message
+from notifications.slack_notify import send_message, send_error_message
 from config.settings import settings
 from helper.exceptions import IncorrectMapping
 from helper.logger import logger
@@ -47,11 +47,7 @@ class DMS_importer:
             end = time.time()
             time_taken = str(datetime.timedelta(seconds=int(end-start)))
             if('notify' in settings.keys() and settings['notify']):
-                msg = "Migration completed for *"
-                msg += str(self.name)
-                msg += "* from database "
-                msg += "*" + self.db['source']['db_name'] + "* (" + self.db['source']['source_type'] + ") to *" + self.db['destination']['destination_type'] + "*:\n"
-                msg += "Total time taken: " + time_taken + "\n"
+                msg = "Migration completed for *{0}* from database *{1}* ({2}) to *{3}*:\nTotal time taken: {4}\n".format(str(self.name), self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'], time_taken)
                 if(isinstance(result, tuple)):
                     msg += "Insertions: " + "{:,}".format(result[0]) + "\n"
                     msg += "Updations: " + "{:,}".format(result[1])
@@ -66,16 +62,12 @@ class DMS_importer:
             logger.err(s=traceback.format_exc())
             logger.inform(s=(self.curr_mapping['unique_id'] + ": Migration stopped.\n"))
             if('notify' in settings.keys() and settings['notify']):
-                msg = "Migration unexpectedly stopped for *"
-                msg += str(self.name)
-                msg += "* from database "
-                msg += self.db['source']['source_type'] + " : *" + self.db['source']['db_name']
-                msg += "*. :warning:\n"
-                msg += "```" + traceback.format_exc() + "```"
+                msg = "<!channel> Migration unexpectedly stopped :warning: for *{0}* from database *{1}* ({2}) to *{3}*".format(str(self.name), self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                error_msg = traceback.format_exc()
                 try:
                     slack_token = settings['slack_notif']['slack_token']
                     channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
-                    send_message(msg = msg, channel = channel, slack_token = slack_token)
+                    send_error_message(msg = msg, error_msg=error_msg, channel = channel, slack_token = slack_token)
                     logger.inform(s="Notification sent successfully.")
                 except:
                     logger.err(s=("Unable to connect to slack and send the notification."))
