@@ -80,7 +80,8 @@ cx_app_event_names = [
     'Suggestion failed',
     'Walkthrough Completed',
     'Walkthrough Next',
-    'Walkthrough Stopped'
+    'Walkthrough Stopped',
+    'Cart Opened'
     ]
 
 cl_app_event_names = [
