@@ -17,6 +17,7 @@ mapping = {
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int', 
+            'to_parition': True,
             'partition_col': 'started_at',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at_for_pipeline', 
