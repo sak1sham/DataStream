@@ -17,6 +17,7 @@ mapping = {
             'mode': 'syncing',
             'primary_key': 'rto_recon_id',
             'primary_key_datatype': 'int', 
+            'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at_for_pipeline', 
