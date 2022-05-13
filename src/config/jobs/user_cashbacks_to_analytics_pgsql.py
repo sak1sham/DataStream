@@ -23,12 +23,6 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'lob_fields_length': {
-                'status': 3036,
-                'campaign_description': 3036,
-                'campaign_type': 3036,
-                'campaign_name': 3036,
-            },
             'buffer_updation_lag':{
                 'hours': 2,
             },

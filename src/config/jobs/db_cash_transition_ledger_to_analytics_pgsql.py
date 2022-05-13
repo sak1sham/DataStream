@@ -23,14 +23,6 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'lob_fields_length': {
-                'transaction_details': 65535,
-                'type': 3036,
-                'spoke_name': 3036,
-                'route_id': 3036,
-                'transition': 3036,
-                'db_phone': 3036,
-            },
             'buffer_updation_lag':{
                 'hours': 2,
             },

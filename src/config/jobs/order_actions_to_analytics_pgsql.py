@@ -21,11 +21,6 @@ mapping = {
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'batch_size': 10000,
-            'lob_fields_length': {
-                'action_name': 3036,
-                'old_value': 65535,
-                'new_value': 65535,
-            },
             'grace_updation_lag': {
                 'hours': 4
             },
