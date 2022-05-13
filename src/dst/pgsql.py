@@ -36,7 +36,7 @@ class PgSQLSaver:
 
 
 
-    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_lengths: Dict[str, int] = {}, varchar_lengths_default: int = 512) -> None:
+    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         table_name = schema + "." + table if schema and len(schema) > 0 else table
@@ -44,7 +44,10 @@ class PgSQLSaver:
         for col in df.columns.to_list():
             cols_def = cols_def + "\n" + col + " "
             if(col not in dtypes.keys() or dtypes[col] == 'string'):
-                cols_def = cols_def + "VARCHAR({0})".format(varchar_lengths[col] if col in varchar_lengths.keys() and varchar_lengths[col] else varchar_lengths_default)
+                if(col in varchar_length_source.keys() and varchar_length_source[col]):
+                    cols_def = cols_def + "VARCHAR({0})".format(varchar_length_source[col])
+                else:
+                    cols_def = cols_def + "TEXT"
             elif(dtypes[col] == 'timestamp'):
                 cols_def = cols_def + "TIMESTAMP"
             elif(dtypes[col] == 'boolean'):
@@ -72,11 +75,11 @@ class PgSQLSaver:
 
 
 
-    def pgsql_insert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_lengths: Dict[str, int] = {}, varchar_lengths_default: int = 512) -> None:
+    def pgsql_insert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
-            self.pgsql_create_table(df=df, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_lengths=varchar_lengths, varchar_lengths_default=varchar_lengths_default)
+            self.pgsql_create_table(df=df, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source)
             table_name = schema + "." + table if schema and len(schema) > 0 else table
             col_names = ""
             list_cols = df.columns.to_list()
@@ -130,11 +133,11 @@ class PgSQLSaver:
 
 
 
-    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_lengths: Dict[str, int] = {}, varchar_lengths_default: int = 512) -> None:
+    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
-            self.pgsql_create_table(df=df, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_lengths=varchar_lengths, varchar_lengths_default=varchar_lengths_default)
+            self.pgsql_create_table(df=df, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source)
             table_name = schema + "." + table if schema and len(schema) > 0 else table
             col_names = ""
             list_cols = df.columns.to_list()
@@ -197,24 +200,29 @@ class PgSQLSaver:
     def inform(self, message: str = "") -> None:
         logger.inform(job_id=self.unique_id, s= (self.unique_id + ": " + message))
     
+
     def warn(self, message: str = "") -> None:
         logger.warn(job_id= self.unique_id, s=(self.unique_id + ": " + message))
 
+
     def err(self, message: str = "") -> None:
         logger.err(job_id= self.unique_id, s=self.unique_id + ": " + message)
+
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
             self.table_list.extend(processed_data['name']) 
         self.name_ = processed_data['name']
         
-        varchar_lengths = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
-        
+        varchar_length_source = processed_data['varchar_lengths'] if 'varchar_lengths' in processed_data and processed_data['varchar_lengths'] else {}
+        if(not varchar_length_source):
+            varchar_length_source = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
+            
         if('col_rename' in processed_data and processed_data['col_rename']):
             for key, val in processed_data['col_rename'].items():
-                if(key in varchar_lengths.keys()):
-                    varchar_lengths[val] = varchar_lengths[key]
-                    varchar_lengths.pop(key)
+                if(key in varchar_length_source.keys()):
+                    varchar_length_source[val] = varchar_length_source[key]
+                    varchar_length_source.pop(key)
         
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
             if('col_rename' in processed_data and processed_data['col_rename']):
@@ -226,8 +234,7 @@ class PgSQLSaver:
                 schema = self.schema,
                 dtypes = processed_data['dtypes'],
                 primary_keys = primary_keys,
-                varchar_lengths = varchar_lengths,
-                varchar_lengths_default = 512
+                varchar_length_source = varchar_length_source
             )
             self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))
         
@@ -242,8 +249,7 @@ class PgSQLSaver:
                 schema = self.schema,
                 dtypes = processed_data['dtypes'],
                 primary_keys = primary_keys,
-                varchar_lengths = varchar_lengths,
-                varchar_lengths_default = 512
+                varchar_length_source = varchar_length_source
             )
             self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
 

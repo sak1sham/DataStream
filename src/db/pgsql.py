@@ -32,6 +32,7 @@ class PGSQLMigrate:
         self.n_insertions = 0
         self.n_updations = 0
         self.col_dtypes = {}
+        self.varchar_lengths = {}
     
 
     def inform(self, message: str = None, save: bool = False) -> None:
@@ -249,6 +250,7 @@ class PGSQLMigrate:
                 processed_data['lob_fields_length'] = self.curr_mapping['lob_fields_length']
             if('col_rename' in self.curr_mapping.keys() and self.curr_mapping['col_rename']):
                 processed_data['col_rename'] = self.curr_mapping['col_rename']
+            processed_data['varchar_lengths'] = self.varchar_lengths
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring'):
                 primary_keys = ['unique_migration_record_id']
@@ -310,13 +312,16 @@ class PGSQLMigrate:
         else:
             # if table_name doesn't contain schema name
             table_name = tn[0]
-        sql_stmt = "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = \'" + table_name + "\' AND table_schema = \'" + schema_name + "\';"
+        sql_stmt = f"SELECT column_name, data_type, character_maximum_length FROM information_schema.columns WHERE table_name = \'{table_name}\' AND table_schema = \'{schema_name}\';"
         col_dtypes = {}
+        self.varchar_lengths = {}
         with conn.cursor('cursor-to-get-col-names') as curs:
             curs.execute(sql_stmt)
             rows = curs.fetchall()
-            for key, val in rows:
-                col_dtypes[key] = val
+            for row in rows:
+                col_dtypes[row[0]] = row[1]
+                if(row[2]):
+                    self.varchar_lengths[row[0]] = row[2]
         if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
             col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
