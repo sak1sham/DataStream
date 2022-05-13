@@ -9,7 +9,7 @@ pytz==2021.3
 requests==2.27.1
 SQLAlchemy==1.4.31
 uvicorn==0.17.4
-psycopg2-binary==2.9.3
+psycopg2==2.9.3
 dnspython==2.2.0
 redshift-connector==2.0.904
 slackclient==2.9.3
