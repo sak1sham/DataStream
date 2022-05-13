@@ -23,14 +23,6 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'lob_fields_length': {
-                'district': 3036,
-                'state_name': 3036,
-                'city': 3036,
-                'circle_name': 3036,
-                'region_name': 3036,
-                'division_name': 3036,
-            },
             'buffer_updation_lag':{
                 'hours': 2,
             },
