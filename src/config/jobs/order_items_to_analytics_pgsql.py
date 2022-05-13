@@ -55,7 +55,7 @@ mapping = {
                 'slug': 3036,
             },
             'grace_updation_lag': {
-                'days': 1
+                'hours': 4
             },
             'buffer_updation_lag':{
                 'hours': 2,

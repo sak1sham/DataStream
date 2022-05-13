@@ -251,6 +251,8 @@ def df_update_records(df: dftype = pd.DataFrame({}), df_u: dftype = pd.DataFrame
         2. is_updated (bool): True if updations are performed in dataframe df, or when some common records were found
         3. uncommon (pd.DataFrame): The records in df_u which were not present in df
     '''
+    if(primary_key not in df):
+        return df, False, df_u
     common = df_u[df_u[primary_key].isin(df[primary_key])]
     if(common.shape[0]):
         uncommon = df_u[~df_u[primary_key].isin(df[primary_key])]
