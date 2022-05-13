@@ -77,7 +77,7 @@ mapping = {
                 'hours': 2,
             },
             'grace_updation_lag': {
-                'days': 1
+                'hours': 4
             },
         },
     ]
