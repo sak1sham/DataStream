@@ -119,7 +119,7 @@ Note: We need to add the bot created for slack API to the channel we want to pos
 # Notes
 
 ## 1. Writing Cron Expressions
-Writing Cron expression as per guidelines at [APScheduler docs](https://apscheduler.readthedocs.io/en/v2.1.0/cronschedule.html). Format (year, month, day, week, day_of_week, hour, minute, second)
+Writing Cron expression as per guidelines at [APScheduler docs](https://apscheduler.readthedocs.io/en/3.x/modules/triggers/cron.html). Format (year, month, day, week, day_of_week, hour, minute, second)
 
 For example: '* * * * * 7-19 */1 0' represents every minute between 7AM to 7PM.
 
