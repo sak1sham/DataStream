@@ -15,7 +15,7 @@ mapping = {
     },
     'tables': [            
         {
-            'table_name': 'cmocx-cl-in-vicinity',
+            'table_name': 'cmocx_cl_in_vicinity',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'id',
