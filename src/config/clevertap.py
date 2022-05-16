@@ -81,7 +81,9 @@ cx_app_event_names = [
     'Walkthrough Completed',
     'Walkthrough Next',
     'Walkthrough Stopped',
-    'Cart Opened'
+    'Cart Opened',
+    'Location Searched',
+    'Location Landing'
     ]
 
 cl_app_event_names = [
