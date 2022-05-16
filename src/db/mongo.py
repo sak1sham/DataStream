@@ -643,7 +643,7 @@ class MongoMigrate:
                     msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
                     slack_token = settings['slack_notif']['slack_token']
                     channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
-                    if('slack_notify' in settings.keys() and settings['slack_notify']):
+                    if('notify' in settings.keys() and settings['notify']):
                         send_message(msg = msg, channel = channel, slack_token = slack_token)
                         self.inform('Notification sent.')
                     raise KeyboardInterrupt("Ending gracefully.")
@@ -727,7 +727,7 @@ class MongoMigrate:
                     msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
                     slack_token = settings['slack_notif']['slack_token']
                     channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
-                    if('slack_notify' in settings.keys() and settings['slack_notify']):
+                    if('notify' in settings.keys() and settings['notify']):
                         send_message(msg = msg, channel = channel, slack_token = slack_token)
                         self.inform('Notification sent.')
                     raise KeyboardInterrupt("Ending gracefully.")
