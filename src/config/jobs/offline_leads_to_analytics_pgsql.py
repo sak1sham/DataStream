@@ -15,7 +15,7 @@ mapping = {
     },
     'tables': [            
         {
-            'table_name': 'cms_items',
+            'table_name': 'offline_leads',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'id',
