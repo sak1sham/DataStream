@@ -12,7 +12,7 @@ mapping = {
     }, 
     'tables': [ 
         {
-            'table_name': 'ofd_itemss', 
+            'table_name': 'ofd_items', 
             'cron': 'self-managed', 
             'mode': 'syncing',
             'primary_key': 'id',
