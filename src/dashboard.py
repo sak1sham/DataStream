@@ -5,6 +5,7 @@ from pymongo import MongoClient
 from typing import Any, Dict
 import pytz
 import os
+from PIL import Image
 
 from config.migration_mapping import get_mapping
 from config.settings import settings
@@ -69,6 +70,16 @@ class Metadata():
 
 
 if __name__ == "__main__":
+    icon = Image.open('./cm_icon.png')
+    st.set_page_config(page_title="Data Migration Service", page_icon=icon)
+    hide_menu_style = """
+        <style>
+        #MainMenu {visibility: hidden; }
+        footer {visibility: hidden;}
+        </style>
+        """
+    st.markdown(hide_menu_style, unsafe_allow_html=True)
+
     jobs_path = os.path.abspath(os.getcwd()) + '/config/jobs/'
     metadata = Metadata()
     job_list = []
