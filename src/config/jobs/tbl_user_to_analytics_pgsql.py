@@ -16,7 +16,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'tbl_user',
-            'cron': 'self-managed',
+            'cron': '* * * * * */1 0 0',
             'mode': 'syncing',
             'primary_key': 'user_id',
             'primary_key_datatype': 'int',
