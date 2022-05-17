@@ -228,7 +228,7 @@ class PgSQLSaver:
             if('col_rename' in processed_data and processed_data['col_rename']):
                 processed_data['df_insert'].rename(columns = processed_data['col_rename'], inplace = True)
             self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
-            self.pgsql_insert_records(
+            self.pgsql_upsert_records(
                 df = processed_data['df_insert'],
                 table = self.name_,
                 schema = self.schema,
