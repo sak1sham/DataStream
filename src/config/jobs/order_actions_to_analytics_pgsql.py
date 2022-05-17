@@ -16,7 +16,7 @@ mapping = {
     'tables': [            
         {
             'table_name': 'order_actions',
-            'cron': 'self-managed',
+            'cron': '* * * * * */1 0 0',
             'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',

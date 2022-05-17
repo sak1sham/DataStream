@@ -16,7 +16,7 @@ mapping = {
     'tables': [            
         {
             'table_name': 'order_item_fulfillment_model',
-            'cron': 'self-managed',
+            'cron': '* * * * * */1 0 0',
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
