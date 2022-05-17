@@ -16,7 +16,7 @@ mapping = {
     'tables': [            
         {
             'table_name': 'orders',
-            'cron': 'self-managed',
+            'cron': '* * * * * */1 0 0',
             'mode': 'syncing',
             'primary_key': 'order_id',
             'primary_key_datatype': 'int',

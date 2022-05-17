@@ -16,7 +16,7 @@ mapping = {
     'tables': [            
         {
             'table_name': 'delivery_otp',
-            'cron': 'self-managed',
+            'cron': '* * * * * */1 0 0',
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
