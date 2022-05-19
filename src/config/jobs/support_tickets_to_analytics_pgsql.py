@@ -15,17 +15,14 @@ mapping = {
     },
     'tables': [            
         {
-            'table_name': 'super_leaders',
+            'table_name': 'support_tickets',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'super_leader_id',
+            'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'bookmark': 'updated_at_for_pipeline',
+            'bookmark': 'updated_at_for_pipeline ',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'col_rename': {
-                'tag': 'tag_'
-            },
             'buffer_updation_lag':{
                 'hours': 2,
             },

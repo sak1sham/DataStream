@@ -13,25 +13,22 @@ mapping = {
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
-    'tables': [            
+    'tables': [
         {
-            'table_name': 'super_leaders',
-            'cron': 'self-managed',
+            'table_name': 'routes',
+            'cron': '* * * * * */1 0 0',
             'mode': 'syncing',
-            'primary_key': 'super_leader_id',
+            'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'col_rename': {
-                'tag': 'tag_'
-            },
-            'buffer_updation_lag':{
-                'hours': 2,
-            },
             'grace_updation_lag': {
                 'hours': 4
             },
+            'buffer_updation_lag':{
+                'hours': 2,
+            }
         },
     ]
 }

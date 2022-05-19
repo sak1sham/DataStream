@@ -15,17 +15,14 @@ mapping = {
     },
     'tables': [            
         {
-            'table_name': 'super_leaders',
+            'table_name': 'user_cashback_redeemed_transactions',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'super_leader_id',
+            'primary_key': 'user_cashback_redeemed_transaction_id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'col_rename': {
-                'tag': 'tag_'
-            },
             'buffer_updation_lag':{
                 'hours': 2,
             },
