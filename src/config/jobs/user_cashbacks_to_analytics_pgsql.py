@@ -18,7 +18,7 @@ mapping = {
             'table_name': 'user_cashbacks',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'id',
+            'primary_key': 'cashback_id',
             'primary_key_datatype': 'str',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
