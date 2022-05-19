@@ -183,10 +183,23 @@ def get_data_from_dashboard_db():
 def get_job_records(job_id: str = None) -> int:
     db = get_data_from_dashboard_db()
     prev = db.find({'job_id': job_id})
+    prev = list(prev)
     if(len(prev) > 0):
         prev = list(prev)
         prev = prev[-1]
         return prev['total_records']
+    else:
+        return None
+
+
+def get_job_mb(job_id: str = None) -> int:
+    db = get_data_from_dashboard_db()
+    prev = db.find({'job_id': job_id})
+    prev = list(prev)
+    if(len(prev) > 0):
+        prev = list(prev)
+        prev = prev[-1]
+        return prev['total_megabytes']
     else:
         return None
 
