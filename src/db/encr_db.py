@@ -153,3 +153,58 @@ def get_recovery_data(job_id: str = None) -> Any:
 def delete_recovery_data(job_id: str = None) -> None:
     db = get_data_from_encr_db()
     db.delete_many({'recovery_record_for_id': job_id})
+
+
+
+#############
+#############
+#############
+#############
+#############
+#############
+#############
+
+dashboard = settings['dashboard_store']
+
+def get_data_from_dashboard_db():
+    '''
+        Function to get connection to the dashboard database/collection
+    '''
+    try:
+        certificate = 'config/rds-combined-ca-bundle.pem'
+        client_dashboard = MongoClient(dashboard['url'], tlsCAFile=certificate)
+        db_dashboard = client_dashboard[dashboard['db_name']]
+        collection_dashboard = db_dashboard[dashboard['collection_name']]
+        return collection_dashboard
+    except:
+        raise ConnectionError("Unable to connect to Dashboard DB.")
+
+
+def get_job_records(job_id: str = None) -> int:
+    db = get_data_from_dashboard_db()
+    prev = db.find({'job_id': job_id})
+    if(len(prev) > 0):
+        prev = list(prev)
+        prev = prev[-1]
+        return prev['total_records']
+    else:
+        return None
+
+
+def save_job_data(data: Dict = {}) -> None:
+    db = get_data_from_dashboard_db()
+    '''
+        data = {
+            job_id: str (unique),
+            table_name: str,
+
+            insertions: int,
+            updations: int,
+            total_records: int,
+            start_time: timestamp,
+            total_time: int (seconds),
+            curr_megabytes_processed: int (mb),
+            total_megabytes: int (mb),
+        }
+    '''
+    db.insert_one(data)
