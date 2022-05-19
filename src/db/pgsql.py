@@ -751,6 +751,11 @@ class PGSQLMigrate:
 
 
     def set_basic_job_params(self, table_name: str = None) -> None:
+        self.n_insertions = 0
+        self.n_updations = 0
+        self.prev_n_records = 0
+        self.start_time = datetime.datetime.utcnow()
+        self.curr_megabytes_processed = 0
         if(self.last_run_cron_job > datetime.datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=pytz.utc)):
             self.prev_n_records = get_job_records(self.curr_mapping['unique_id'])
             if(not self.prev_n_records):
