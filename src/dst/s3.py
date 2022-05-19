@@ -1,6 +1,5 @@
 import awswrangler as wr
 import boto3
-from matplotlib.pyplot import table
 import pandas as pd
 import io
 from urllib.parse import urlparse
