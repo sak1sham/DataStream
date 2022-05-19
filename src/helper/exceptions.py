@@ -30,3 +30,6 @@ class SchemaMismatch(Exception):
 
 class EmptyDataframe(Exception):
     pass
+
+class Sigterm(Exception):
+    pass

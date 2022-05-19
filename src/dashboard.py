@@ -118,7 +118,8 @@ if __name__ == "__main__":
     
     id_substr = id_substr.strip().split()
     if(substr_include):
-        job_list = [x for x in job_list if any(y in x for y in id_substr)]
+        if(len(id_substr)):
+            job_list = [x for x in job_list if any(y in x for y in id_substr)]
     else:
         job_list = [x for x in job_list if not any(y in x for y in id_substr)]
     

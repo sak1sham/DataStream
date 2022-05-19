@@ -1,5 +1,5 @@
 from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, save_recovery_data, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record, save_recovery_data, get_recovery_data, delete_recovery_data
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, save_recovery_data, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record, save_recovery_data, get_recovery_data, delete_recovery_data, get_job_records, save_job_data, get_job_mb
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
@@ -46,6 +46,9 @@ class MongoMigrate:
         self.tz_info = pytz.timezone(tz_str)
         self.n_insertions = 0
         self.n_updations = 0
+        self.prev_n_records = 0
+        self.start_time = datetime.datetime.utcnow()
+        self.curr_megabytes_processed = 0
 
 
     def inform(self, message: str = None, save: bool = False) -> None:
@@ -160,7 +163,41 @@ class MongoMigrate:
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
 
         mirroring = (self.curr_mapping['mode'] == 'mirroring')
-        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet, mirroring=mirroring, table_name=self.curr_mapping['collection_name'])
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet, mirroring=mirroring, table_name=self.curr_mapping['collection_name'])        
+
+        if(self.last_run_cron_job > datetime.datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=pytz.utc)):
+            self.prev_n_records = get_job_records(self.curr_mapping['unique_id'])
+            if(not self.prev_n_records):
+                self.prev_n_records = self.saver.count_n_records(table_name = self.curr_mapping['collection_name'])
+        else:
+            self.prev_n_records = get_job_records(self.curr_mapping['unique_id'])
+            if(not self.prev_n_records):
+                self.prev_n_records = 0
+
+
+    def save_job_working_data(self) -> None:
+        self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
+        total_records = self.prev_n_records + self.n_insertions
+        total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
+        total_megabytes = 0
+        if (self.n_insertions > 0):
+            total_megabytes = (self.curr_megabytes_processed/self.n_insertions)*total_records
+        else:
+            total_megabytes = get_job_mb(self.curr_mapping['unique_id'])
+        job_data = {
+            "job_id": self.curr_mapping['unique_id'],
+            "table_name": self.curr_mapping['collection_name'],
+            "insertions": self.n_insertions,
+            "updations": self.n_updations,
+            "total_records": total_records,
+            "start_time": self.start_time,
+            "total_time": total_time,
+            "curr_megabytes_processed": self.curr_megabytes_processed,
+            "total_megabytes": total_megabytes,
+        }
+        save_job_data(job_data)
+        self.inform("Saved data for job to be shown on dashboard.")
+
 
 
     def postprocess(self):
@@ -638,6 +675,7 @@ class MongoMigrate:
                     processed_collection = {}
                     break
                 if(killer.kill_now):
+                    self.save_job_working_data()
                     msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                     msg += "Reason: Caught sigterm :warning:\n"
                     msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
@@ -646,7 +684,7 @@ class MongoMigrate:
                     if('notify' in settings.keys() and settings['notify']):
                         send_message(msg = msg, channel = channel, slack_token = slack_token)
                         self.inform('Notification sent.')
-                    raise KeyboardInterrupt("Ending gracefully.")
+                    raise Sigterm("Ending gracefully.")
             time.sleep(self.time_delay)
         self.inform(message = "Logging operation complete.", save=True)
 
@@ -722,6 +760,7 @@ class MongoMigrate:
                     processed_collection = {}
                     break
                 if(killer.kill_now):
+                    self.save_job_working_data()
                     msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                     msg += "Reason: Caught sigterm :warning:\n"
                     msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
@@ -730,7 +769,7 @@ class MongoMigrate:
                     if('notify' in settings.keys() and settings['notify']):
                         send_message(msg = msg, channel = channel, slack_token = slack_token)
                         self.inform('Notification sent.')
-                    raise KeyboardInterrupt("Ending gracefully.")
+                    raise Sigterm("Ending gracefully.")
             time.sleep(self.time_delay)
         self.inform(message = "Insertions completed, starting to update records", save = True)
 
@@ -853,6 +892,10 @@ class MongoMigrate:
                 primary_keys = ['_id']
             self.n_insertions += processed_collection['df_insert'].shape[0]
             self.n_updations += processed_collection['df_update'].shape[0]
+            if(processed_collection['df_insert'].shape[0]):
+                self.curr_megabytes_processed += processed_collection['df_insert'].memory_usage(index=True).sum()
+            if(processed_collection['df_update'].shape[0]):
+                self.curr_megabytes_processed += processed_collection['df_update'].memory_usage(index=True).sum()
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
 
 
@@ -875,17 +918,27 @@ class MongoMigrate:
             Syncing: Where all new records is migrated, and all updations are also mapped to destination. If a record is deleted at source, it's NOT deleted at destination
             Mirroring: A mirror image of source db is maintained at destination
         '''
-        if(self.curr_mapping['mode'] == 'dumping'):
-            self.dumping_process()
-        elif(self.curr_mapping['mode'] == 'logging'):
-            self.logging_process()
-        elif(self.curr_mapping['mode'] == 'syncing'):
-            self.syncing_process()
-        elif(self.curr_mapping['mode'] == 'mirroring'):
-            self.dumping_process()
+        try:
+            if(self.curr_mapping['mode'] == 'dumping'):
+                self.dumping_process()
+            elif(self.curr_mapping['mode'] == 'logging'):
+                self.logging_process()
+            elif(self.curr_mapping['mode'] == 'syncing'):
+                self.syncing_process()
+            elif(self.curr_mapping['mode'] == 'mirroring'):
+                self.dumping_process()
+            else:
+                raise IncorrectMapping("Please specify a mode of operation.")
+        except KeyboardInterrupt:
+            self.save_job_working_data()
+            raise
+        except Sigterm as e:
+            raise
+        except Exception as e:
+            self.save_job_working_data()
+            raise
         else:
-            raise IncorrectMapping("Please specify a mode of operation.")
-
+            self.save_job_working_data()
         self.postprocess()
         self.inform(message="Post processing completed.", save=True)
 

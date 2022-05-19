@@ -31,6 +31,9 @@ class DMS_exporter:
     def get_n_cols(self, table_name: str = None) -> int:
         return self.saver.get_n_cols(table_name=table_name)
 
+    def count_n_records(self, table_name: str = None) -> int:
+        return self.saver.count_n_records(table_name=table_name)
+
     def drop_table(self, table_name: str = None) -> None:
         self.saver.delete_table(table_name=table_name)
 
