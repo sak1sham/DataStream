@@ -496,9 +496,13 @@ class PGSQLMigrate:
                                     else:
                                         updated_in_destination = False                            
                 self.inform(message="Completed processing of table " + table_name + ".")
+            except Sigterm as e:
+                raise
             except Exception as e:
                 self.err(error=e)
                 raise ProcessingError("Caught some exception while processing records.")
+        except Sigterm as e:
+                raise    
         except ProcessingError:
             raise
         except Exception as e:
