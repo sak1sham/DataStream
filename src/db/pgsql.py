@@ -74,12 +74,12 @@ class PGSQLMigrate:
         job_data = {
             "job_id": self.curr_mapping['unique_id'],
             "table_name": table_name,
-            "insertions": self.n_insertions,
-            "updations": self.n_updations,
-            "total_records": total_records,
+            "insertions": int(self.n_insertions),
+            "updations": int(self.n_updations),
+            "total_records": int(total_records),
             "start_time": self.start_time,
-            "total_time": total_time,
-            "curr_megabytes_processed": self.curr_megabytes_processed,
+            "total_time": float(total_time),
+            "curr_megabytes_processed": float(self.curr_megabytes_processed),
             "total_megabytes": total_megabytes,
         }
         save_job_data(job_data)
