@@ -285,6 +285,26 @@ class PgSQLSaver:
         conn.close()
         return df.iloc[0][0]
 
+    def count_n_records(self, table_name: str = None) -> int:
+        try:
+            sql_query = f'SELECT COUNT(*) as count FROM {table_name}'
+            self.inform(sql_query)
+            conn = psycopg2.connect(
+                host = self.db_destination['url'],
+                database = self.db_destination['db_name'],
+                user = self.db_destination['username'],
+                password = self.db_destination['password']
+            )
+            df = pd.DataFrame({})
+            with conn.cursor() as cursor:
+                cursor.execute(sql_query)
+                df = pd.DataFrame(cursor.fetchall(), columns=['count'])
+            return df.iloc[0][0]
+        except Exception as e:
+            self.err("Unable to fetch the number of records previously at destination.")
+            self.err(e)
+            raise
+
 
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()

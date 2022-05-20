@@ -32,7 +32,8 @@ class s3Saver:
     def warn(self, message: str = "") -> None:
         logger.warn(job_id = self.unique_id, s=(self.unique_id + ": " + message))
 
-
+    def err(self, message: str = "") -> None:
+        logger.err(job_id = self.unique_id, s = self.unique_id + ": " + message)
 
     def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = [], primary_keys: List[str] = None) -> None:
         if(c_partition and len(c_partition) > 0):
@@ -143,6 +144,18 @@ class s3Saver:
                 path = self.s3_location + table_name + "/",
                 last_modified_end = delete_before_date
             )
+
+
+    def count_n_records(self, table_name: str = None) -> int:
+        try:
+            sql_query = f"SELECT COUNT(*) as count FROM {table_name};"
+            self.inform(sql_query)
+            df = wr.athena.read_sql_query(sql = sql_query, database = self.database)
+            return df.iloc[0][0]
+        except Exception as e:
+            self.err("Unable to fetch the number of records previously at destination.")
+            self.err(e)
+            raise
 
 
     def close(self):

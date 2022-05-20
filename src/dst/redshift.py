@@ -123,6 +123,20 @@ class RedshiftSaver:
         return df.iloc[0][0]
 
 
+    def count_n_records(self, table_name: str = None) -> int:
+        try:
+            sql_query = f'SELECT COUNT(*) as count FROM {table_name}'
+            self.inform(sql_query)
+            df = wr.redshift.read_sql_query(
+                sql = sql_query,
+                con = self.conn
+            )
+            return df.iloc[0][0]
+        except Exception as e:
+            self.err("Unable to fetch the number of records previously at destination.")
+            self.err(e)
+            raise
+
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()
         if(tz):

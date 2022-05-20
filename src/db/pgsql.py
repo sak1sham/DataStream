@@ -1,5 +1,5 @@
 from helper.util import convert_to_datetime, convert_to_dtype, get_athena_dtypes
-from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb, save_recovery_data, get_recovery_data, delete_recovery_data
+from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb, save_recovery_data, get_recovery_data, delete_recovery_data, get_job_records, save_job_data, get_job_mb
 from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
@@ -33,6 +33,9 @@ class PGSQLMigrate:
         self.n_updations = 0
         self.col_dtypes = {}
         self.varchar_lengths = {}
+        self.prev_n_records = 0
+        self.start_time = datetime.datetime.utcnow()
+        self.curr_megabytes_processed = 0
     
 
     def inform(self, message: str = None, save: bool = False) -> None:
@@ -57,6 +60,30 @@ class PGSQLMigrate:
 
         mirroring = (self.curr_mapping['mode'] == 'mirroring')
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], mirroring=mirroring, table_name=self.curr_mapping['table_name'])
+
+
+    def save_job_working_data(self, table_name: str = None) -> None:
+        self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
+        total_records = self.prev_n_records + self.n_insertions
+        total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
+        total_megabytes = 0
+        if (self.n_insertions + self.n_updations > 0):
+            total_megabytes = (self.curr_megabytes_processed/(self.n_insertions + self.n_updations))*total_records
+        else:
+            total_megabytes = get_job_mb(self.curr_mapping['unique_id'])
+        job_data = {
+            "job_id": self.curr_mapping['unique_id'],
+            "table_name": table_name,
+            "insertions": self.n_insertions,
+            "updations": self.n_updations,
+            "total_records": total_records,
+            "start_time": self.start_time,
+            "total_time": total_time,
+            "curr_megabytes_processed": self.curr_megabytes_processed,
+            "total_megabytes": total_megabytes,
+        }
+        save_job_data(job_data)
+        self.inform("Saved data for job to be shown on dashboard.")
 
 
     def postprocess(self):
@@ -254,6 +281,10 @@ class PGSQLMigrate:
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring'):
                 primary_keys = ['unique_migration_record_id']
+            if(processed_data['df_insert'].shape[0]):
+                self.curr_megabytes_processed += processed_data['df_insert'].memory_usage(index=True).sum()
+            if(processed_data['df_update'].shape[0]):
+                self.curr_megabytes_processed += processed_data['df_update'].memory_usage(index=True).sum()
             self.n_insertions += processed_data['df_insert'].shape[0]
             self.n_updations += processed_data['df_update'].shape[0]
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
@@ -395,15 +426,16 @@ class PGSQLMigrate:
                                     processed_data = {}
                                     break
                                 if(killer.kill_now):
-                                        msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
-                                        msg += "Reason: Caught sigterm :warning:\n"
-                                        msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
-                                        slack_token = settings['slack_notif']['slack_token']
-                                        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
-                                        if('notify' in settings.keys() and settings['notify']):
-                                            send_message(msg = msg, channel = channel, slack_token = slack_token)
-                                            self.inform('Notification sent.')
-                                        raise KeyboardInterrupt("Ending gracefully.")
+                                    self.save_job_working_data(table_name=table_name)
+                                    msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                                    msg += "Reason: Caught sigterm :warning:\n"
+                                    msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                                    slack_token = settings['slack_notif']['slack_token']
+                                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                                    if('notify' in settings.keys() and settings['notify']):
+                                        send_message(msg = msg, channel = channel, slack_token = slack_token)
+                                        self.inform('Notification sent.')
+                                    raise Sigterm("Ending gracefully.")
 
                             elif(mode == "syncing"):
                                 if(sync_mode == 1):
@@ -433,6 +465,7 @@ class PGSQLMigrate:
                                         processed_data = {}
                                         break
                                     if(killer.kill_now):
+                                        self.save_job_working_data(table_name=table_name)
                                         msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                                         msg += "Reason: Caught sigterm :warning:\n"
                                         msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
@@ -441,7 +474,7 @@ class PGSQLMigrate:
                                         if('notify' in settings.keys() and settings['notify']):
                                             send_message(msg = msg, channel = channel, slack_token = slack_token)
                                             self.inform('Notification sent.')
-                                        raise KeyboardInterrupt("Ending gracefully.")
+                                        raise Sigterm("Ending gracefully.")
                                 else:
                                     ## UPDATION MODE
                                     ## In syncing-update mode, we iterate through multiple batches until we find atleast (batch_size) number of records to be updates
@@ -463,9 +496,13 @@ class PGSQLMigrate:
                                     else:
                                         updated_in_destination = False                            
                 self.inform(message="Completed processing of table " + table_name + ".")
+            except Sigterm as e:
+                raise
             except Exception as e:
                 self.err(error=e)
                 raise ProcessingError("Caught some exception while processing records.")
+        except Sigterm as e:
+                raise    
         except ProcessingError:
             raise
         except Exception as e:
@@ -727,6 +764,22 @@ class PGSQLMigrate:
                 self.inform("Double-checked for updations in last {0} hours, {1} minutes and {2} minutes.".format(buffer_hours, buffer_minutes, buffer_seconds))
 
 
+    def set_basic_job_params(self, table_name: str = None) -> None:
+        self.n_insertions = 0
+        self.n_updations = 0
+        self.prev_n_records = 0
+        self.start_time = datetime.datetime.utcnow()
+        self.curr_megabytes_processed = 0
+        if(self.last_run_cron_job > datetime.datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=pytz.utc)):
+            self.prev_n_records = get_job_records(self.curr_mapping['unique_id'])
+            if(not self.prev_n_records):
+                self.prev_n_records = self.saver.count_n_records(table_name = table_name)
+        else:
+            self.prev_n_records = get_job_records(self.curr_mapping['unique_id'])
+            if(not self.prev_n_records):
+                self.prev_n_records = 0
+
+
     def preprocess_table(self, table_name: str = None) -> None:
         n_columns_destination = self.saver.get_n_cols(table_name=table_name)
         try:
@@ -816,25 +869,37 @@ class PGSQLMigrate:
         name_tables = useful_tables
         name_tables.sort()
         self.inform(message="Starting to migrating following " + str(len(name_tables)) + " useful tables from database " + str(self.db['source']['db_name']) + ":\n" + '\n'.join(name_tables), save=True)
-        
-        for table_name in name_tables:
-            if(table_name.count('.') >= 2):
-                self.warn(message=("Can not migrate table with table_name: " + table_name))
-                continue
-            if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
-                self.preprocess_table(table_name)
-            
-            if(self.curr_mapping['mode'] == 'dumping'):
-                self.dumping_process(table_name)
-            elif(self.curr_mapping['mode'] == 'logging'):
-                self.logging_process(table_name)
-            elif(self.curr_mapping['mode'] == 'syncing'):
-                self.syncing_process(table_name)
-            elif(self.curr_mapping['mode'] == 'mirroring'):
-                self.dumping_process(table_name)
-            else:
-                raise IncorrectMapping("Wrong mode of operation: can be syncing, logging, mirroring or dumping only.")
-            self.inform(message=("Migration completed for table " + str(table_name)), save=True)
+        curr_table_processed = None
+        try:
+            for table_name in name_tables:
+                curr_table_processed = table_name
+                if(table_name.count('.') >= 2):
+                    self.warn(message=("Can not migrate table with table_name: " + table_name))
+                    continue
+                if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
+                    self.preprocess_table(table_name)
+                self.set_basic_job_params(table_name)
+                if(self.curr_mapping['mode'] == 'dumping'):
+                    self.dumping_process(table_name)
+                elif(self.curr_mapping['mode'] == 'logging'):
+                    self.logging_process(table_name)
+                elif(self.curr_mapping['mode'] == 'syncing'):
+                    self.syncing_process(table_name)
+                elif(self.curr_mapping['mode'] == 'mirroring'):
+                    self.dumping_process(table_name)
+                else:
+                    raise IncorrectMapping("Wrong mode of operation: can be syncing, logging, mirroring or dumping only.")
+                self.inform(message=("Migration completed for table " + str(table_name)), save=True)
+        except KeyboardInterrupt:
+            self.save_job_working_data(curr_table_processed)
+            raise
+        except Sigterm as e:
+            raise
+        except Exception as e:
+            self.save_job_working_data(curr_table_processed)
+            raise
+        else:
+            self.save_job_working_data(curr_table_processed)
                 
         self.inform(message="Overall migration complete.", save=True)
         if(self.curr_mapping['mode'] == 'dumping' and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
