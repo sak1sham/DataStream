@@ -16,7 +16,7 @@ mapping = {
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'session_id',
-            'primary_key_datatype': 'str',
+            'primary_key_datatype': 'int',
             'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
