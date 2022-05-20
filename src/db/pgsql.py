@@ -67,8 +67,8 @@ class PGSQLMigrate:
         total_records = self.prev_n_records + self.n_insertions
         total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
         total_megabytes = 0
-        if (self.n_insertions > 0):
-            total_megabytes = (self.curr_megabytes_processed/self.n_insertions)*total_records
+        if (self.n_insertions + self.n_updations > 0):
+            total_megabytes = (self.curr_megabytes_processed/(self.n_insertions + self.n_updations))*total_records
         else:
             total_megabytes = get_job_mb(self.curr_mapping['unique_id'])
         job_data = {
