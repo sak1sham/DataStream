@@ -129,7 +129,7 @@ class RedshiftSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
-            sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \' {table_name}\';'
+            sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
             df = wr.redshift.read_sql_query(
                 sql = sql_query,

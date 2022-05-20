@@ -288,7 +288,7 @@ class PgSQLSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
-            sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \' {table_name}\';'
+            sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
             conn = psycopg2.connect(
                 host = self.db_destination['url'],
