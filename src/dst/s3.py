@@ -146,12 +146,26 @@ class s3Saver:
             )
 
 
-    def count_n_records(self, table_name: str = None) -> int:
+    def is_exists(self, table_name: str = None) -> bool:
         try:
-            sql_query = f"SELECT COUNT(*) as count FROM {table_name};"
+            sql_query = f"SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.database}\' AND TABLE_NAME = \' {table_name}\';"
             self.inform(sql_query)
             df = wr.athena.read_sql_query(sql = sql_query, database = self.database)
-            return df.iloc[0][0]
+            return df.shape[0] > 0
+        except Exception as e:
+            self.err("Unable to test if the table is present previously at destination.")
+            self.err(e)
+            raise
+
+    def count_n_records(self, table_name: str = None) -> int:
+        try:
+            if(self.is_exists(table_name=table_name)):
+                sql_query = f"SELECT COUNT(*) as count FROM {table_name};"
+                self.inform(sql_query)
+                df = wr.athena.read_sql_query(sql = sql_query, database = self.database)
+                return df.iloc[0][0]
+            else:
+                return 0
         except Exception as e:
             self.err("Unable to fetch the number of records previously at destination.")
             self.err(e)

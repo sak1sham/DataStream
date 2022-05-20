@@ -17,7 +17,7 @@ class RedshiftSaver:
             user = db_destination['user'],
             password = db_destination['password']
         )
-        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else db_source['source_type'] + "_" + db_source['db_name'] + "_dms"
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (db_source['source_type'] + "_" + db_source['db_name'] + "_dms").replace('-', '_').replace('.', '_')
         self.is_small_data = is_small_data
         self.name_ = ""
         self.table_list = []
@@ -27,6 +27,10 @@ class RedshiftSaver:
     
     def warn(self, message: str = "") -> None:
         logger.warn(job_id= self.unique_id, s=(self.unique_id + ": " + message))
+
+    def err(self, message: str = "") -> None:
+        logger.warn(job_id= self.unique_id, s=(self.unique_id + ": " + message))
+
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
@@ -123,15 +127,33 @@ class RedshiftSaver:
         return df.iloc[0][0]
 
 
-    def count_n_records(self, table_name: str = None) -> int:
+    def is_exists(self, table_name: str = None) -> bool:
         try:
-            sql_query = f'SELECT COUNT(*) as count FROM {table_name}'
+            sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
             df = wr.redshift.read_sql_query(
                 sql = sql_query,
                 con = self.conn
             )
-            return df.iloc[0][0]
+            return df.shape[0] > 0
+        except Exception as e:
+            self.err("Unable to test if the table is present previously at destination.")
+            self.err(e)
+            raise
+
+
+    def count_n_records(self, table_name: str = None) -> int:
+        try:
+            if(self.is_exists(table_name=table_name)):
+                sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
+                self.inform(sql_query)
+                df = wr.redshift.read_sql_query(
+                    sql = sql_query,
+                    con = self.conn
+                )
+                return df.iloc[0][0]
+            else:
+                return 0
         except Exception as e:
             self.err("Unable to fetch the number of records previously at destination.")
             self.err(e)

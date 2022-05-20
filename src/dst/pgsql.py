@@ -30,7 +30,7 @@ class PgSQLSaver:
         else:
             self.inform("Successfully tested connection with destination db.")
             
-        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else db_source['source_type'] + "_" + db_source['db_name'] + "_dms"
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (db_source['source_type'] + "_" + db_source['db_name'] + "_dms").replace('-', '_').replace('.', '_')
         self.name_ = ""
         self.table_list = []
 
@@ -285,9 +285,10 @@ class PgSQLSaver:
         conn.close()
         return df.iloc[0][0]
 
-    def count_n_records(self, table_name: str = None) -> int:
+
+    def is_exists(self, table_name: str = None) -> bool:
         try:
-            sql_query = f'SELECT COUNT(*) as count FROM {table_name}'
+            sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
             conn = psycopg2.connect(
                 host = self.db_destination['url'],
@@ -295,11 +296,38 @@ class PgSQLSaver:
                 user = self.db_destination['username'],
                 password = self.db_destination['password']
             )
-            df = pd.DataFrame({})
+            rows = []
             with conn.cursor() as cursor:
                 cursor.execute(sql_query)
-                df = pd.DataFrame(cursor.fetchall(), columns=['count'])
-            return df.iloc[0][0]
+                rows = cursor.fetchall()
+                if(not rows or len(rows) == 0):
+                    return False
+                else:
+                    return True
+        except Exception as e:
+            self.err("Unable to test if the table is present previously at destination.")
+            self.err(e)
+            raise
+
+
+    def count_n_records(self, table_name: str = None) -> int:
+        try:
+            if(self.is_exists(table_name=table_name)):
+                sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
+                self.inform(sql_query)
+                conn = psycopg2.connect(
+                    host = self.db_destination['url'],
+                    database = self.db_destination['db_name'],
+                    user = self.db_destination['username'],
+                    password = self.db_destination['password']
+                )
+                df = pd.DataFrame({})
+                with conn.cursor() as cursor:
+                    cursor.execute(sql_query)
+                    df = pd.DataFrame(cursor.fetchall(), columns=['count'])
+                return df.iloc[0][0]
+            else:
+                return 0
         except Exception as e:
             self.err("Unable to fetch the number of records previously at destination.")
             self.err(e)
