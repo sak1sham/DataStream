@@ -33,7 +33,6 @@ class PGSQLMigrate:
         self.n_updations = 0
         self.col_dtypes = {}
         self.varchar_lengths = {}
-        self.prev_n_records = 0
         self.start_time = datetime.datetime.utcnow()
         self.curr_megabytes_processed = 0
     
@@ -64,10 +63,10 @@ class PGSQLMigrate:
 
     def save_job_working_data(self, table_name: str = None) -> None:
         self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
-        total_records = self.prev_n_records + self.n_insertions
+        total_records = self.saver.count_n_records(table_name = table_name)
         total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
         total_megabytes = 0
-        if (self.n_insertions + self.n_updations > 0):
+        if(self.n_insertions + self.n_updations > 0):
             total_megabytes = (self.curr_megabytes_processed/(self.n_insertions + self.n_updations))*total_records
         else:
             total_megabytes = get_job_mb(self.curr_mapping['unique_id'])
@@ -767,17 +766,8 @@ class PGSQLMigrate:
     def set_basic_job_params(self, table_name: str = None) -> None:
         self.n_insertions = 0
         self.n_updations = 0
-        self.prev_n_records = 0
         self.start_time = datetime.datetime.utcnow()
         self.curr_megabytes_processed = 0
-        if(self.last_run_cron_job > datetime.datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=pytz.utc)):
-            self.prev_n_records = get_job_records(self.curr_mapping['unique_id'])
-            if(not self.prev_n_records):
-                self.prev_n_records = self.saver.count_n_records(table_name = table_name)
-        else:
-            self.prev_n_records = get_job_records(self.curr_mapping['unique_id'])
-            if(not self.prev_n_records):
-                self.prev_n_records = 0
 
 
     def preprocess_table(self, table_name: str = None) -> None:
