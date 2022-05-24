@@ -528,7 +528,7 @@ class PGSQLMigrate:
                 password = self.db['source']['password']
             )
             if(self.curr_mapping['primary_key_datatype'] == 'uuid'):
-                sql_stmt = f"SELECT {self.curr_mapping['primary_key']} FROM {table_name} ORDER BY {self.curr_mapping['primary_key']} DESC LIMIT 1;"
+                sql_stmt = f"SELECT {self.curr_mapping['primary_key']} FROM {table_name} ORDER BY {self.curr_mapping['primary_key']} DESC LIMIT 1"
             else:
                 sql_stmt = f"SELECT max({self.curr_mapping['primary_key']}) as curr_max_pkey FROM {table_name}"
             try:
@@ -598,7 +598,7 @@ class PGSQLMigrate:
             curr = str(self.get_last_pkey(table_name = table_name))
             if(last_rec):
                 last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid);"
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         sql_stmt += " ORDER BY " + self.curr_mapping['primary_key'] 
@@ -641,7 +641,7 @@ class PGSQLMigrate:
                 last = '00000000-0000-0000-0000-000000000000'
                 if(last_rec):
                     last = str(last_rec['record_id'])
-                sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{last2}\' as uuid);"
+                sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{last2}\' as uuid)"
             else:
                 IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
             
@@ -694,7 +694,7 @@ class PGSQLMigrate:
             curr_max = str(self.get_last_pkey(table_name = table_name))
             if(last_rec):
                 last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid);"
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         sql_stmt += " ORDER BY " + self.curr_mapping['primary_key'] 
@@ -730,7 +730,7 @@ class PGSQLMigrate:
             curr_max = str(self.get_last_pkey(table_name = table_name))
             if(last_rec):
                 last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= Cast(\'{last}\' as uuid);"
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= Cast(\'{last}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         
