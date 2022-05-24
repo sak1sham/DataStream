@@ -640,7 +640,7 @@ class PGSQLMigrate:
                 last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
                 last = '00000000-0000-0000-0000-000000000000'
                 if(last_rec):
-                    last = str(last_rec['record_id'])
+                    last = str(last_rec)
                 sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{last2}\' as uuid)"
             else:
                 IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
@@ -694,7 +694,7 @@ class PGSQLMigrate:
             curr_max = str(self.get_last_pkey(table_name = table_name))
             if(last_rec):
                 last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid)"
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr_max}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         sql_stmt += " ORDER BY " + self.curr_mapping['primary_key'] 
@@ -729,7 +729,7 @@ class PGSQLMigrate:
             last = '00000000-0000-0000-0000-000000000000'
             curr_max = str(self.get_last_pkey(table_name = table_name))
             if(last_rec):
-                last = str(last_rec['record_id'])
+                last = str(last_rec)
             sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= Cast(\'{last}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
@@ -779,6 +779,9 @@ class PGSQLMigrate:
                 elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
                     curr = pytz.utc.localize(curr).astimezone(self.tz_info)
                     sql_stmt += " WHERE {0} <= CAST(\'{1}\' as timestamp)".format(self.curr_mapping['primary_key'], curr)
+                elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
+                    curr = str(curr)
+                    sql_stmt += " WHERE {0} <= CAST(\'{1}\' as uuid)".format(self.curr_mapping['primary_key'], curr)
                 else:
                     IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
                 
