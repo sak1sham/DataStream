@@ -551,7 +551,7 @@ class PGSQLMigrate:
         '''
             Function to create PGSQL query for dumping/mirroring mode and then send it further for processing.
         '''
-        sql_stmt = "SELECT * FROM " + table_name
+        sql_stmt = f"SELECT * FROM {table_name}"
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             sql_stmt = self.curr_mapping['fetch_data_query']
         self.process_sql_query(table_name, sql_stmt, mode=self.curr_mapping['mode'])
@@ -561,7 +561,7 @@ class PGSQLMigrate:
         '''
             Function to create PGSQL query for logging mode and then send it further for processing.
         '''
-        sql_stmt = "SELECT * FROM " + table_name
+        sql_stmt = f"SELECT * FROM {table_name}"
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
        
@@ -573,14 +573,14 @@ class PGSQLMigrate:
                 last = int(last_rec['record_id'])
             curr = str(curr)
             last = str(last)
-            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " > " + last + " AND " + self.curr_mapping['primary_key'] + " <= " + curr
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > {last} AND {self.curr_mapping['primary_key']} <= {curr}"
         elif(self.curr_mapping['primary_key_datatype'] == 'str'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = ""
             curr = str(self.get_last_pkey(table_name = table_name))
             if(last_rec):
                 last = str(last_rec['record_id'])
-            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " > \'" + last + "\' AND " + self.curr_mapping['primary_key'] + " <= \'" + curr + "\'"
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > \'{last}\' AND {self.curr_mapping['primary_key']} <= \'{curr}\'"
         elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
@@ -591,7 +591,7 @@ class PGSQLMigrate:
                 curr = self.tz_info.localize(curr)
             if(last_rec):
                 last = pytz.utc.localize(last_rec['record_id']).astimezone(self.tz_info)
-            sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) > Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp) AND Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + curr.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
+            sql_stmt += f" WHERE Cast({self.curr_mapping['primary_key']} as timestamp) > Cast(\'{last.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp) AND Cast({self.curr_mapping['primary_key']} as timestamp) <= Cast(\'{curr.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp)"
         elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = '00000000-0000-0000-0000-000000000000'
@@ -601,7 +601,7 @@ class PGSQLMigrate:
             sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
-        sql_stmt += " ORDER BY " + self.curr_mapping['primary_key'] 
+        sql_stmt += f" ORDER BY {self.curr_mapping['primary_key']}"
         self.process_sql_query(table_name, sql_stmt, mode='logging')
 
 
@@ -616,26 +616,26 @@ class PGSQLMigrate:
             self.inform("")
             self.inform("Trying to make the system recover by updating the records inserted during the previously failed job(s).")
             last2 = recovery_data['record_id']
-            sql_stmt = "SELECT * FROM " + table_name
+            sql_stmt = f"SELECT * FROM {table_name}"
             if(self.curr_mapping['primary_key_datatype'] == 'int'):
                 last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
                 last = -2147483648
                 if(last_rec):
                     last = int(last_rec)
                 last = str(last)
-                sql_stmt += " WHERE {0} > {1} AND {2} <= {3}".format(self.curr_mapping['primary_key'], last, self.curr_mapping['primary_key'], last2)
+                sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > {last} AND {self.curr_mapping['primary_key']} <= {last2}"
             elif(self.curr_mapping['primary_key_datatype'] == 'str'):
                 last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
                 last = ""
                 if(last_rec):
                     last = str(last_rec)
-                sql_stmt += " WHERE {0} > \'{1}\' AND {2} <= \'{3}\'".format(self.curr_mapping['primary_key'], last, self.curr_mapping['primary_key'], last2)
+                sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > \'{last}\' AND {self.curr_mapping['primary_key']} <= \'{last2}\'"
             elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
                 last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
                 last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
                 if(last_rec):
                     last = pytz.utc.localize(last_rec).astimezone(self.tz_info)
-                sql_stmt += " WHERE CAST({0} as timestamp) > CAST(\'{1}\' as timestamp) AND CAST({2} as timestamp) <= CAST(\'{3}\' as timestamp)".format(self.curr_mapping['primary_key'], last.strftime('%Y-%m-%d %H:%M:%S'), self.curr_mapping['primary_key'], last2.strftime('%Y-%m-%d %H:%M:%S'))
+                sql_stmt += f" WHERE CAST({self.curr_mapping['primary_key']} as timestamp) > CAST(\'{last.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp) AND CAST({self.curr_mapping['primary_key']} as timestamp) <= CAST(\'{last2.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp)"
             elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
                 last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
                 last = '00000000-0000-0000-0000-000000000000'
@@ -649,15 +649,15 @@ class PGSQLMigrate:
             last_time = last_time.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']): 
                 if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']): 
-                    sql_stmt += " AND Cast({0} as timestamp) > CAST(\'{1}\' as timestamp)".format(self.curr_mapping['bookmark'], last_time)
+                    sql_stmt += f" AND Cast({self.curr_mapping['bookmark']} as timestamp) > CAST(\'{last_time}\' as timestamp)"
                 else: 
-                    sql_stmt += " AND {0} > \'{1}\'::timestamp".format(self.curr_mapping['bookmark'], last_time)
+                    sql_stmt += f" AND {self.curr_mapping['bookmark']} > \'{last_time}\'::timestamp"
             self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
 
         ## NOW, SYSTEM IS RECOVERED, LET'S FOCUS ON INSERTING NEW DATA
         self.inform("")
         self.inform("Starting Insertion of new records.")
-        sql_stmt = "SELECT * FROM " + table_name
+        sql_stmt = f"SELECT * FROM {table_name}"
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
         
