@@ -61,7 +61,7 @@ class PGSQLMigrate:
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], mirroring=mirroring, table_name=self.curr_mapping['table_name'])
 
 
-    def save_job_working_data(self, table_name: str = None) -> None:
+    def save_job_working_data(self, table_name: str = None, status: bool = True) -> None:
         self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
         total_records = self.saver.count_n_records(table_name = table_name)
         total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
@@ -80,6 +80,7 @@ class PGSQLMigrate:
             "total_time": float(total_time),
             "curr_megabytes_processed": float(self.curr_megabytes_processed),
             "total_megabytes": total_megabytes,
+            "status": status
         }
         save_job_data(job_data)
         self.inform("Saved data for job to be shown on dashboard.")
@@ -431,7 +432,7 @@ class PGSQLMigrate:
                                     processed_data = {}
                                     break
                                 if(killer.kill_now):
-                                    self.save_job_working_data(table_name=table_name)
+                                    self.save_job_working_data(table_name=table_name, status=False)
                                     msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                                     msg += "Reason: Caught sigterm :warning:\n"
                                     msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
@@ -470,7 +471,7 @@ class PGSQLMigrate:
                                         processed_data = {}
                                         break
                                     if(killer.kill_now):
-                                        self.save_job_working_data(table_name=table_name)
+                                        self.save_job_working_data(table_name=table_name, status=False)
                                         msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                                         msg += "Reason: Caught sigterm :warning:\n"
                                         msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
@@ -920,12 +921,12 @@ class PGSQLMigrate:
                     raise IncorrectMapping("Wrong mode of operation: can be syncing, logging, mirroring or dumping only.")
                 self.inform(message=("Migration completed for table " + str(table_name)), save=True)
         except KeyboardInterrupt:
-            self.save_job_working_data(curr_table_processed)
+            self.save_job_working_data(curr_table_processed, status=False)
             raise
         except Sigterm as e:
             raise
         except Exception as e:
-            self.save_job_working_data(curr_table_processed)
+            self.save_job_working_data(curr_table_processed, status=False)
             raise
         else:
             self.save_job_working_data(curr_table_processed)
