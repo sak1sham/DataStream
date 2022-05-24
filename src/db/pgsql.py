@@ -697,14 +697,14 @@ class PGSQLMigrate:
             sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr_max}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
-        sql_stmt += " ORDER BY " + self.curr_mapping['primary_key'] 
+        sql_stmt += f" ORDER BY {self.curr_mapping['primary_key']}"
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 1)
         self.inform("Inserted all records found.")
         
         ## NOW INSERTION IS COMPLETE, LET'S FOCUS ON UPDATING OLD DATA
         self.inform("")
         self.inform("Starting updation of previously existing records.")
-        sql_stmt = "SELECT * FROM " + table_name
+        sql_stmt = f"SELECT * FROM {table_name}"
         if(self.curr_mapping['primary_key_datatype'] == 'int'):
             last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
             last = -2147483648
@@ -753,7 +753,7 @@ class PGSQLMigrate:
         last = last.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
         if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']): 
             if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']): 
-                sql_stmt += " AND Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)" 
+                sql_stmt += f" AND Cast({self.curr_mapping['bookmark']} as timestamp) > CAST(\'{last}\' as timestamp)" 
             else: 
                 sql_stmt += f" AND {self.curr_mapping['bookmark']} > \'{last}\'::timestamp" 
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
@@ -771,7 +771,7 @@ class PGSQLMigrate:
             if(curr and self.n_insertions > 0 and 'record_id' in curr.keys() and curr['record_id']):
                 ## If some records were inserted, we need to check updates for last few records as per precise time 
                 curr = curr['record_id']
-                sql_stmt = "SELECT * FROM " + table_name
+                sql_stmt = f"SELECT * FROM {table_name}"
                 if(self.curr_mapping['primary_key_datatype'] == 'int'):
                     sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= {str(int(float(curr)))}"
                 elif(self.curr_mapping['primary_key_datatype'] == 'str'):
