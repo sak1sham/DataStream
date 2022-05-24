@@ -226,7 +226,7 @@ class PGSQLMigrate:
         return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
 
-    def updating_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
+    def updating_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}, filter: bool = True) -> Dict[str, Any]:
         '''
             Function that takes in dataframe and processes it assuming only updations are to be performed
                 1. Add partitions if required
@@ -247,7 +247,7 @@ class PGSQLMigrate:
         df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
         
         ## If the records were not already filtered as per updation_date, filter them first
-        if('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark']):
+        if(filter and ('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark'])):
             _, df = self.distribute_records(collection_encr, df, mode='update')
         
         ## Convert to required data types and return
@@ -407,7 +407,7 @@ class PGSQLMigrate:
                                 ## resume mode is thus supported.
                                 processed_data = {}
                                 if(start_logging):
-                                    processed_data = self.updating_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes)
+                                    processed_data = self.updating_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, filter = False)
                                     start_logging = False
                                 else:
                                     processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, mode = 'logging')
