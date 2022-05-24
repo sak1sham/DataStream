@@ -520,7 +520,6 @@ class PGSQLMigrate:
             primary_key can be either string, integer or datetime.
             primary_key needs to be unique, and strictly increasing.
         '''
-        sql_stmt = 'SELECT max(' + self.curr_mapping['primary_key'] + ') as curr_max_pkey FROM ' + table_name
         try:
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
@@ -528,6 +527,10 @@ class PGSQLMigrate:
                 user = self.db['source']['username'],
                 password = self.db['source']['password']
             )
+            if(self.curr_mapping['primary_key_datatype'] == 'uuid'):
+                sql_stmt = f"SELECT {self.curr_mapping['primary_key']} FROM {table_name} ORDER BY {self.curr_mapping['primary_key']} DESC LIMIT 1"
+            else:
+                sql_stmt = f"SELECT max({self.curr_mapping['primary_key']}) as curr_max_pkey FROM {table_name}"
             try:
                 with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
@@ -589,6 +592,13 @@ class PGSQLMigrate:
             if(last_rec):
                 last = pytz.utc.localize(last_rec['record_id']).astimezone(self.tz_info)
             sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) > Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp) AND Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + curr.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
+        elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
+            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+            last = '00000000-0000-0000-0000-000000000000'
+            curr = str(self.get_last_pkey(table_name = table_name))
+            if(last_rec):
+                last = str(last_rec['record_id'])
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         sql_stmt += " ORDER BY " + self.curr_mapping['primary_key'] 
@@ -626,6 +636,12 @@ class PGSQLMigrate:
                 if(last_rec):
                     last = pytz.utc.localize(last_rec).astimezone(self.tz_info)
                 sql_stmt += " WHERE CAST({0} as timestamp) > CAST(\'{1}\' as timestamp) AND CAST({2} as timestamp) <= CAST(\'{3}\' as timestamp)".format(self.curr_mapping['primary_key'], last.strftime('%Y-%m-%d %H:%M:%S'), self.curr_mapping['primary_key'], last2.strftime('%Y-%m-%d %H:%M:%S'))
+            elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
+                last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
+                last = '00000000-0000-0000-0000-000000000000'
+                if(last_rec):
+                    last = str(last_rec)
+                sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{last2}\' as uuid)"
             else:
                 IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
             
@@ -672,6 +688,13 @@ class PGSQLMigrate:
             if(last_rec):
                 last = pytz.utc.localize(last_rec['record_id']).astimezone(self.tz_info)
             sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) > Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp) AND Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + curr_max.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
+        elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
+            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
+            last = '00000000-0000-0000-0000-000000000000'
+            curr_max = str(self.get_last_pkey(table_name = table_name))
+            if(last_rec):
+                last = str(last_rec['record_id'])
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr_max}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         sql_stmt += " ORDER BY " + self.curr_mapping['primary_key'] 
@@ -701,6 +724,13 @@ class PGSQLMigrate:
             if(last_rec):
                 last = pytz.utc.localize(last_rec).astimezone(self.tz_info)
             sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
+        elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
+            last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
+            last = '00000000-0000-0000-0000-000000000000'
+            curr_max = str(self.get_last_pkey(table_name = table_name))
+            if(last_rec):
+                last = str(last_rec)
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= Cast(\'{last}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         
@@ -749,6 +779,9 @@ class PGSQLMigrate:
                 elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
                     curr = pytz.utc.localize(curr).astimezone(self.tz_info)
                     sql_stmt += " WHERE {0} <= CAST(\'{1}\' as timestamp)".format(self.curr_mapping['primary_key'], curr)
+                elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
+                    curr = str(curr)
+                    sql_stmt += " WHERE {0} <= CAST(\'{1}\' as uuid)".format(self.curr_mapping['primary_key'], curr)
                 else:
                     IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
                 
