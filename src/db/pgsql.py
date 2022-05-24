@@ -405,6 +405,7 @@ class PGSQLMigrate:
                                 ## In Logging mode, we first process and save the data of the batch
                                 ## After saving every batch, we save the record_id of the last migrated record
                                 ## resume mode is thus supported.
+                                processed_data = {}
                                 if(start_logging):
                                     processed_data = self.updating_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes)
                                     start_logging = False
