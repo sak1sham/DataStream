@@ -669,14 +669,14 @@ class PGSQLMigrate:
                 last = int(last_rec['record_id'])
             curr_max = str(curr_max)
             last = str(last)
-            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " > " + last + " AND " + self.curr_mapping['primary_key'] + " <= " + curr_max
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > {last} AND {self.curr_mapping['primary_key']} <= {curr_max}"
         elif(self.curr_mapping['primary_key_datatype'] == 'str'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = ""
             curr_max = str(self.get_last_pkey(table_name = table_name))
             if(last_rec):
                 last = str(last_rec['record_id'])
-            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " > \'" + last + "\' AND " + self.curr_mapping['primary_key'] + " <= \'" + curr_max + "\'"
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > \'{last}\' AND {self.curr_mapping['primary_key']} <= \'{curr_max}\'"
         elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
@@ -687,7 +687,7 @@ class PGSQLMigrate:
                 curr_max = self.tz_info.localize(curr_max)
             if(last_rec):
                 last = pytz.utc.localize(last_rec['record_id']).astimezone(self.tz_info)
-            sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) > Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp) AND Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + curr_max.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
+            sql_stmt += f" WHERE Cast({self.curr_mapping['primary_key']} as timestamp) > Cast(\'{last.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp) AND Cast({self.curr_mapping['primary_key']} as timestamp) <= Cast(\'{curr_max.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp)"
         elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = '00000000-0000-0000-0000-000000000000'
@@ -711,19 +711,19 @@ class PGSQLMigrate:
             if(last_rec):
                 last = int(last_rec)
             last = str(last)
-            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " <= " + last
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= {last}"
         elif(self.curr_mapping['primary_key_datatype'] == 'str'):
             last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
             last = ""
             if(last_rec):
                 last = str(last_rec)
-            sql_stmt += " WHERE " + self.curr_mapping['primary_key'] + " <= \'" + last + "\'"
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= \'{last}\'"
         elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
             last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
             last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
             if(last_rec):
                 last = pytz.utc.localize(last_rec).astimezone(self.tz_info)
-            sql_stmt += " WHERE Cast(" + self.curr_mapping['primary_key'] + " as timestamp) <= Cast(\'" + last.strftime('%Y-%m-%d %H:%M:%S') + "\' as timestamp)"
+            sql_stmt += f" WHERE Cast({self.curr_mapping['primary_key']} as timestamp) <= Cast(\'{last.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp)"
         elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
             last_rec = get_last_migrated_record_prev_job(self.curr_mapping['unique_id'])
             last = '00000000-0000-0000-0000-000000000000'
@@ -755,7 +755,7 @@ class PGSQLMigrate:
             if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']): 
                 sql_stmt += " AND Cast(" + self.curr_mapping['bookmark'] + " as timestamp) > CAST(\'" + last + "\' as timestamp)" 
             else: 
-                sql_stmt += " AND " + self.curr_mapping['bookmark'] + " > \'" + last + "\'::timestamp" 
+                sql_stmt += f" AND {self.curr_mapping['bookmark']} > \'{last}\'::timestamp" 
         self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
         self.inform("Updated all existing records.")
 
