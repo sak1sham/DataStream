@@ -148,7 +148,7 @@ class s3Saver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
-            sql_query = f"SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.database}\' AND TABLE_NAME = \' {table_name}\';"
+            sql_query = f"SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.database}\' AND TABLE_NAME = \'{table_name}\';"
             self.inform(sql_query)
             df = wr.athena.read_sql_query(sql = sql_query, database = self.database)
             return df.shape[0] > 0
