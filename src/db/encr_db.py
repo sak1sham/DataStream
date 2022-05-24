@@ -218,6 +218,7 @@ def save_job_data(data: Dict = {}) -> None:
             total_time: int (seconds),
             curr_megabytes_processed: int (mb),
             total_megabytes: int (mb),
+            status: bool
         }
     '''
     db.insert_one(data)
