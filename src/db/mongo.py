@@ -165,7 +165,7 @@ class MongoMigrate:
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet, mirroring=mirroring, table_name=self.curr_mapping['collection_name'])        
 
 
-    def save_job_working_data(self) -> None:
+    def save_job_working_data(self, status: bool = True) -> None:
         self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
         total_records = self.saver.count_n_records(table_name = self.curr_mapping['collection_name'])
         total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
@@ -184,6 +184,7 @@ class MongoMigrate:
             "total_time": float(total_time),
             "curr_megabytes_processed": float(self.curr_megabytes_processed),
             "total_megabytes": total_megabytes,
+            "status": status,
         }
         save_job_data(job_data)
         self.inform("Saved data for job to be shown on dashboard.")
@@ -665,7 +666,7 @@ class MongoMigrate:
                     processed_collection = {}
                     break
                 if(killer.kill_now):
-                    self.save_job_working_data()
+                    self.save_job_working_data(status=False)
                     msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                     msg += "Reason: Caught sigterm :warning:\n"
                     msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
@@ -750,7 +751,7 @@ class MongoMigrate:
                     processed_collection = {}
                     break
                 if(killer.kill_now):
-                    self.save_job_working_data()
+                    self.save_job_working_data(status=False)
                     msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                     msg += "Reason: Caught sigterm :warning:\n"
                     msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
@@ -920,12 +921,12 @@ class MongoMigrate:
             else:
                 raise IncorrectMapping("Please specify a mode of operation.")
         except KeyboardInterrupt:
-            self.save_job_working_data()
+            self.save_job_working_data(status=False)
             raise
         except Sigterm as e:
             raise
         except Exception as e:
-            self.save_job_working_data()
+            self.save_job_working_data(status=False)
             raise
         else:
             self.save_job_working_data()
