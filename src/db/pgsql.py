@@ -773,15 +773,15 @@ class PGSQLMigrate:
                 curr = curr['record_id']
                 sql_stmt = "SELECT * FROM " + table_name
                 if(self.curr_mapping['primary_key_datatype'] == 'int'):
-                    sql_stmt += " WHERE {0} <= {1}".format(self.curr_mapping['primary_key'], str(int(float(curr))))
+                    sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= {str(int(float(curr)))}"
                 elif(self.curr_mapping['primary_key_datatype'] == 'str'):
-                    sql_stmt += " WHERE {0} <= \'{1}\'".format(self.curr_mapping['primary_key'], curr)
+                    sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= \'{curr}\'"
                 elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
                     curr = pytz.utc.localize(curr).astimezone(self.tz_info)
-                    sql_stmt += " WHERE {0} <= CAST(\'{1}\' as timestamp)".format(self.curr_mapping['primary_key'], curr)
+                    sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= CAST(\'{curr}\' as timestamp)"
                 elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
                     curr = str(curr)
-                    sql_stmt += " WHERE {0} <= CAST(\'{1}\' as uuid)".format(self.curr_mapping['primary_key'], curr)
+                    sql_stmt += f" WHERE {self.curr_mapping['primary_key']} <= CAST(\'{curr}\' as uuid)"
                 else:
                     IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
                 
@@ -789,9 +789,9 @@ class PGSQLMigrate:
                 last2 = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
                 if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']): 
                     if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']): 
-                        sql_stmt += " AND Cast({0} as timestamp) > CAST(\'{1}\' as timestamp) AND Cast({2} as timestamp) <= CAST(\'{3}\' as timestamp)".format(self.curr_mapping['bookmark'], last1, self.curr_mapping['bookmark'], last2)
+                        sql_stmt += f" AND Cast({self.curr_mapping['bookmark']} as timestamp) > CAST(\'{last1}\' as timestamp) AND Cast({self.curr_mapping['bookmark']} as timestamp) <= CAST(\'{last2}\' as timestamp)"
                     else:
-                        sql_stmt += " AND {0} > \'{1}\'::timestamp AND {2} <= \'{3}\'::timestamp".format(self.curr_mapping['bookmark'], last1, self.curr_mapping['bookmark'], last2) 
+                        sql_stmt += f" AND {self.curr_mapping['bookmark']} > \'{last1}\'::timestamp AND {self.curr_mapping['bookmark']} <= \'{last2}\'::timestamp"
                 self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
                 self.inform("Double-checked for updations in last {0} hours, {1} minutes and {2} minutes.".format(buffer_hours, buffer_minutes, buffer_seconds))
 
