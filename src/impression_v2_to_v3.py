@@ -84,6 +84,7 @@ def save_to_s3(df: pd.DataFrame() = None) -> None:
         )
     except Exception as e:
         logger.err(job_id='', s = str(e))
+        logger.info(jobid = '', s = "RETRYING")
         raise
 
 for df in dfs:
