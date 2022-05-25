@@ -61,7 +61,7 @@ class PGSQLMigrate:
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], mirroring=mirroring, table_name=self.curr_mapping['table_name'])
 
 
-    def save_job_working_data(self, table_name: str = None) -> None:
+    def save_job_working_data(self, table_name: str = None, status: bool = True) -> None:
         self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
         total_records = self.saver.count_n_records(table_name = table_name)
         total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
@@ -80,6 +80,7 @@ class PGSQLMigrate:
             "total_time": float(total_time),
             "curr_megabytes_processed": float(self.curr_megabytes_processed),
             "total_megabytes": total_megabytes,
+            "status": status
         }
         save_job_data(job_data)
         self.inform("Saved data for job to be shown on dashboard.")
@@ -226,7 +227,7 @@ class PGSQLMigrate:
         return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
 
-    def updating_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
+    def updating_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}, filter: bool = True) -> Dict[str, Any]:
         '''
             Function that takes in dataframe and processes it assuming only updations are to be performed
                 1. Add partitions if required
@@ -247,7 +248,7 @@ class PGSQLMigrate:
         df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
         
         ## If the records were not already filtered as per updation_date, filter them first
-        if('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark']):
+        if(filter and ('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark'])):
             _, df = self.distribute_records(collection_encr, df, mode='update')
         
         ## Convert to required data types and return
@@ -385,6 +386,7 @@ class PGSQLMigrate:
                     columns = [desc[0] for desc in curs.description]
                     ## Now, we have the names of the columns. Next, go back right to the starting of table (-1) and fetch records from the cursor in batches.
                     curs.scroll(-1)
+                    start_logging = True
                     while(True):
                         rows = curs.fetchmany(self.batch_size)
                         if (not rows):
@@ -404,7 +406,12 @@ class PGSQLMigrate:
                                 ## In Logging mode, we first process and save the data of the batch
                                 ## After saving every batch, we save the record_id of the last migrated record
                                 ## resume mode is thus supported.
-                                processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, mode = 'logging')
+                                processed_data = {}
+                                if(start_logging):
+                                    processed_data = self.updating_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, filter = False)
+                                    start_logging = False
+                                else:
+                                    processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, mode = 'logging')
                                 killer = NormalKiller()
                                 if(self.curr_mapping['cron'] == 'self-managed'):
                                     killer = GracefulKiller()
@@ -425,7 +432,7 @@ class PGSQLMigrate:
                                     processed_data = {}
                                     break
                                 if(killer.kill_now):
-                                    self.save_job_working_data(table_name=table_name)
+                                    self.save_job_working_data(table_name=table_name, status=False)
                                     msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                                     msg += "Reason: Caught sigterm :warning:\n"
                                     msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
@@ -464,7 +471,7 @@ class PGSQLMigrate:
                                         processed_data = {}
                                         break
                                     if(killer.kill_now):
-                                        self.save_job_working_data(table_name=table_name)
+                                        self.save_job_working_data(table_name=table_name, status=False)
                                         msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['table_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
                                         msg += "Reason: Caught sigterm :warning:\n"
                                         msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
@@ -573,14 +580,14 @@ class PGSQLMigrate:
                 last = int(last_rec['record_id'])
             curr = str(curr)
             last = str(last)
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > {last} AND {self.curr_mapping['primary_key']} <= {curr}"
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= {last} AND {self.curr_mapping['primary_key']} <= {curr}"
         elif(self.curr_mapping['primary_key_datatype'] == 'str'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = ""
             curr = str(self.get_last_pkey(table_name = table_name))
             if(last_rec):
                 last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > \'{last}\' AND {self.curr_mapping['primary_key']} <= \'{curr}\'"
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= \'{last}\' AND {self.curr_mapping['primary_key']} <= \'{curr}\'"
         elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
@@ -591,14 +598,14 @@ class PGSQLMigrate:
                 curr = self.tz_info.localize(curr)
             if(last_rec):
                 last = pytz.utc.localize(last_rec['record_id']).astimezone(self.tz_info)
-            sql_stmt += f" WHERE Cast({self.curr_mapping['primary_key']} as timestamp) > Cast(\'{last.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp) AND Cast({self.curr_mapping['primary_key']} as timestamp) <= Cast(\'{curr.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp)"
+            sql_stmt += f" WHERE Cast({self.curr_mapping['primary_key']} as timestamp) >= Cast(\'{last.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp) AND Cast({self.curr_mapping['primary_key']} as timestamp) <= Cast(\'{curr.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp)"
         elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = '00000000-0000-0000-0000-000000000000'
             curr = str(self.get_last_pkey(table_name = table_name))
             if(last_rec):
                 last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} > Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid)"
+            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid)"
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         sql_stmt += f" ORDER BY {self.curr_mapping['primary_key']}"
@@ -914,12 +921,12 @@ class PGSQLMigrate:
                     raise IncorrectMapping("Wrong mode of operation: can be syncing, logging, mirroring or dumping only.")
                 self.inform(message=("Migration completed for table " + str(table_name)), save=True)
         except KeyboardInterrupt:
-            self.save_job_working_data(curr_table_processed)
+            self.save_job_working_data(curr_table_processed, status=False)
             raise
         except Sigterm as e:
             raise
         except Exception as e:
-            self.save_job_working_data(curr_table_processed)
+            self.save_job_working_data(curr_table_processed, status=False)
             raise
         else:
             self.save_job_working_data(curr_table_processed)
