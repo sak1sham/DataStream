@@ -35,8 +35,7 @@ class PgSQLSaver:
         self.table_list = []
 
 
-
-    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}) -> None:
+    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         table_name = schema + "." + table if schema and len(schema) > 0 else table
@@ -56,12 +55,20 @@ class PgSQLSaver:
                 cols_def = cols_def + "BIGINT"
             elif(dtypes[col] == 'double'):
                 cols_def = cols_def + "DOUBLE PRECISION"
-            if(len(primary_keys) > 0 and primary_keys[0] == col):
+            if(not logging_flag and len(primary_keys) > 0 and primary_keys[0] == col):
                 cols_def = cols_def + " PRIMARY KEY"
             cols_def = cols_def + ","
         cols_def = cols_def[:-1]
 
-        sql_query = "CREATE TABLE IF NOT EXISTS {0} ({1}\n);".format(table_name, cols_def)
+        logging_query = ""
+        if(logging_flag):
+            cols = ""
+            for col in df.columns.to_list():
+                cols += f"{col}, "
+            if(len(cols) > 0):
+                logging_query = f", UNIQUE ({cols[:-2]})"
+
+        sql_query = f"CREATE TABLE IF NOT EXISTS {table_name} ({cols_def}\n{logging_query});"
         conn = psycopg2.connect(
             host = self.db_destination['url'],
             database = self.db_destination['db_name'],
@@ -74,72 +81,12 @@ class PgSQLSaver:
         conn.close()
 
 
-
-    def pgsql_insert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}) -> None:
+    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
             df2 = df.copy()
-            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source)
-            table_name = schema + "." + table if schema and len(schema) > 0 else table
-            col_names = ""
-            list_cols = df2.columns.to_list()
-            for col in list_cols:
-                col_names = col_names + col + ", "
-
-            col_names = col_names[:-2]
-            for key, val in dtypes.items():
-                if(val == 'timestamp'):
-                    df2[key] = df2[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isnull(x) else '')
-            
-            cols_def = ""
-            for index, row in df2.iterrows():
-                row_def = "("
-                for col in list_cols:
-                    if(pd.isna(row[col])):
-                        row_def += "NULL"
-                    elif(col not in dtypes.keys() or dtypes[col] == 'string'):
-                        row_def += "\'{0}\'".format(row[col].replace("'", "''"))
-                    elif(dtypes[col] == 'timestamp'):
-                        if(len(row[col]) > 0):
-                            row_def += "CAST(\'{0}\' AS TIMESTAMP)".format(row[col])
-                        else:
-                            row_def += "NULL"
-                    elif(dtypes[col] == 'boolean'):
-                        if(dtypes[col]):
-                            row_def += "True"
-                        else:
-                            row_def += "False"
-                    elif(dtypes[col] == 'bigint' or dtypes[col] == 'double'):
-                        row_def += '{0}'.format(row[col])
-                    row_def += ", "
-                row_def = row_def[:-2] + "),\n"
-                cols_def += row_def
-            cols_def = cols_def[:-2]
-
-            sql_query = "INSERT INTO {0}({1}) VALUES \n{2};".format(table_name, col_names, cols_def)
-            conn = psycopg2.connect(
-                host = self.db_destination['url'],
-                database = self.db_destination['db_name'],
-                user = self.db_destination['username'],
-                password = self.db_destination['password']
-            )
-            with conn.cursor() as curs:
-                curs.execute(sql_query)
-                conn.commit()
-            conn.close()
-        except Exception as e:
-            raise Exception("Unable to insert records in table.")
-
-
-
-
-    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}) -> None:
-        if(df.empty):
-            raise EmptyDataframe("Dataframe can not be empty.")
-        try:
-            df2 = df.copy()
-            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source)
+            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source, logging_flag=logging_flag)
             table_name = schema + "." + table if schema and len(schema) > 0 else table
             col_names = ""
             list_cols = df2.columns.to_list()
@@ -176,14 +123,17 @@ class PgSQLSaver:
                 cols_def += row_def
             cols_def = cols_def[:-2]
 
-            up_query = ""
-            for col in list_cols:
-                if(col != primary_keys[0]):
-                    up_query += "{0} = excluded.{0},\n".format(col)
-            if(len(up_query)>2):
-                up_query = up_query[:-2]
+            conflict_behaviour = "ON CONFLICT DO NOTHING"
+            if(not logging_flag):
+                up_query = ""
+                for col in list_cols:
+                    if(col != primary_keys[0]):
+                        up_query += "{0} = excluded.{0},\n".format(col)
+                if(len(up_query)>2):
+                    up_query = up_query[:-2]
+                conflict_behaviour = f"ON CONFLICT ({primary_keys[0]}) DO UPDATE SET {up_query}"
 
-            sql_query = "INSERT INTO {0}({1}) VALUES \n{2}\n ON CONFLICT ({3}) DO UPDATE SET {4};".format(table_name, col_names, cols_def, primary_keys[0], up_query)
+            sql_query = f"INSERT INTO {table_name}({col_names})\nVALUES\n{cols_def}\n {conflict_behaviour};"
             conn = psycopg2.connect(
                 host = self.db_destination['url'],
                 database = self.db_destination['db_name'],
@@ -215,7 +165,11 @@ class PgSQLSaver:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
             self.table_list.extend(processed_data['name']) 
         self.name_ = processed_data['name']
-        
+
+        logging_flag = False
+        if('logging_flag' in processed_data.keys() and processed_data['logging_flag']):
+            logging_flag = True
+
         varchar_length_source = processed_data['varchar_lengths'] if 'varchar_lengths' in processed_data and processed_data['varchar_lengths'] else {}
         if(not varchar_length_source):
             varchar_length_source = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
@@ -236,7 +190,8 @@ class PgSQLSaver:
                 schema = self.schema,
                 dtypes = processed_data['dtypes'],
                 primary_keys = primary_keys,
-                varchar_length_source = varchar_length_source
+                varchar_length_source = varchar_length_source,
+                logging_flag=logging_flag
             )
             self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))
         
@@ -251,7 +206,8 @@ class PgSQLSaver:
                 schema = self.schema,
                 dtypes = processed_data['dtypes'],
                 primary_keys = primary_keys,
-                varchar_length_source = varchar_length_source
+                varchar_length_source = varchar_length_source,
+                logging_flag=logging_flag
             )
             self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
 
