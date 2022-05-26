@@ -16,7 +16,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'dispatch_or_received_shipments',
-            'cron': '* * * * * */1 45 0',
+            'cron': '* * * * * */1 0 0',
             'mode': 'logging',
             'primary_key': 'scanned_at',
             'primary_key_datatype': 'datetime',
