@@ -21,6 +21,7 @@ mapping = {
             'primary_key': 'scanned_at',
             'primary_key_datatype': 'datetime',
             'batch_size': 10000,
+            'logging_flag': True,
             'grace_updation_lag': {
                 'hours': 4
             },
