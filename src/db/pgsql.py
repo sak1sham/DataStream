@@ -422,7 +422,7 @@ class PGSQLMigrate:
                                         last_record_id = processed_data['df_insert'][pkey].iloc[-1]
                                         if(self.curr_mapping['primary_key_datatype'] == 'int'):
                                             last_record_id = int(last_record_id)
-                                        elif(self.curr_mapping['primary_key_datatype'] == 'str'):
+                                        elif(self.curr_mapping['primary_key_datatype'] == 'str' or self.curr_mapping['primary_key_datatype'] == 'uuid'):
                                             last_record_id = str(last_record_id)
                                         elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
                                             if(not last_record_id.tzinfo):
@@ -460,7 +460,7 @@ class PGSQLMigrate:
                                             last_record_id = processed_data['df_insert'][pkey].iloc[-1]
                                             if(self.curr_mapping['primary_key_datatype'] == 'int'):
                                                 last_record_id = int(last_record_id)
-                                            elif(self.curr_mapping['primary_key_datatype'] == 'str'):
+                                            elif(self.curr_mapping['primary_key_datatype'] == 'str' or self.curr_mapping['primary_key_datatype'] == 'uuid'):
                                                 last_record_id = str(last_record_id)
                                             elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
                                                 if(not last_record_id.tzinfo):
