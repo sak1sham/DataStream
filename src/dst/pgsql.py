@@ -79,20 +79,21 @@ class PgSQLSaver:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
-            self.pgsql_create_table(df=df, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source)
+            df2 = df.copy()
+            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source)
             table_name = schema + "." + table if schema and len(schema) > 0 else table
             col_names = ""
-            list_cols = df.columns.to_list()
+            list_cols = df2.columns.to_list()
             for col in list_cols:
                 col_names = col_names + col + ", "
 
             col_names = col_names[:-2]
             for key, val in dtypes.items():
                 if(val == 'timestamp'):
-                    df[key] = df[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isnull(x) else '')
+                    df2[key] = df2[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isnull(x) else '')
             
             cols_def = ""
-            for index, row in df.iterrows():
+            for index, row in df2.iterrows():
                 row_def = "("
                 for col in list_cols:
                     if(pd.isna(row[col])):
@@ -137,20 +138,21 @@ class PgSQLSaver:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
-            self.pgsql_create_table(df=df, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source)
+            df2 = df.copy()
+            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source)
             table_name = schema + "." + table if schema and len(schema) > 0 else table
             col_names = ""
-            list_cols = df.columns.to_list()
+            list_cols = df2.columns.to_list()
             for col in list_cols:
                 col_names = col_names + col + ", "
 
             col_names = col_names[:-2]
             for key, val in dtypes.items():
                 if(val == 'timestamp'):
-                    df[key] = df[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isnull(x) else '')
+                    df2[key] = df2[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isnull(x) else '')
 
             cols_def = ""
-            for index, row in df.iterrows():
+            for index, row in df2.iterrows():
                 row_def = "("
                 for col in list_cols:
                     if(pd.isna(row[col])):
