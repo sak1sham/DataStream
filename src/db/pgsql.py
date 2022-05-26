@@ -287,6 +287,11 @@ class PGSQLMigrate:
                 self.curr_megabytes_processed += processed_data['df_update'].memory_usage(index=True).sum()
             self.n_insertions += processed_data['df_insert'].shape[0]
             self.n_updations += processed_data['df_update'].shape[0]
+            if('logging_flag' in self.curr_mapping.keys() and self.curr_mapping['logging_flag']):
+                if(self.curr_mapping['mode'] == 'logging'):
+                    processed_data['logging_flag'] = True
+                else:
+                    self.warn("logging_flag works only in logging mode.")
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
 
