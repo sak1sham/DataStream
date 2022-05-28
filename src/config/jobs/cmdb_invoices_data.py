@@ -14,8 +14,8 @@ mapping = {
         {
             'table_name': 'invoices_data',
             'mode': 'syncing',
-            'primary_key': 'invoices_data_id',
-            'primary_key_datatype': 'int',
+            'primary_key': 'id',
+            'primary_key_datatype': 'str',
             'cron': 'self-managed',
             'to_partition': True,
             'partition_col': 'created_at',
