@@ -18,10 +18,9 @@ mapping = {
             'table_name': 'dispatch_or_received_shipments',
             'cron': '* * * * * */1 0 0',
             'mode': 'logging',
-            'primary_key': 'scanned_at',
-            'primary_key_datatype': 'datetime',
+            'primary_key': 'id',
+            'primary_key_datatype': 'int',
             'batch_size': 10000,
-            'logging_flag': True,
             'grace_updation_lag': {
                 'hours': 4
             },
