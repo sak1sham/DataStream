@@ -112,7 +112,7 @@ class PgSQLSaver:
                         else:
                             row_def += "NULL"
                     elif(dtypes[col] == 'boolean'):
-                        if(dtypes[col]):
+                        if(row[col]):
                             row_def += "True"
                         else:
                             row_def += "False"
