@@ -242,7 +242,8 @@ cx_app_event_names = [
     'Wallet Dekhe Clicked',
     'Wallet Unticked',
     'Welcome Message Clicked',
-    'Welcome message to CL' 
+    'Welcome message to CL',
+    'App Cloner Detected' 
 ]
 
 cl_app_event_names = [
