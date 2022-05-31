@@ -12,7 +12,7 @@ mapping = {
     }, 
     'tables': [ 
         {
-            'table_name': 'order_tags', 
+            'table_name': 'analytics.order_tags', 
             'cron': 'self-managed', 
             'mode': 'syncing',
             'primary_key': 'order_id',
