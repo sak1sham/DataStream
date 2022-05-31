@@ -16,7 +16,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'dispatch_or_received_shipments',
-            'cron': '* * * * * */1 0 0',
+            'cron': 'self-managed',
             'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
