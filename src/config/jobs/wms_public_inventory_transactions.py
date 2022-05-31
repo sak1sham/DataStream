@@ -2,7 +2,7 @@ mapping = {
     'source': {
         'source_type': 'sql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-        'db_name': 'cmdb',
+        'db_name': 'wmsdb',
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
@@ -10,19 +10,22 @@ mapping = {
         'destination_type': 's3',
         's3_bucket_name': 'database-migration-service-prod'
     },
-    'tables': [            
+    'tables': [
         {
-            'table_name': 'analytics.sku_details',
+            'table_name': 'inventory_transactions',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'sku_id',
-            'primary_key_datatype': 'str',
+            'primary_key': 'transaction_id',
+            'primary_key_datatype': 'uuid',
+            'to_partition': True,
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'buffer_updation_lag': {
+            'buffer_updation_lag':{
                 'hours': 2,
-            } ,
+            },
             'grace_updation_lag': {
                 'days': 1
             },

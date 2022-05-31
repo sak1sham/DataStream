@@ -6,20 +6,20 @@ mapping = {
         'username': 'saksham_garg', 
         'password': '3y5HMs^2qy%&Kma' 
     }, 
-    'destination': { 
-        'destination_type': 's3', 
-        's3_bucket_name': 'database-migration-service-prod' 
-    }, 
+    'destination': {
+        'destination_type': 'pgsql',
+        'url': '3.108.43.163',
+        'db_name': 'dms',
+        'username': 'saksham_garg',
+        'password': '3y5HMs^2qy%&Kma'
+    },
     'tables': [ 
         {
-            'table_name': 'rm_inventory_transactions', 
+            'table_name': 'rm_skus_parent_batch_wise', 
             'cron': 'self-managed', 
             'mode': 'syncing',
-            'primary_key': 'inventory_transaction_id',
-            'primary_key_datatype': 'uuid',
-            'to_partition': True,
-            'partition_col': 'created_at',
-            'partition_col_format': 'datetime',
+            'primary_key': 'id',
+            'primary_key_datatype': 'int', 
             'bookmark': 'updated_at_for_pipeline', 
             'improper_bookmarks': False, 
             'batch_size': 10000, 

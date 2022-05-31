@@ -24,7 +24,7 @@ mapping = {
             'improper_bookmarks': False,
             'batch_size': 10000,
             'grace_updation_lag': {
-                'hours': 4
+                'days': 1
             },
             'buffer_updation_lag':{
                 'hours': 2,

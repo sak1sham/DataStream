@@ -7,22 +7,25 @@ mapping = {
         'password': '3y5HMs^2qy%&Kma'
     },
     'destination': {
-        'destination_type': 's3',
-        's3_bucket_name': 'database-migration-service-prod'
+        'destination_type': 'pgsql',
+        'url': '3.108.43.163',
+        'db_name': 'dms',
+        'username': 'saksham_garg',
+        'password': '3y5HMs^2qy%&Kma'
     },
     'tables': [            
         {
-            'table_name': 'analytics.sku_details',
+            'table_name': 'analytics.cl_funnel',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'sku_id',
+            'primary_key': 'cl_id',
             'primary_key_datatype': 'str',
-            'bookmark': 'updated_at_for_pipeline',
+            'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'buffer_updation_lag': {
+            'buffer_updation_lag':{
                 'hours': 2,
-            } ,
+            },
             'grace_updation_lag': {
                 'days': 1
             },
