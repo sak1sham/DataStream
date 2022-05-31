@@ -13,22 +13,31 @@ mapping = {
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
-    'tables': [            
+    'tables': [
         {
-            'table_name': 'db_cash_transition_ledger',
+            'table_name': 'analytics.order_tags',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'id',
+            'primary_key': 'order_id',
             'primary_key_datatype': 'int',
-            'bookmark': 'updated_at',
+            'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'buffer_updation_lag':{
+            'buffer_updation_lag': {
                 'hours': 2,
-            },
+            } ,
             'grace_updation_lag': {
                 'days': 1
             },
         },
     ]
 }
+
+
+
+
+
+
+
+
+

@@ -1,11 +1,11 @@
-mapping = {
-    'source': {
-        'source_type': 'sql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
-        'db_name': 'cmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
-    },
+mapping = { 
+    'source': { 
+        'source_type': 'sql', 
+        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com', 
+        'db_name': 'cmdb', 
+        'username': 'saksham_garg', 
+        'password': '3y5HMs^2qy%&Kma' 
+    }, 
     'destination': {
         'destination_type': 'pgsql',
         'url': '3.108.43.163',
@@ -13,14 +13,14 @@ mapping = {
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
-    'tables': [            
+    'tables': [ 
         {
-            'table_name': 'db_cash_transition_ledger',
+            'table_name': 'user_segment_tags',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'bookmark': 'updated_at',
+            'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
             'buffer_updation_lag':{

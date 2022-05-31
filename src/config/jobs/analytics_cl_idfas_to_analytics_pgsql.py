@@ -15,12 +15,12 @@ mapping = {
     },
     'tables': [            
         {
-            'table_name': 'db_cash_transition_ledger',
+            'table_name': 'analytics.cl_idfas',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'id',
-            'primary_key_datatype': 'int',
-            'bookmark': 'updated_at',
+            'primary_key': 'cl_id',
+            'primary_key_datatype': 'uuid',
+            'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
             'buffer_updation_lag':{

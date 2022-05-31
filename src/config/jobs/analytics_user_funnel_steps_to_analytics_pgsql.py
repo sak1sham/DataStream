@@ -15,17 +15,20 @@ mapping = {
     },
     'tables': [            
         {
-            'table_name': 'db_cash_transition_ledger',
+            'table_name': 'analytics.user_funnel_steps',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'id',
+            'primary_key': 'user_funnel_step_id',
             'primary_key_datatype': 'int',
-            'bookmark': 'updated_at',
+            'to_partition': True,
+            'partition_col': 'funnel_date',
+            'partition_col_format': 'datetime',
+            'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'buffer_updation_lag':{
+            'buffer_updation_lag': {
                 'hours': 2,
-            },
+            } ,
             'grace_updation_lag': {
                 'days': 1
             },

@@ -15,17 +15,17 @@ mapping = {
     },
     'tables': [            
         {
-            'table_name': 'db_cash_transition_ledger',
+            'table_name': 'analytics.sku_details',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'id',
-            'primary_key_datatype': 'int',
-            'bookmark': 'updated_at',
+            'primary_key': 'sku_id',
+            'primary_key_datatype': 'str',
+            'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
-            'buffer_updation_lag':{
+            'buffer_updation_lag': {
                 'hours': 2,
-            },
+            } ,
             'grace_updation_lag': {
                 'days': 1
             },

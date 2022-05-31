@@ -15,11 +15,11 @@ mapping = {
     },
     'tables': [            
         {
-            'table_name': 'db_cash_transition_ledger',
+            'table_name': 'analytics.cl_funnel',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'id',
-            'primary_key_datatype': 'int',
+            'primary_key': 'cl_id',
+            'primary_key_datatype': 'str',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
