@@ -35,7 +35,7 @@ class PgSQLSaver:
         self.table_list = []
 
 
-    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False) -> None:
+    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = []) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         table_name = schema + "." + table if schema and len(schema) > 0 else table
@@ -43,7 +43,9 @@ class PgSQLSaver:
         for col in df.columns.to_list():
             cols_def = cols_def + "\n" + col + " "
             if(col not in dtypes.keys() or dtypes[col] == 'string'):
-                if(col in varchar_length_source.keys() and varchar_length_source[col]):
+                if(col in json_cols):
+                    cols_def = cols_def + "JSON"
+                elif(col in varchar_length_source.keys() and varchar_length_source[col]):
                     cols_def = cols_def + "VARCHAR({0})".format(varchar_length_source[col])
                 else:
                     cols_def = cols_def + "TEXT"
@@ -81,12 +83,12 @@ class PgSQLSaver:
         conn.close()
 
 
-    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False) -> None:
+    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = []) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
             df2 = df.copy()
-            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source, logging_flag=logging_flag)
+            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source, logging_flag=logging_flag, json_cols = json_cols)
             table_name = schema + "." + table if schema and len(schema) > 0 else table
             col_names = ""
             list_cols = df2.columns.to_list()
@@ -173,13 +175,18 @@ class PgSQLSaver:
         varchar_length_source = processed_data['varchar_lengths'] if 'varchar_lengths' in processed_data and processed_data['varchar_lengths'] else {}
         if(not varchar_length_source):
             varchar_length_source = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
+        
+        json_cols = processed_data['json_cols'] if 'json_cols' in processed_data.keys() and processed_data['json_cols'] else []
             
         if('col_rename' in processed_data and processed_data['col_rename']):
             for key, val in processed_data['col_rename'].items():
                 if(key in varchar_length_source.keys()):
                     varchar_length_source[val] = varchar_length_source[key]
                     varchar_length_source.pop(key)
-        
+                elif(key in json_cols):
+                    ind = json_cols.index(key)
+                    json_cols[ind] = val       
+
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
             if('col_rename' in processed_data and processed_data['col_rename']):
                 processed_data['df_insert'].rename(columns = processed_data['col_rename'], inplace = True)
@@ -191,7 +198,8 @@ class PgSQLSaver:
                 dtypes = processed_data['dtypes'],
                 primary_keys = primary_keys,
                 varchar_length_source = varchar_length_source,
-                logging_flag=logging_flag
+                logging_flag=logging_flag,
+                json_cols = json_cols
             )
             self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))
         
@@ -207,7 +215,8 @@ class PgSQLSaver:
                 dtypes = processed_data['dtypes'],
                 primary_keys = primary_keys,
                 varchar_length_source = varchar_length_source,
-                logging_flag=logging_flag
+                logging_flag=logging_flag,
+                json_cols = json_cols
             )
             self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
 
