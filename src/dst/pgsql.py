@@ -104,7 +104,7 @@ class PgSQLSaver:
             for index, row in df2.iterrows():
                 row_def = "("
                 for col in list_cols:
-                    if(pd.isna(row[col])):
+                    if(pd.isna(row[col]) or (col in json_cols and len(row[col]) == 0)):
                         row_def += "NULL"
                     elif(col not in dtypes.keys() or dtypes[col] == 'string'):
                         row_def += "\'{0}\'".format(row[col].replace("'", "''"))
