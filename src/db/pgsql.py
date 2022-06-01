@@ -35,6 +35,7 @@ class PGSQLMigrate:
         self.varchar_lengths = {}
         self.start_time = datetime.datetime.utcnow()
         self.curr_megabytes_processed = 0
+        self.json_cols = []
     
 
     def inform(self, message: str = None, save: bool = False) -> None:
@@ -292,6 +293,7 @@ class PGSQLMigrate:
                     processed_data['logging_flag'] = True
                 else:
                     self.warn("logging_flag works only in logging mode.")
+            processed_data['json_cols'] = self.json_cols
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
 
@@ -348,6 +350,7 @@ class PGSQLMigrate:
         else:
             # if table_name doesn't contain schema name
             table_name = tn[0]
+        self.json_cols = []
         sql_stmt = f"SELECT column_name, data_type, character_maximum_length FROM information_schema.columns WHERE table_name = \'{table_name}\' AND table_schema = \'{schema_name}\';"
         col_dtypes = {}
         self.varchar_lengths = {}
@@ -356,6 +359,8 @@ class PGSQLMigrate:
             rows = curs.fetchall()
             for row in rows:
                 col_dtypes[row[0]] = row[1]
+                if(row[1] in ['json', 'jsonb']):
+                    self.json_cols.append(row[0])
                 if(row[2]):
                     self.varchar_lengths[row[0]] = row[2]
         if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
