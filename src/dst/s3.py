@@ -23,7 +23,7 @@ def retry_if_botocore_client_error(exception):
 @retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000, retry_on_exception=retry_if_botocore_client_error)
 def insert_s3(df: pd.DataFrame = pd.DataFrame({}), path: str = None, compression: str = None, mode: str = None, database: str = None, table: str = None, dtype: Dict[str, str] = {}, description: str = None, dataset: bool = False, partition_cols: List[str] = [], schema_evolution: bool = True, job_id: str = ""):
     try:
-        if(df and df.shape[0] > 0):
+        if(df is not None and df.shape[0] > 0):
             wr.s3.to_parquet(
                     df = df,
                     path = path,
@@ -47,7 +47,7 @@ def insert_s3(df: pd.DataFrame = pd.DataFrame({}), path: str = None, compression
 @retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000, retry_on_exception=retry_if_botocore_client_error)
 def update_s3_file(df: pd.DataFrame = pd.DataFrame({}), path: str = None, compression: str = None, job_id: str = ""):
     try:
-        if(df and df.shape[0] > 0):
+        if(df is not None and df.shape[0] > 0):
             wr.s3.to_parquet(
                     df = df,
                     path = path,
