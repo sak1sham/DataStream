@@ -103,7 +103,7 @@ class KafkaMigrate:
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
             else:
-                self.warn(message=("Unable to find partition_col. Continuing without partitioning."))
+                self.warn(message="Unable to find partition_col. Continuing without partitioning.")
         self.curr_mapping['fields']['dms_pkey'] = 'int'
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
         self.athena_dtypes = get_athena_dtypes(self.curr_mapping['fields'])
