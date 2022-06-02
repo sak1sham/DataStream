@@ -63,7 +63,7 @@ def convert_to_datetime(x: Any = None, tz_: Any = pytz.utc) -> datetype:
         try:
             return pd.to_datetime(x, utc = True)
         except Exception as e:
-            logger.warn(s=("Unable to convert " + str(x) + " of type " + str(type(x)) + " to any datetime format. Returning None"))
+            logger.warn(s = f"Unable to convert {str(x)} of type {str(type(x))} to any datetime format. Returning None")
             return pd.Timestamp(None)
 
 
@@ -95,7 +95,7 @@ def evaluate_cron(expression: str) -> List[str]:
             year, month, day, week, day_of_week, hour, minute, second
     '''
     if(expression is None):
-        logger.warn(s=("Cron Expression Not Specified. Unable to run job"))
+        logger.warn(s = "Cron Expression Not Specified. Unable to run job")
         expression =  '1602 * * * * * */5 0'
     vals = expression.split()
     vals = [(None if w == '?' else w) for w in vals]
@@ -137,7 +137,7 @@ def validate_or_convert(docu_orig: Dict[str, Any] = {}, schema: Dict[str, str] =
             try:
                 docu[key] = str(docu[key])
             except Exception as e:
-                logger.warn(s=("Unidentified datatype at docu _id:" + str(docu['_id']) + ". Saving NoneType."))
+                logger.warn(s= f"Unidentified datatype at document _id: {str(docu['_id'])}. Saving NoneType.")
                 docu[key] = None
     
     for key, _ in schema.items():
@@ -187,7 +187,7 @@ def convert_jsonb_to_string(x: Any) -> str:
             x = str(x)
             return x
         except Exception as e:
-            logger.warn(s=("Can't convert jsonb to str, returning None"))
+            logger.warn(s="Can't convert jsonb to str, returning None")
             return None
 
 def convert_range_to_str(r) -> str:

@@ -920,7 +920,7 @@ class PGSQLMigrate:
             for table_name in name_tables:
                 curr_table_processed = table_name
                 if(table_name.count('.') >= 2):
-                    self.warn(message=("Can not migrate table with table_name: " + table_name))
+                    self.warn(message="Can not migrate table with table_name: {table_name}")
                     continue
                 if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
                     self.preprocess_table(table_name)
