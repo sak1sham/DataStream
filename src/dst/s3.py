@@ -1,6 +1,5 @@
 import awswrangler as wr
 import boto3
-import botocore
 import pandas as pd
 import io
 from urllib.parse import urlparse
@@ -16,11 +15,7 @@ from helper.util import convert_heads_to_lowercase
 from helper.util import utc_to_local, df_update_records
 
 
-def retry_if_botocore_client_error(exception):
-    return isinstance(exception, botocore.exceptions.ClientError)
-
-
-@retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000, retry_on_exception=retry_if_botocore_client_error)
+@retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000)
 def insert_s3(df: pd.DataFrame = pd.DataFrame({}), path: str = None, compression: str = None, mode: str = None, database: str = None, table: str = None, dtype: Dict[str, str] = {}, description: str = None, dataset: bool = False, partition_cols: List[str] = [], schema_evolution: bool = True, job_id: str = ""):
     try:
         if(df is not None and df.shape[0] > 0):
@@ -44,7 +39,7 @@ def insert_s3(df: pd.DataFrame = pd.DataFrame({}), path: str = None, compression
         raise
 
 
-@retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000, retry_on_exception=retry_if_botocore_client_error)
+@retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000)
 def update_s3_file(df: pd.DataFrame = pd.DataFrame({}), path: str = None, compression: str = None, job_id: str = ""):
     try:
         if(df is not None and df.shape[0] > 0):
