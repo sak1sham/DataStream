@@ -16,7 +16,7 @@ mapping = {
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'cl_id',
-            'primary_key_datatype': 'uuid',
+            'primary_key_datatype': 'str',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,

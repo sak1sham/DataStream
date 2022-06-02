@@ -6,10 +6,13 @@ mapping = {
         'username': 'saksham_garg', 
         'password': '3y5HMs^2qy%&Kma' 
     }, 
-    'destination': { 
-        'destination_type': 's3', 
-        's3_bucket_name': 'database-migration-service-prod' 
-    }, 
+    'destination': {
+        'destination_type': 'pgsql',
+        'url': '3.108.43.163',
+        'db_name': 'dms',
+        'username': 'saksham_garg',
+        'password': '3y5HMs^2qy%&Kma'
+    },
     'tables': [ 
         {
             'table_name': 'rm_inventory_transactions', 

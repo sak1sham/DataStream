@@ -88,6 +88,7 @@ class PgSQLSaver:
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
             df2 = df.copy()
+            table = table.replace('.', '_').replace('-', '_')
             self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source, logging_flag=logging_flag, json_cols = json_cols)
             table_name = schema + "." + table if schema and len(schema) > 0 else table
             col_names = ""
