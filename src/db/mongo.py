@@ -72,7 +72,7 @@ class MongoMigrate:
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
         except Exception as e:
-            self.err(error = e)
+            self.err(error = str(e))
             self.db_collection = None
             raise ConnectionError("Unable to connect to source.")
 
