@@ -783,11 +783,11 @@ class PGSQLMigrate:
         ## NOW, UPDATION IS ALSO COMPLETE
         ## WE NEED TO UPDATE/DOUBLE-CHECK THAT DATA WHICH WAS INSERTED DURING CURRENT MIGRATION, BUT UPDATED 2-3 MINUTES BEFORE THE JOB STARTED
         if('buffer_updation_lag' in self.curr_mapping.keys() and self.curr_mapping['buffer_updation_lag']):
+            buffer_days = 0 if 'days' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['days'] else self.curr_mapping['buffer_updation_lag']['days']
             buffer_hours = 0 if 'hours' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['hours'] else self.curr_mapping['buffer_updation_lag']['hours']
             buffer_minutes = 0 if 'minutes' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['minutes'] else self.curr_mapping['buffer_updation_lag']['minutes']
-            buffer_seconds = 0 if 'seconds' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['seconds'] else self.curr_mapping['buffer_updation_lag']['seconds']
             self.inform("")
-            self.inform(f"Starting updation-check for newly inserted records which were updated in the {buffer_hours} hours, {buffer_minutes} minutes and {buffer_seconds} minutes before the job started.")
+            self.inform(f"Starting updation-check for newly inserted records which were updated in the {buffer_days} days, {buffer_hours} hours, {buffer_minutes} and minutes before the job started.")
             curr = get_last_migrated_record(self.curr_mapping['unique_id'])
             if(curr and self.n_insertions > 0 and 'record_id' in curr.keys() and curr['record_id']):
                 ## If some records were inserted, we need to check updates for last few records as per precise time 
@@ -806,7 +806,7 @@ class PGSQLMigrate:
                 else:
                     IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
                 
-                last1 = (self.curr_run_cron_job - datetime.timedelta(hours=buffer_hours, minutes=buffer_minutes, seconds=buffer_seconds)).astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+                last1 = (self.curr_run_cron_job - datetime.timedelta(days=buffer_days, hours=buffer_hours, minutes=buffer_minutes)).astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
                 last2 = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
                 if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']): 
                     if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']): 
@@ -814,7 +814,7 @@ class PGSQLMigrate:
                     else:
                         sql_stmt += f" AND {self.curr_mapping['bookmark']} > \'{last1}\'::timestamp AND {self.curr_mapping['bookmark']} <= \'{last2}\'::timestamp"
                 self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
-                self.inform(f"Double-checked for updations in last {buffer_hours} hours, {buffer_minutes} minutes and {buffer_seconds} minutes.")
+                self.inform(f"Double-checked for updations in last {buffer_days} days, {buffer_hours} hours and {buffer_minutes} minutes.")
 
 
     def set_basic_job_params(self, table_name: str = None) -> None:
