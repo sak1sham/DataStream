@@ -35,7 +35,7 @@ def insert_s3(df: pd.DataFrame = pd.DataFrame({}), path: str = None, compression
         else:
             raise EmptyDataframe("Dataframe can not be empty.")
     except Exception as e:
-        logger.err(job_id = job_id, s = str(e))
+        logger.err(s = str(e))
         raise
 
 
@@ -51,7 +51,7 @@ def update_s3_file(df: pd.DataFrame = pd.DataFrame({}), path: str = None, compre
         else:
             raise EmptyDataframe("Dataframe can not be empty.")
     except Exception as e:
-        logger.err(job_id = job_id, s = str(e))
+        logger.err(s = str(e))
         raise
 
 class s3Saver:
@@ -64,14 +64,14 @@ class s3Saver:
         self.database = (db_source["source_type"] + "_" + db_source["db_name"]).replace(".", "_").replace("-", "_")
         self.description = f"Data migrated from {self.database}"
 
-    def inform(self, message: str = "", save: bool = False) -> None:
-        logger.inform(job_id=self.unique_id, s = f"{self.unique_id}: {message}", save=save)
+    def inform(self, message: str = "") -> None:
+        logger.inform(s = f"{self.unique_id}: {message}")
 
     def warn(self, message: str = "") -> None:
-        logger.warn(job_id = self.unique_id, s = f"{self.unique_id}: {message}")
+        logger.warn(s = f"{self.unique_id}: {message}")
 
     def err(self, message: str = "") -> None:
-        logger.err(job_id = self.unique_id, s = f"{self.unique_id}: {message}")
+        logger.err(s = f"{self.unique_id}: {message}")
 
     def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = [], primary_keys: List[str] = None) -> None:
         if(c_partition and len(c_partition) > 0):

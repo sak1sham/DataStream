@@ -23,13 +23,13 @@ class RedshiftSaver:
         self.table_list = []
 
     def inform(self, message: str = "") -> None:
-        logger.inform(job_id=self.unique_id, s = f"{self.unique_id}: {message}")
+        logger.inform(s = f"{self.unique_id}: {message}")
     
     def warn(self, message: str = "") -> None:
-        logger.warn(job_id= self.unique_id, s = f"{self.unique_id}: {message}")
+        logger.warn(s = f"{self.unique_id}: {message}")
 
     def err(self, message: str = "") -> None:
-        logger.warn(job_id= self.unique_id, s = f"{self.unique_id}: {message}")
+        logger.warn(s = f"{self.unique_id}: {message}")
 
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
