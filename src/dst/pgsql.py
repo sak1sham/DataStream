@@ -112,7 +112,7 @@ class PgSQLSaver:
                         row_def += "\'{0}\'".format(row[col].replace("'", "''"))
                     elif(dtypes[col] == 'timestamp'):
                         if(len(row[col]) > 0):
-                            row_def += "CAST(\'{0}\' AS TIMESTAMP)".format(row[col])
+                            row_def += f"CAST(\'{row[col]}\' AS TIMESTAMP)"
                         else:
                             row_def += "NULL"
                     elif(dtypes[col] == 'boolean'):
