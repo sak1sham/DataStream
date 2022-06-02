@@ -321,12 +321,12 @@ class PGSQLMigrate:
                     table_names = [str(t[0] + "." + t[1]) for t in rows]
                     return table_names
             except Exception as e:
-                self.err(error=e)
+                self.err(error=str(e))
                 raise ProcessingError("Caught some exception while getting list of all tables.")
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(error=e)
+            self.err(error=str(e))
             raise ConnectionError("Unable to connect to source.")
 
 
@@ -515,14 +515,14 @@ class PGSQLMigrate:
             except Sigterm as e:
                 raise
             except Exception as e:
-                self.err(error=e)
+                self.err(error=str(e))
                 raise ProcessingError("Caught some exception while processing records.")
         except Sigterm as e:
                 raise    
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(error=e)
+            self.err(error=str(e))
             raise ConnectionError("Unable to connect to source.")
 
         if(mode == 'syncing' and sync_mode == 2 and processed_data):
@@ -555,12 +555,12 @@ class PGSQLMigrate:
                     curr_max_pkey = curs.fetchone()[0]
                     return curr_max_pkey
             except Exception as e:
-                self.err(error=e)
+                self.err(error=str(e))
                 raise ProcessingError("Caught some exception while finding maximum value of primary_key till now.")
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(error=e)
+            self.err(error=str(e))
             raise ConnectionError("Unable to connect to source.")
 
 

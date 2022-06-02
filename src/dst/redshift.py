@@ -138,7 +138,7 @@ class RedshiftSaver:
             return df.shape[0] > 0
         except Exception as e:
             self.err("Unable to test if the table is present previously at destination.")
-            self.err(e)
+            self.err(str(e))
             raise
 
 
@@ -156,7 +156,7 @@ class RedshiftSaver:
                 return 0
         except Exception as e:
             self.err("Unable to fetch the number of records previously at destination.")
-            self.err(e)
+            self.err(str(e))
             raise
 
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:

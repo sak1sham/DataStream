@@ -97,7 +97,7 @@ class MongoTester():
                         raise
             return True
         except Exception as e:
-            logger.err(e)
+            logger.err(str(e))
 
     def test_mongo(self):
         client = MongoClient(self.url, tlsCAFile=certificate)
