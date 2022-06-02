@@ -51,13 +51,13 @@ class KafkaMigrate:
                                 value_deserializer=lambda m: m)
 
     def inform(self, message: str = None, save: bool = False) -> None:
-        logger.inform(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message), save=save)
+        logger.inform(job_id = self.curr_mapping['unique_id'], s = f"{self.curr_mapping['unique_id']}: {message}", save=save)
 
     def warn(self, message: str = None) -> None:
-        logger.warn(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message))
+        logger.warn(job_id = self.curr_mapping['unique_id'], s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def err(self, error: Any = None) -> None:
-        logger.err(job_id= self.curr_mapping['unique_id'], s=error)
+        logger.err(job_id= self.curr_mapping['unique_id'], s = error)
 
     def preprocess(self) -> None:
         '''
@@ -186,10 +186,10 @@ class KafkaMigrate:
             start_time = time.time()
             self.redis_db.rpush(self.redis_key, message.value)
             total_redis_insertion_time += time.time() - start_time
-            self.inform("Reached {0}/{1}".format(self.redis_db.llen(self.redis_key), self.batch_size))
+            self.inform(f"Reached {self.redis_db.llen(self.redis_key)}/{self.batch_size}")
             if(self.redis_db.llen(self.redis_key) >= self.batch_size):
-                self.inform("Time taken in (consuming + redis insertions) of {0} records: {1} seconds".format(self.batch_size, time.time() - batch_start_time))
-                self.inform("Time taken in (redis insertions) of {0} records: {1} seconds".format(self.batch_size, total_redis_insertion_time))
+                self.inform(f"Time taken in (consuming + redis insertions) of {self.batch_size} records: {time.time() - batch_start_time} seconds")
+                self.inform(f"Time taken in (redis insertions) of {self.batch_size} records: {total_redis_insertion_time} seconds")
                 start_time = time.time()
                 list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
                 segregated_recs = {}
@@ -208,7 +208,7 @@ class KafkaMigrate:
                     self.save_data(processed_data=processed_data)
                     self.inform(message="Data saved")
 
-                self.inform("Time taken to migrate a batch to s3: {0} seconds".format(time.time() - start_time))
+                self.inform(f"Time taken to migrate a batch to s3: {time.time() - start_time} seconds")
                 batch_start_time = time.time()
                 total_redis_insertion_time = 0
                 

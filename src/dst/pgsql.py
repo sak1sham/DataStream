@@ -47,7 +47,7 @@ class PgSQLSaver:
                 if(col in json_cols):
                     cols_def = cols_def + "JSON"
                 elif(col in varchar_length_source.keys() and varchar_length_source[col]):
-                    cols_def = cols_def + "VARCHAR({0})".format(varchar_length_source[col])
+                    cols_def = cols_def + f"VARCHAR({varchar_length_source[col]})"
                 else:
                     cols_def = cols_def + "TEXT"
             elif(dtypes[col] == 'timestamp'):
@@ -121,7 +121,7 @@ class PgSQLSaver:
                         else:
                             row_def += "False"
                     elif(dtypes[col] == 'bigint' or dtypes[col] == 'double'):
-                        row_def += '{0}'.format(row[col])
+                        row_def += f'{row[col]}'
                     row_def += ", "
                 row_def = row_def[:-2] + "),\n"
                 cols_def += row_def
@@ -132,7 +132,7 @@ class PgSQLSaver:
                 up_query = ""
                 for col in list_cols:
                     if(col != primary_keys[0]):
-                        up_query += "{0} = excluded.{0},\n".format(col)
+                        up_query += f"{col} = excluded.{col},\n"
                 if(len(up_query)>2):
                     up_query = up_query[:-2]
                 conflict_behaviour = f"ON CONFLICT ({primary_keys[0]}) DO UPDATE SET {up_query}"
@@ -155,15 +155,15 @@ class PgSQLSaver:
 
 
     def inform(self, message: str = "") -> None:
-        logger.inform(job_id=self.unique_id, s= (self.unique_id + ": " + message))
+        logger.inform(job_id=self.unique_id, s = f"{self.unique_id}: {message}")
     
 
     def warn(self, message: str = "") -> None:
-        logger.warn(job_id= self.unique_id, s=(self.unique_id + ": " + message))
+        logger.warn(job_id= self.unique_id, s = f"{self.unique_id}: {message}")
 
 
     def err(self, message: str = "") -> None:
-        logger.err(job_id= self.unique_id, s=self.unique_id + ": " + message)
+        logger.err(job_id= self.unique_id, s = f"{self.unique_id}: {message}")
 
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
@@ -193,7 +193,7 @@ class PgSQLSaver:
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
             if('col_rename' in processed_data and processed_data['col_rename']):
                 processed_data['df_insert'].rename(columns = processed_data['col_rename'], inplace = True)
-            self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
+            self.inform(message = f"Attempting to insert {str(processed_data['df_insert'].memory_usage(index=True).sum())} bytes.")
             self.pgsql_upsert_records(
                 df = processed_data['df_insert'],
                 table = self.name_,
@@ -204,10 +204,10 @@ class PgSQLSaver:
                 logging_flag=logging_flag,
                 json_cols = json_cols
             )
-            self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))
+            self.inform(message = f"Inserted {str(processed_data['df_insert'].shape[0])} records.")
         
         if('df_update' in processed_data and processed_data['df_update'].shape[0] > 0):
-            self.inform(message=("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."))
+            self.inform(message = f"Attempting to update {str(processed_data['df_update'].memory_usage(index=True).sum())} bytes.")
             if('col_rename' in processed_data and processed_data['col_rename']):
                 processed_data['df_update'].rename(columns = processed_data['col_rename'], inplace = True)
             # is_dump = False, and primary_keys will be present.
@@ -221,11 +221,11 @@ class PgSQLSaver:
                 logging_flag=logging_flag,
                 json_cols = json_cols
             )
-            self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
+            self.inform(message= f"{str(processed_data['df_update'].shape[0])} updations done.")
 
 
     def delete_table(self, table_name: str = None) -> None:
-        query = "DROP TABLE " + self.schema + "." + table_name + ";"
+        query = f"DROP TABLE {self.schema}.{table_name};"
         self.inform(query)
         conn = psycopg2.connect(
             host = self.db_destination['url'],
@@ -237,11 +237,11 @@ class PgSQLSaver:
             cursor.execute(query)
             conn.commit()
         conn.close()
-        self.inform("Deleted " + table_name + " from PgSQL schema " + self.schema)
+        self.inform(f"Deleted {table_name} from PgSQL schema {self.schema}")
 
 
     def get_n_cols(self, table_name: str = None) -> int:
-        query = 'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{0}\' AND table_name = \'{1}\''.format(self.schema, table_name)
+        query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
         self.inform(query)
         conn = psycopg2.connect(
             host = self.db_destination['url'],
@@ -315,7 +315,7 @@ class PgSQLSaver:
         if('hours' in expiry.keys()):
             hours = expiry['hours']
         delete_before_date = today_ - datetime.timedelta(days=days, hours=hours)
-        self.inform(message=("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d')))
+        self.inform(message= f"Trying to expire data which was modified on or before {delete_before_date.strftime('%Y/%m/%d')}")
         ## Expire function is called only when Mode = Dumping
         ## i.e. the saved data will have a migration_snapshot_date column
         ## We just have to query using that column to delete old data

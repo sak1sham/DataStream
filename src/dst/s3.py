@@ -62,16 +62,16 @@ class s3Saver:
         self.name_ = ""
         self.table_list = []
         self.database = (db_source["source_type"] + "_" + db_source["db_name"]).replace(".", "_").replace("-", "_")
-        self.description = "Data migrated from " + self.database
+        self.description = f"Data migrated from {self.database}"
 
     def inform(self, message: str = "", save: bool = False) -> None:
-        logger.inform(job_id=self.unique_id, s=(self.unique_id + ": " + message), save=save)
+        logger.inform(job_id=self.unique_id, s = f"{self.unique_id}: {message}", save=save)
 
     def warn(self, message: str = "") -> None:
-        logger.warn(job_id = self.unique_id, s=(self.unique_id + ": " + message))
+        logger.warn(job_id = self.unique_id, s = f"{self.unique_id}: {message}")
 
     def err(self, message: str = "") -> None:
-        logger.err(job_id = self.unique_id, s = self.unique_id + ": " + message)
+        logger.err(job_id = self.unique_id, s = f"{self.unique_id}: {message}")
 
     def save(self, processed_data: Dict[str, Any] = None, c_partition: List[str] = [], primary_keys: List[str] = None) -> None:
         if(c_partition and len(c_partition) > 0):
@@ -82,7 +82,7 @@ class s3Saver:
         file_name = self.s3_location + processed_data['name'] + "/"
 
         if(processed_data['df_insert'].shape[0] > 0):
-            self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
+            self.inform(message = f"Attempting to insert {str(processed_data['df_insert'].memory_usage(index=True).sum())} bytes.")
             processed_data['df_insert'] = convert_heads_to_lowercase(processed_data['df_insert'])
             processed_data['dtypes'] = convert_heads_to_lowercase(processed_data["dtypes"])
             insert_s3(
@@ -99,12 +99,12 @@ class s3Saver:
                 schema_evolution = True,
                 job_id = self.unique_id
             )
-            self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))
+            self.inform(message = f"Inserted {str(processed_data['df_insert'].shape[0])} records.")
         
         not_found = []
         n_updations = processed_data['df_update'].shape[0]
         if(n_updations > 0):
-            self.inform(message=("Attempting to update " + str(n_updations) + " records or " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."))
+            self.inform(message = f"Attempting to update {str(n_updations)} records or {str(processed_data['df_update'].memory_usage(index=True).sum())} bytes.")
             processed_data['df_update'] = convert_heads_to_lowercase(processed_data['df_update'])
             dfs_u = [processed_data['df_update'].copy()]
             if(self.partition_cols and len(self.partition_cols) > 0):
@@ -179,7 +179,7 @@ class s3Saver:
         if('hours' in expiry.keys()):
             hours = expiry['hours']
         delete_before_date = today_ - datetime.timedelta(days=days, hours=hours)
-        self.inform(message=("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d')))
+        self.inform(message = f"Trying to expire data which was modified on or before {delete_before_date.strftime('%Y/%m/%d')}")
         for table_name in self.table_list:
             wr.s3.delete_objects(
                 path = self.s3_location + table_name + "/",
