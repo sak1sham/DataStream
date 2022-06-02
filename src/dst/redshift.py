@@ -23,13 +23,13 @@ class RedshiftSaver:
         self.table_list = []
 
     def inform(self, message: str = "") -> None:
-        logger.inform(job_id=self.unique_id, s= (self.unique_id + ": " + message))
+        logger.inform(s = f"{self.unique_id}: {message}")
     
     def warn(self, message: str = "") -> None:
-        logger.warn(job_id= self.unique_id, s=(self.unique_id + ": " + message))
+        logger.warn(s = f"{self.unique_id}: {message}")
 
     def err(self, message: str = "") -> None:
-        logger.warn(job_id= self.unique_id, s=(self.unique_id + ": " + message))
+        logger.warn(s = f"{self.unique_id}: {message}")
 
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
@@ -52,7 +52,7 @@ class RedshiftSaver:
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
             if('col_rename' in processed_data and processed_data['col_rename']):
                 processed_data['df_insert'].rename(columns = processed_data['col_rename'], inplace = True)
-            self.inform(message=("Attempting to insert " + str(processed_data['df_insert'].memory_usage(index=True).sum()) + " bytes."))
+            self.inform(message = f"Attempting to insert {str(processed_data['df_insert'].memory_usage(index=True).sum())} bytes.")
             if(self.is_small_data):
                 wr.redshift.to_sql(
                     df = processed_data['df_insert'],
@@ -76,10 +76,10 @@ class RedshiftSaver:
                     varchar_lengths = varchar_lengths,
                     varchar_lengths_default = 512
                 )
-            self.inform(message=("Inserted " + str(processed_data['df_insert'].shape[0]) + " records."))    
+            self.inform(message = f"Inserted {str(processed_data['df_insert'].shape[0])} records.")   
         
         if('df_update' in processed_data and processed_data['df_update'].shape[0] > 0):
-            self.inform(message=("Attempting to update " + str(processed_data['df_update'].memory_usage(index=True).sum()) + " bytes."))
+            self.inform(message = f"Attempting to update {str(processed_data['df_update'].memory_usage(index=True).sum())} bytes.")
             if('col_rename' in processed_data and processed_data['col_rename']):
                 processed_data['df_update'].rename(columns = processed_data['col_rename'], inplace = True)
             # is_dump = False, and primary_keys will be present.
@@ -106,19 +106,19 @@ class RedshiftSaver:
                     varchar_lengths = varchar_lengths,
                     varchar_lengths_default = 512
                 )
-            self.inform(message=(str(processed_data['df_update'].shape[0]) + " updations done."))
+            self.inform(message = f"{str(processed_data['df_update'].shape[0])} updations done.")
 
 
     def delete_table(self, table_name: str = None) -> None:
-        query = "DROP TABLE " + self.schema + "." + table_name + ";"
+        query = f"DROP TABLE {self.schema}.{table_name};"
         self.inform(query)
         with self.conn.cursor() as cursor:
             cursor.execute(query)
-        self.inform("Deleted " + table_name + " from Redshift schema " + self.schema)
+        self.inform(f"Deleted {table_name} from Redshift schema {self.schema}")
 
 
     def get_n_cols(self, table_name: str = None) -> int:
-        query = 'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{0}\' AND table_name = \'{1}\''.format(self.schema, table_name)
+        query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
         self.inform(query)
         df = wr.redshift.read_sql_query(
             sql = query,
@@ -170,13 +170,13 @@ class RedshiftSaver:
         if('hours' in expiry.keys()):
             hours = expiry['hours']
         delete_before_date = today_ - datetime.timedelta(days=days, hours=hours)
-        self.inform(message=("Trying to expire data which was modified on or before " + delete_before_date.strftime('%Y/%m/%d')))
+        self.inform(message = f"Trying to expire data which was modified on or before {delete_before_date.strftime('%Y/%m/%d')}")
         ## Expire function is called only when is_dump = True
         ## i.e. the saved data will have a migration_snapshot_date column
         ## We just have to query using that column to delete old data
         delete_before_date_str = delete_before_date.strftime('%Y-%m-%d %H:%M:%S')
         for table_name in self.table_list:
-            query = "DELETE FROM " + self.schema + "." + table_name + " WHERE migration_snapshot_date <= " + delete_before_date_str + ";"
+            query = f"DELETE FROM {self.schema}.{table_name} WHERE migration_snapshot_date <= {delete_before_date_str};"
             with self.conn.cursor() as cursor:
                 cursor.execute(query)
     

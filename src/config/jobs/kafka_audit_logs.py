@@ -41,7 +41,7 @@ mapping = {
     ],
     'testing': {
         'test_type': 'sql',
-        'url': 'cmdb-rr2.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'cmdb',
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma',

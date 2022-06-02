@@ -50,14 +50,14 @@ class MongoMigrate:
         self.curr_megabytes_processed = 0
 
 
-    def inform(self, message: str = None, save: bool = False) -> None:
-        logger.inform(job_id= self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message), save=save)
+    def inform(self, message: str = None) -> None:
+        logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def warn(self, message: str = None) -> None:
-        logger.warn(job_id=self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message))
+        logger.warn(s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def err(self, error: Any = None) -> None:
-        logger.err(job_id=self.curr_mapping['unique_id'], s=error)
+        logger.err(s=error)
 
 
     def get_connectivity(self) -> None:
@@ -195,8 +195,8 @@ class MongoMigrate:
         '''
             After all migration has been performed, we save the datetime of this job. This helps in finding all records updated after this datetime, and before next job is running.
         '''
-        self.inform(message = "Inserted " + str(self.n_insertions) + " records")
-        self.inform(message = "Updated " + str(self.n_updations) + " records")
+        self.inform(message = f"Inserted {str(self.n_insertions)} records")
+        self.inform(message = f"Updated {str(self.n_updations)} records")
         set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
         delete_recovery_data(job_id=self.curr_mapping['unique_id'])
 
@@ -280,7 +280,7 @@ class MongoMigrate:
         collection_encr = get_data_from_encr_db()
         all_documents = []
 
-        self.inform(message = 'Inserting some records created after ' + str(migration_prev_id.generation_time) + '.')
+        self.inform(message = f'Inserting some records created after {str(migration_prev_id.generation_time)}.')
         query = {
             "_id": {
                 "$gt": migration_prev_id, 
@@ -334,7 +334,7 @@ class MongoMigrate:
         docu_update = []
         collection_encr = get_data_from_encr_db()
         migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job - datetime.timedelta(minutes=1))
-        self.inform(message = 'Updating all records updated between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
+        self.inform(message = f'Updating all records updated between {str(self.last_run_cron_job)} and {str(self.curr_run_cron_job)}')
         all_documents = []
         ## Bookmark is that field in the document (dictionary) which identifies the timestamp when the record was updated
         ## If bookmark field is not proper (can either be string, or integer timestamp, or datetime), we set improper_bookmarks as True, and can't query inside mongodb collection using that field directly
@@ -430,7 +430,7 @@ class MongoMigrate:
         docu_update = []
         collection_encr = get_data_from_encr_db()
         migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job + datetime.timedelta(minutes=1))
-        self.inform(message = 'Updating all records updated between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
+        self.inform(message = f'Updating all records updated between {str(self.last_run_cron_job)} and {str(self.curr_run_cron_job)}')
         all_documents = []
         ## Bookmark is that field in the document (dictionary) which identifies the timestamp when the record was updated
         ## If bookmark field is not proper (can either be string, or integer timestamp, or datetime), we set improper_bookmarks as True, and can't query inside mongodb collection using that field directly
@@ -541,7 +541,7 @@ class MongoMigrate:
         collection_encr = get_data_from_encr_db()
         check_time1 = ObjectId.from_datetime(self.curr_run_cron_job - datetime.timedelta(days=buffer_days, hours=buffer_hours, minutes=buffer_minutes))
         check_time2 = ObjectId.from_datetime(self.curr_run_cron_job)
-        self.inform(message = 'Updating all records updated between {0} and {1}'.format(check_time1.generation_time, check_time2.generation_time))
+        self.inform(message = f'Updating all records updated between {check_time1.generation_time} and {check_time2.generation_time}')
         all_documents = []
         if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and not improper_bookmarks):
             ## Return all documents which are greater than and equal to ('$gte') the time when last job was performed
@@ -636,10 +636,10 @@ class MongoMigrate:
                 self.save_data(processed_collection=processed_collection)
                 processed_collection = {}
             time.sleep(self.time_delay)
-        self.inform(message = "Migration Complete.", save=True)
+        self.inform(message = "Migration Complete.")
         if('expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
-            self.inform(message = "Expired data removed.", save=True)
+            self.inform(message = "Expired data removed.")
 
 
     def logging_process(self) -> None:
@@ -667,9 +667,11 @@ class MongoMigrate:
                     break
                 if(killer.kill_now):
                     self.save_job_working_data(status=False)
-                    msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                    msg = f"<!channel>Migration stopped for *{self.curr_mapping['collection_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
                     msg += "Reason: Caught sigterm :warning:\n"
-                    msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                    ins_str = "{:,}".format(self.n_insertions)
+                    upd_str = "{:,}".format(self.n_updations)
+                    msg += f"Insertions: {ins_str}\nUpdations: {upd_str}"
                     slack_token = settings['slack_notif']['slack_token']
                     channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                     if('notify' in settings.keys() and settings['notify']):
@@ -677,7 +679,7 @@ class MongoMigrate:
                         self.inform('Notification sent.')
                     raise Sigterm("Ending gracefully.")
             time.sleep(self.time_delay)
-        self.inform(message = "Logging operation complete.", save=True)
+        self.inform(message = "Logging operation complete.")
 
 
     def syncing_process(self) -> None:
@@ -710,7 +712,7 @@ class MongoMigrate:
                         processed_collection['df_update'] = processed_collection_u['df_update']
                     else:
                         processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
-                    self.inform(message="Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
+                    self.inform(message = f"Found {str(processed_collection['df_update'].shape[0])} updations upto now.")
                 else:
                     if(processed_collection):
                         self.save_data(processed_collection=processed_collection)
@@ -752,9 +754,11 @@ class MongoMigrate:
                     break
                 if(killer.kill_now):
                     self.save_job_working_data(status=False)
-                    msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                    msg = f"<!channel>Migration stopped for *{self.curr_mapping['collection_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
                     msg += "Reason: Caught sigterm :warning:\n"
-                    msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                    ins_str = "{:,}".format(self.n_insertions)
+                    upd_str = "{:,}".format(self.n_updations)
+                    msg += f"Insertions: {ins_str}\nUpdations: {upd_str}"
                     slack_token = settings['slack_notif']['slack_token']
                     channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                     if('notify' in settings.keys() and settings['notify']):
@@ -762,7 +766,7 @@ class MongoMigrate:
                         self.inform('Notification sent.')
                     raise Sigterm("Ending gracefully.")
             time.sleep(self.time_delay)
-        self.inform(message = "Insertions completed, starting to update records", save = True)
+        self.inform(message = "Insertions completed, starting to update records")
 
         ## NOW, DO ALL REQUIRED UPDATIONS
         self.inform(message="Starting to migrate updations in records.")
@@ -787,7 +791,7 @@ class MongoMigrate:
                     processed_collection['df_update'] = processed_collection_u['df_update']
                 else:
                     processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
-                self.inform(message="Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
+                self.inform(message = f"Found {str(processed_collection['df_update'].shape[0])} updations upto now.")
             else:
                 if(processed_collection):
                     self.save_data(processed_collection=processed_collection)
@@ -812,7 +816,7 @@ class MongoMigrate:
             buffer_hours = self.curr_mapping['buffer_updation_lag']['hours'] if 'hours' in self.curr_mapping['buffer_updation_lag'].keys() and self.curr_mapping['buffer_updation_lag']['hours'] else 0
             buffer_minutes = self.curr_mapping['buffer_updation_lag']['minutes'] if 'minutes' in self.curr_mapping['buffer_updation_lag'].keys() and self.curr_mapping['buffer_updation_lag']['minutes'] else 0
 
-            self.inform("Starting updation-check for newly inserted records which were updated in the {0} days, {1} hours and {2} minutes before the job started.".format(buffer_days, buffer_hours, buffer_minutes))
+            self.inform(f"Starting updation-check for newly inserted records which were updated in the {buffer_days} days, {buffer_hours} hours and {buffer_minutes} minutes before the job started.")
             start = 0
             updated_in_destination = True
             processed_collection = {}
@@ -834,7 +838,7 @@ class MongoMigrate:
                         processed_collection['df_update'] = processed_collection_u['df_update']
                     else:
                         processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
-                    self.inform(message="Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
+                    self.inform(message = f"Found {str(processed_collection['df_update'].shape[0])} updations upto now.")
                 else:
                     if(processed_collection):
                         self.save_data(processed_collection=processed_collection)
@@ -853,7 +857,7 @@ class MongoMigrate:
                 start += self.batch_size
             self.inform(message="Buffer_updation completed.")
 
-        self.inform(message="Syncing operation complete (Both - Insertion and Updation).", save=True)
+        self.inform(message="Syncing operation complete (Both - Insertion and Updation).")
 
 
     def save_data(self, processed_collection: Dict[str, Any] = None) -> None:
@@ -898,9 +902,9 @@ class MongoMigrate:
             raise IncorrectMapping("Mirroring mode not supported for destination S3")
         
         self.get_connectivity()
-        self.inform(message="Connected to database and collection.", save=True)
+        self.inform(message="Connected to database and collection.")
         self.preprocess()
-        self.inform(message="Collection pre-processed.", save=True)
+        self.inform(message="Collection pre-processed.")
 
         '''
             Mode = 'syncing', 'logging', 'dumping' or 'mirroring'
@@ -931,7 +935,7 @@ class MongoMigrate:
         else:
             self.save_job_working_data()
         self.postprocess()
-        self.inform(message="Post processing completed.", save=True)
+        self.inform(message="Post processing completed.")
 
         self.saver.close()
         self.inform(message="Hope to see you again :')")

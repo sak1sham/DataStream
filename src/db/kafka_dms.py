@@ -50,14 +50,14 @@ class KafkaMigrate:
                                 group_id=kafka_group,
                                 value_deserializer=lambda m: m)
 
-    def inform(self, message: str = None, save: bool = False) -> None:
-        logger.inform(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message), save=save)
+    def inform(self, message: str = None) -> None:
+        logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def warn(self, message: str = None) -> None:
-        logger.warn(job_id = self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message))
+        logger.warn(s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def err(self, error: Any = None) -> None:
-        logger.err(job_id= self.curr_mapping['unique_id'], s=error)
+        logger.err(s = error)
 
     def preprocess(self) -> None:
         '''
@@ -103,7 +103,7 @@ class KafkaMigrate:
                     else:
                         raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
             else:
-                self.warn(message=("Unable to find partition_col. Continuing without partitioning."))
+                self.warn(message="Unable to find partition_col. Continuing without partitioning.")
         self.curr_mapping['fields']['dms_pkey'] = 'int'
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
         self.athena_dtypes = get_athena_dtypes(self.curr_mapping['fields'])
@@ -177,19 +177,19 @@ class KafkaMigrate:
             Consumes the data in kafka
         '''
         consumer = self.get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
-        self.inform(message='Started consuming messages.', save=True)
+        self.inform(message='Started consuming messages.')
         self.preprocess()
-        self.inform(message="Preprocessing done.", save=True)
+        self.inform(message="Preprocessing done.")
         batch_start_time = time.time()
         total_redis_insertion_time = 0
         for message in consumer:
             start_time = time.time()
             self.redis_db.rpush(self.redis_key, message.value)
             total_redis_insertion_time += time.time() - start_time
-            self.inform("Reached {0}/{1}".format(self.redis_db.llen(self.redis_key), self.batch_size))
+            self.inform(f"Reached {self.redis_db.llen(self.redis_key)}/{self.batch_size}")
             if(self.redis_db.llen(self.redis_key) >= self.batch_size):
-                self.inform("Time taken in (consuming + redis insertions) of {0} records: {1} seconds".format(self.batch_size, time.time() - batch_start_time))
-                self.inform("Time taken in (redis insertions) of {0} records: {1} seconds".format(self.batch_size, total_redis_insertion_time))
+                self.inform(f"Time taken in (consuming + redis insertions) of {self.batch_size} records: {time.time() - batch_start_time} seconds")
+                self.inform(f"Time taken in (redis insertions) of {self.batch_size} records: {total_redis_insertion_time} seconds")
                 start_time = time.time()
                 list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
                 segregated_recs = {}
@@ -208,7 +208,7 @@ class KafkaMigrate:
                     self.save_data(processed_data=processed_data)
                     self.inform(message="Data saved")
 
-                self.inform("Time taken to migrate a batch to s3: {0} seconds".format(time.time() - start_time))
+                self.inform(f"Time taken to migrate a batch to s3: {time.time() - start_time} seconds")
                 batch_start_time = time.time()
                 total_redis_insertion_time = 0
                 
