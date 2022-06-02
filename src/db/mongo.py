@@ -50,14 +50,14 @@ class MongoMigrate:
         self.curr_megabytes_processed = 0
 
 
-    def inform(self, message: str = None, save: bool = False) -> None:
-        logger.inform(job_id= self.curr_mapping['unique_id'], s = f"{self.curr_mapping['unique_id']}: {message}", save=save)
+    def inform(self, message: str = None) -> None:
+        logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def warn(self, message: str = None) -> None:
-        logger.warn(job_id=self.curr_mapping['unique_id'], s = f"{self.curr_mapping['unique_id']}: {message}")
+        logger.warn(s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def err(self, error: Any = None) -> None:
-        logger.err(job_id=self.curr_mapping['unique_id'], s=error)
+        logger.err(s=error)
 
 
     def get_connectivity(self) -> None:
@@ -636,10 +636,10 @@ class MongoMigrate:
                 self.save_data(processed_collection=processed_collection)
                 processed_collection = {}
             time.sleep(self.time_delay)
-        self.inform(message = "Migration Complete.", save=True)
+        self.inform(message = "Migration Complete.")
         if('expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
-            self.inform(message = "Expired data removed.", save=True)
+            self.inform(message = "Expired data removed.")
 
 
     def logging_process(self) -> None:
@@ -667,7 +667,7 @@ class MongoMigrate:
                     break
                 if(killer.kill_now):
                     self.save_job_working_data(status=False)
-                    msg = f"Migration stopped for *{self.curr_mapping['collection_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
+                    msg = f"<!channel>Migration stopped for *{self.curr_mapping['collection_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
                     msg += "Reason: Caught sigterm :warning:\n"
                     ins_str = "{:,}".format(self.n_insertions)
                     upd_str = "{:,}".format(self.n_updations)
@@ -679,7 +679,7 @@ class MongoMigrate:
                         self.inform('Notification sent.')
                     raise Sigterm("Ending gracefully.")
             time.sleep(self.time_delay)
-        self.inform(message = "Logging operation complete.", save=True)
+        self.inform(message = "Logging operation complete.")
 
 
     def syncing_process(self) -> None:
@@ -754,7 +754,7 @@ class MongoMigrate:
                     break
                 if(killer.kill_now):
                     self.save_job_working_data(status=False)
-                    msg = f"Migration stopped for *{self.curr_mapping['collection_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
+                    msg = f"<!channel>Migration stopped for *{self.curr_mapping['collection_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
                     msg += "Reason: Caught sigterm :warning:\n"
                     ins_str = "{:,}".format(self.n_insertions)
                     upd_str = "{:,}".format(self.n_updations)
@@ -766,7 +766,7 @@ class MongoMigrate:
                         self.inform('Notification sent.')
                     raise Sigterm("Ending gracefully.")
             time.sleep(self.time_delay)
-        self.inform(message = "Insertions completed, starting to update records", save = True)
+        self.inform(message = "Insertions completed, starting to update records")
 
         ## NOW, DO ALL REQUIRED UPDATIONS
         self.inform(message="Starting to migrate updations in records.")
@@ -857,7 +857,7 @@ class MongoMigrate:
                 start += self.batch_size
             self.inform(message="Buffer_updation completed.")
 
-        self.inform(message="Syncing operation complete (Both - Insertion and Updation).", save=True)
+        self.inform(message="Syncing operation complete (Both - Insertion and Updation).")
 
 
     def save_data(self, processed_collection: Dict[str, Any] = None) -> None:
@@ -902,9 +902,9 @@ class MongoMigrate:
             raise IncorrectMapping("Mirroring mode not supported for destination S3")
         
         self.get_connectivity()
-        self.inform(message="Connected to database and collection.", save=True)
+        self.inform(message="Connected to database and collection.")
         self.preprocess()
-        self.inform(message="Collection pre-processed.", save=True)
+        self.inform(message="Collection pre-processed.")
 
         '''
             Mode = 'syncing', 'logging', 'dumping' or 'mirroring'
@@ -935,7 +935,7 @@ class MongoMigrate:
         else:
             self.save_job_working_data()
         self.postprocess()
-        self.inform(message="Post processing completed.", save=True)
+        self.inform(message="Post processing completed.")
 
         self.saver.close()
         self.inform(message="Hope to see you again :')")

@@ -43,7 +43,7 @@ class DMS_importer:
             end = time.time()
             time_taken = str(datetime.timedelta(seconds=int(end-start)))
             if('notify' in settings.keys() and settings['notify']):
-                msg = "Migration completed for *{0}* from database *{1}* ({2}) to *{3}*:\nTotal time taken: {4}\n".format(str(self.name), self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'], time_taken)
+                msg = f"Migration completed for *{str(self.name)}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*:\nTotal time taken: {time_taken}\n"
                 if(isinstance(result, tuple)):
                     msg += "Insertions: " + "{:,}".format(result[0]) + "\n"
                     msg += "Updations: " + "{:,}".format(result[1])
@@ -61,7 +61,7 @@ class DMS_importer:
             logger.err(s=traceback.format_exc())
             logger.inform(s = f"{self.curr_mapping['unique_id']}: Migration stopped.\n")
             if('notify' in settings.keys() and settings['notify']):
-                msg = "<!channel> Migration unexpectedly stopped :warning: for *{0}* from database *{1}* ({2}) to *{3}*".format(str(self.name), self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                msg = f"<!channel> Migration unexpectedly stopped :warning: for *{str(self.name)}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*"
                 error_msg = traceback.format_exc()
                 try:
                     slack_token = settings['slack_notif']['slack_token']

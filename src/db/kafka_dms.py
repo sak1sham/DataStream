@@ -50,14 +50,14 @@ class KafkaMigrate:
                                 group_id=kafka_group,
                                 value_deserializer=lambda m: m)
 
-    def inform(self, message: str = None, save: bool = False) -> None:
-        logger.inform(job_id = self.curr_mapping['unique_id'], s = f"{self.curr_mapping['unique_id']}: {message}", save=save)
+    def inform(self, message: str = None) -> None:
+        logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def warn(self, message: str = None) -> None:
-        logger.warn(job_id = self.curr_mapping['unique_id'], s = f"{self.curr_mapping['unique_id']}: {message}")
+        logger.warn(s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def err(self, error: Any = None) -> None:
-        logger.err(job_id= self.curr_mapping['unique_id'], s = error)
+        logger.err(s = error)
 
     def preprocess(self) -> None:
         '''
@@ -177,9 +177,9 @@ class KafkaMigrate:
             Consumes the data in kafka
         '''
         consumer = self.get_kafka_connection(topic=self.curr_mapping['topic_name'], kafka_group=self.db['source']['consumer_group_id'], kafka_server=self.db['source']['kafka_server'], KafkaUsername=self.db['source']['kafka_username'], KafkaPassword=self.db['source']['kafka_password'], enable_auto_commit=True)
-        self.inform(message='Started consuming messages.', save=True)
+        self.inform(message='Started consuming messages.')
         self.preprocess()
-        self.inform(message="Preprocessing done.", save=True)
+        self.inform(message="Preprocessing done.")
         batch_start_time = time.time()
         total_redis_insertion_time = 0
         for message in consumer:
