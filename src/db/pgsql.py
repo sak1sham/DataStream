@@ -158,13 +158,13 @@ class PGSQLMigrate:
             for i in range(len(self.curr_mapping['partition_col'])):
                 col = self.curr_mapping['partition_col'][i].lower()
                 col_form = self.curr_mapping['partition_col_format'][i]
-                parq_col = "parquet_format_" + col
+                parq_col = f"parquet_format_{col}"
                 if(col == 'migration_snapshot_date' or col_form == 'datetime'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
                     temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
-                    df[parq_col + "_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
-                    df[parq_col + "_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
-                    df[parq_col + "_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
+                    df[f"{parq_col}_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
+                    df[f"{parq_col}_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
+                    df[f"{parq_col}_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
                 elif(col_form == 'str'):
                     self.partition_for_parquet.extend([parq_col])
                     df[parq_col] = df[col].astype(str)
@@ -318,7 +318,7 @@ class PGSQLMigrate:
                 with conn.cursor() as curs:
                     curs.execute(sql_stmt)
                     rows = curs.fetchall()
-                    table_names = [str(t[0] + "." + t[1]) for t in rows]
+                    table_names = [str(f"{t[0]}.{t[1]}") for t in rows]
                     return table_names
             except Exception as e:
                 raise ProcessingError("Caught some exception while getting list of all tables.") from e

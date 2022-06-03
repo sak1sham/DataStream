@@ -56,12 +56,12 @@ def update_s3_file(df: pd.DataFrame = pd.DataFrame({}), path: str = None, compre
 
 class s3Saver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, c_partition: List[str] = [], unique_id: str = "") -> None:
-        self.s3_location = "s3://" + db_destination['s3_bucket_name'] + "/" + db_source['source_type'] + "/" + db_source['db_name'] + "/"
+        self.s3_location = f"s3://{db_destination['s3_bucket_name']}/{db_source['source_type']}/{db_source['db_name']}/"
         self.partition_cols = convert_heads_to_lowercase(c_partition)
         self.unique_id = unique_id
         self.name_ = ""
         self.table_list = []
-        self.database = (db_source["source_type"] + "_" + db_source["db_name"]).replace(".", "_").replace("-", "_")
+        self.database = (f"{db_source['source_type']}_{db_source['db_name']}").replace(".", "_").replace("-", "_")
         self.description = f"Data migrated from {self.database}"
 
     def inform(self, message: str = "") -> None:
@@ -79,7 +79,7 @@ class s3Saver:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
-        file_name = self.s3_location + processed_data['name'] + "/"
+        file_name = f"{self.s3_location}{processed_data['name']}/"
 
         if(processed_data['df_insert'].shape[0] > 0):
             self.inform(message = f"Attempting to insert {str(processed_data['df_insert'].memory_usage(index=True).sum())} bytes.")
@@ -115,7 +115,7 @@ class s3Saver:
                 file_name_u = self.s3_location + processed_data['name']
                 if(self.partition_cols):
                     for x in self.partition_cols:
-                        file_name_u = file_name_u + "/" + x + "=" + str(df_u.iloc[0][x])
+                        file_name_u = f"{file_name_u}/{x}={str(df_u.iloc[0][x])}"
                     df_u.drop(self.partition_cols, axis=1, inplace=True)
                 ## Now, all records within df_u are found within this same location
                 prev_files = wr.s3.list_objects(file_name_u)
@@ -145,7 +145,7 @@ class s3Saver:
             self.inform(message = f"{n_updations-len(not_found)} updations done.")
             
             if(len(not_found) > 0):
-                file_name = self.s3_location + processed_data['name'] + "/"
+                file_name = f"{self.s3_location}{processed_data['name']}/"
                 records_update_insert = processed_data["df_update"][processed_data["df_update"][primary_keys[0]].isin(not_found)]
                 records_update_insert = convert_heads_to_lowercase(records_update_insert)
                 self.inform(message = f"Attempting to insert {records_update_insert.memory_usage(index=True).sum()} bytes.")
@@ -182,7 +182,7 @@ class s3Saver:
         self.inform(message = f"Trying to expire data which was modified on or before {delete_before_date.strftime('%Y/%m/%d')}")
         for table_name in self.table_list:
             wr.s3.delete_objects(
-                path = self.s3_location + table_name + "/",
+                path = f"{self.s3_location}{table_name}/",
                 last_modified_end = delete_before_date
             )
 
