@@ -21,6 +21,8 @@ mapping = {
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
+            'bookmark': 'updated_at_for_pipeline',
+            'improper_bookmarks': False,
             'batch_size': 10000,
             'buffer_updation_lag':{
                 'hours': 2,
