@@ -396,6 +396,8 @@ class PGSQLMigrate:
                     curs.scroll(-1)
                     start_logging = True
                     while(True):
+                        if('cut_off_time' in settings.keys() and settings['cut_off_time'] and datetime.datetime.now(tz=self.tz_info).time() > settings['cut_off_time']):
+                            raise Sigterm(f"Need to stop. Time beyond cut-off-time: {str(settings['cut_off_time'])}")
                         rows = curs.fetchmany(self.batch_size)
                         if (not rows):
                             ## If no more rows are present, break
