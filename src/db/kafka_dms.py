@@ -101,7 +101,7 @@ class KafkaMigrate:
                         self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                         self.curr_mapping['fields'][parq_col + "_day"] = 'int'
                     else:
-                        raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+                        raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
             else:
                 self.warn(message="Unable to find partition_col. Continuing without partitioning.")
         self.curr_mapping['fields']['dms_pkey'] = 'int'
@@ -130,7 +130,7 @@ class KafkaMigrate:
             elif(col_form == 'int'):
                 df[parq_col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int, copy=False, errors='ignore')
             else:
-                raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, str or datetime.") 
+                raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, str or datetime.") 
         return df
 
 

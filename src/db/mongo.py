@@ -72,9 +72,8 @@ class MongoMigrate:
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
         except Exception as e:
-            self.err(error = str(e))
             self.db_collection = None
-            raise ConnectionError("Unable to connect to source.")
+            raise ConnectionError("Unable to connect to source.") from e
 
 
     def fetch_data(self, start: int = -1, end: int = -1, query: Dict[str, Any] = None) -> List[Dict[str, Any]]:
@@ -156,7 +155,7 @@ class MongoMigrate:
                     self.curr_mapping['fields'][parq_col + "_month"] = 'int'
                     self.curr_mapping['fields'][parq_col + "_day"] = 'int'
                 else:
-                    raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+                    raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
         
         if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
@@ -225,7 +224,7 @@ class MongoMigrate:
                 document[parq_col + "_month"] = str(float(document[col].month))
                 document[parq_col + "_day"] = str(float(document[col].day))
             else:
-                raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+                raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
         return document
 
 

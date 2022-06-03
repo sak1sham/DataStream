@@ -172,7 +172,7 @@ class PGSQLMigrate:
                     self.partition_for_parquet.extend([parq_col])
                     df[parq_col] = df[col].fillna(0).astype(int)
                 else:
-                    raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, str or datetime.") 
+                    raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, str or datetime.") 
         else:
             self.warn(message="Unable to find partition_col. Continuing without partitioning.")
         return df
@@ -321,13 +321,11 @@ class PGSQLMigrate:
                     table_names = [str(t[0] + "." + t[1]) for t in rows]
                     return table_names
             except Exception as e:
-                self.err(error=str(e))
-                raise ProcessingError("Caught some exception while getting list of all tables.")
+                raise ProcessingError("Caught some exception while getting list of all tables.") from e
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(error=str(e))
-            raise ConnectionError("Unable to connect to source.")
+            raise ConnectionError("Unable to connect to source.") from e
 
 
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
@@ -519,15 +517,13 @@ class PGSQLMigrate:
             except Sigterm as e:
                 raise
             except Exception as e:
-                self.err(error=str(e))
-                raise ProcessingError("Caught some exception while processing records.")
+                raise ProcessingError("Caught some exception while processing records.") from e
         except Sigterm as e:
-                raise    
+            raise    
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(error=str(e))
-            raise ConnectionError("Unable to connect to source.")
+            raise ConnectionError("Unable to connect to source.") from e
 
         if(mode == 'syncing' and sync_mode == 2 and processed_data):
             ## If processing updates are completed, and total updated records present in processed_data are less than batch_size, still save them now
@@ -559,13 +555,11 @@ class PGSQLMigrate:
                     curr_max_pkey = curs.fetchone()[0]
                     return curr_max_pkey
             except Exception as e:
-                self.err(error=str(e))
-                raise ProcessingError("Caught some exception while finding maximum value of primary_key till now.")
+                raise ProcessingError("Caught some exception while finding maximum value of primary_key till now.") from e
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(error=str(e))
-            raise ConnectionError("Unable to connect to source.")
+            raise ConnectionError("Unable to connect to source.") from e
 
 
     def dumping_process(self, table_name: str = None) -> None:
@@ -863,8 +857,8 @@ class PGSQLMigrate:
                 self.inform("Data is deleted, now starting migration again.")
             else:
                 self.inform('No discrepancy, let\'s start the migration')
-        except ProcessingError:
-            raise Exception("Unable to verify datatypes of table from source and destination.")
+        except ProcessingError as e:
+            raise Exception("Unable to verify datatypes of table from source and destination.") from e
 
 
     def process(self) -> Tuple[int]:

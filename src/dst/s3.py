@@ -194,8 +194,7 @@ class s3Saver:
             df = wr.athena.read_sql_query(sql = sql_query, database = self.database)
             return df.shape[0] > 0
         except Exception as e:
-            self.err("Unable to test if the table is present previously at destination.")
-            self.err(str(e))
+            self.err("Unable to check the presence of the table at destination.")
             raise
 
     def count_n_records(self, table_name: str = None) -> int:
@@ -209,7 +208,6 @@ class s3Saver:
                 return 0
         except Exception as e:
             self.err("Unable to fetch the number of records previously at destination.")
-            self.err(str(e))
             raise
 
 
