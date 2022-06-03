@@ -67,14 +67,13 @@ class MongoMigrate:
         try:
             certificate = certifi.where()
             if('certificate_file' in self.db['source'].keys() and self.db['source']['certificate_file']):
-                certificate = "config/" + self.db['source']['certificate_file']
+                certificate = f"config/{self.db['source']['certificate_file']}"
             client = MongoClient(self.db['source']['url'], tlsCAFile=certificate)
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
         except Exception as e:
-            self.err(error = str(e))
             self.db_collection = None
-            raise ConnectionError("Unable to connect to source.")
+            raise ConnectionError("Unable to connect to source.") from e
 
 
     def fetch_data(self, start: int = -1, end: int = -1, query: Dict[str, Any] = None) -> List[Dict[str, Any]]:
@@ -128,19 +127,19 @@ class MongoMigrate:
             for i in range(len(self.curr_mapping['partition_col'])):
                 col = self.curr_mapping['partition_col'][i]
                 col_form = self.curr_mapping['partition_col_format'][i]
-                parq_col = "parquet_format_" + col
+                parq_col = f"parquet_format_{col}"
                 if(col == 'migration_snapshot_date'):
                     self.curr_mapping['partition_col_format'][i] = 'datetime'
                     self.curr_mapping['fields'][col] = 'datetime'
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    self.curr_mapping['fields'][parq_col + "_year"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_month"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_day"] = 'int'
+                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
+                    self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                    self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                    self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
                 elif(col == '_id' and col_form == 'datetime'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    self.curr_mapping['fields'][parq_col + "_year"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_month"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_day"] = 'int'
+                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
+                    self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                    self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                    self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
                 elif(col_form == 'str'):
                     self.partition_for_parquet.extend([parq_col])
                     self.curr_mapping['fields'][parq_col] = 'str'
@@ -151,12 +150,12 @@ class MongoMigrate:
                     self.partition_for_parquet.extend([parq_col])
                     self.curr_mapping['fields'][parq_col] = 'float'
                 elif(col_form == 'datetime'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    self.curr_mapping['fields'][parq_col + "_year"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_month"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_day"] = 'int'
+                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
+                    self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                    self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                    self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
                 else:
-                    raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+                    raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
         
         if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
@@ -208,11 +207,11 @@ class MongoMigrate:
         for i in range(len(self.curr_mapping['partition_col'])):
             col = self.curr_mapping['partition_col'][i]
             col_form = self.curr_mapping['partition_col_format'][i]
-            parq_col = "parquet_format_" + col
+            parq_col = f"parquet_format_{col}"
             if(col == '_id'):
-                document[parq_col + "_year"] = insertion_time.year
-                document[parq_col + "_month"] = insertion_time.month
-                document[parq_col + "_day"] = insertion_time.day
+                document[f"{parq_col}_year"] = insertion_time.year
+                document[f"{parq_col}_month"] = insertion_time.month
+                document[f"{parq_col}_day"] = insertion_time.day
             elif(col_form == 'str'):
                 document[parq_col] = str(document[col])
             elif(col_form == 'int'):
@@ -221,11 +220,11 @@ class MongoMigrate:
                 document[parq_col] = float(document[col])
             elif(col_form == 'datetime'):
                 document[col] = convert_to_datetime(document[col], pytz.utc)
-                document[parq_col + "_year"] = str(float(document[col].year))
-                document[parq_col + "_month"] = str(float(document[col].month))
-                document[parq_col + "_day"] = str(float(document[col].day))
+                document[f"{parq_col}_year"] = str(float(document[col].year))
+                document[f"{parq_col}_month"] = str(float(document[col].month))
+                document[f"{parq_col}_day"] = str(float(document[col].day))
             else:
-                raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+                raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
         return document
 
 

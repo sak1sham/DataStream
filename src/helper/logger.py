@@ -9,7 +9,7 @@ datetype = NewType("datetype", datetime)
 class Log_manager:
     def __init__(self) -> None:
         p = os.path.abspath(os.getcwd())
-        logs_folder = p + '/../tmp'
+        logs_folder = f'{p}/../tmp'
         isExist = os.path.exists(logs_folder)
         if not isExist:
             os.makedirs(logs_folder)
@@ -19,7 +19,7 @@ class Log_manager:
             level = logging.INFO,
             datefmt = '%Y-%m-%d %H:%M:%S',
             handlers=[
-                logging.FileHandler(logs_folder + '/debug.log', mode='w'),
+                logging.FileHandler(f'{logs_folder}/debug.log', mode='w'),
                 logging.StreamHandler()
             ]
         )

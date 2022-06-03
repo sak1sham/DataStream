@@ -25,13 +25,12 @@ class PgSQLSaver:
             )
             conn.close()
         except Exception as e:
-            self.err(str(e))
             self.err("Unable to connect to destination.")
             raise
         else:
             self.inform("Successfully tested connection with destination db.")
             
-        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (db_source['source_type'] + "_" + db_source['db_name'] + "_dms").replace('-', '_').replace('.', '_')
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{db_source['source_type']}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
         self.name_ = ""
         self.table_list = []
 
@@ -39,28 +38,28 @@ class PgSQLSaver:
     def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = []) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
-        table_name = schema + "." + table if schema and len(schema) > 0 else table
+        table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
         cols_def = ""
         for col in df.columns.to_list():
-            cols_def = cols_def + "\n" + col + " "
+            cols_def = f"{cols_def} \n{col} "
             if(col not in dtypes.keys() or dtypes[col] == 'string'):
                 if(col in json_cols):
-                    cols_def = cols_def + "JSON"
+                    cols_def = f"{cols_def} JSON"
                 elif(col in varchar_length_source.keys() and varchar_length_source[col]):
                     cols_def = cols_def + f"VARCHAR({varchar_length_source[col]})"
                 else:
-                    cols_def = cols_def + "TEXT"
+                    cols_def = f"{cols_def} TEXT"
             elif(dtypes[col] == 'timestamp'):
-                cols_def = cols_def + "TIMESTAMP"
+                cols_def = f"{cols_def} TIMESTAMP"
             elif(dtypes[col] == 'boolean'):
-                cols_def = cols_def + "BOOLEAN"
+                cols_def = f"{cols_def} BOOLEAN"
             elif(dtypes[col] == 'bigint'):
-                cols_def = cols_def + "BIGINT"
+                cols_def = f"{cols_def} BIGINT"
             elif(dtypes[col] == 'double'):
-                cols_def = cols_def + "DOUBLE PRECISION"
+                cols_def = f"{cols_def} DOUBLE PRECISION"
             if(not logging_flag and len(primary_keys) > 0 and primary_keys[0] == col):
-                cols_def = cols_def + " PRIMARY KEY"
-            cols_def = cols_def + ","
+                cols_def = f"{cols_def}  PRIMARY KEY"
+            cols_def = f"{cols_def} ,"
         cols_def = cols_def[:-1]
 
         logging_query = ""
@@ -91,7 +90,7 @@ class PgSQLSaver:
             df2 = df.copy()
             table = table.replace('.', '_').replace('-', '_')
             self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source, logging_flag=logging_flag, json_cols = json_cols)
-            table_name = schema + "." + table if schema and len(schema) > 0 else table
+            table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
             col_names = ""
             list_cols = df2.columns.to_list()
             for col in list_cols:
@@ -149,8 +148,7 @@ class PgSQLSaver:
                 conn.commit()
             conn.close()
         except Exception as e:
-            self.err(str(e))
-            raise Exception("Unable to insert records in table.")
+            raise Exception("Unable to insert records in table.") from e
 
 
 
@@ -275,8 +273,7 @@ class PgSQLSaver:
                 else:
                     return True
         except Exception as e:
-            self.err("Unable to test if the table is present previously at destination.")
-            self.err(str(e))
+            self.err("Unable to check the presence of the table at destination.")
             raise
 
 
@@ -300,7 +297,6 @@ class PgSQLSaver:
                 return 0
         except Exception as e:
             self.err("Unable to fetch the number of records previously at destination.")
-            self.err(str(e))
             raise
 
 
@@ -321,7 +317,7 @@ class PgSQLSaver:
         ## We just have to query using that column to delete old data
         delete_before_date_str = delete_before_date.strftime('%Y-%m-%d %H:%M:%S')
         for table_name in self.table_list:
-            query = "DELETE FROM " + self.schema + "." + table_name + " WHERE migration_snapshot_date <= " + delete_before_date_str + ";"
+            query = f"DELETE FROM {self.schema}.{table_name} WHERE migration_snapshot_date <= {delete_before_date_str};"
             conn = psycopg2.connect(
                 host = self.db_destination['url'],
                 database = self.db_destination['db_name'],

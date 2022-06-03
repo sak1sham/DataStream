@@ -9,7 +9,7 @@ from helper.util import utc_to_local
 class RedshiftSaver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, unique_id: str = "", is_small_data: bool = False) -> None:
         # s3_location is required as a staging area to push into redshift
-        self.s3_location = "s3://" + db_destination['s3_bucket_name'] + "/Redshift/" + db_source['source_type'] + "/" + db_source['db_name'] + "/"
+        self.s3_location = f"s3://{db_destination['s3_bucket_name']}/Redshift/{db_source['source_type']}/{db_source['db_name']}/"
         self.unique_id = unique_id
         self.conn = redshift_connector.connect(
             host = db_destination['host'],
@@ -17,7 +17,7 @@ class RedshiftSaver:
             user = db_destination['user'],
             password = db_destination['password']
         )
-        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (db_source['source_type'] + "_" + db_source['db_name'] + "_dms").replace('-', '_').replace('.', '_')
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{db_source['source_type']}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
         self.is_small_data = is_small_data
         self.name_ = ""
         self.table_list = []
@@ -36,7 +36,7 @@ class RedshiftSaver:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
             self.table_list.extend(processed_data['name']) 
         self.name_ = processed_data['name']
-        file_name = self.s3_location + self.name_ + "/"
+        file_name = f"{self.s3_location}{self.name_}/"
         
         if 'filename' in processed_data:
             file_name += str(processed_data['filename']) + "/"
@@ -137,8 +137,7 @@ class RedshiftSaver:
             )
             return df.shape[0] > 0
         except Exception as e:
-            self.err("Unable to test if the table is present previously at destination.")
-            self.err(str(e))
+            self.err("Unable to check the presence of the table at destination.")
             raise
 
 
@@ -156,7 +155,6 @@ class RedshiftSaver:
                 return 0
         except Exception as e:
             self.err("Unable to fetch the number of records previously at destination.")
-            self.err(str(e))
             raise
 
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:

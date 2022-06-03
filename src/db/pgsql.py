@@ -158,13 +158,13 @@ class PGSQLMigrate:
             for i in range(len(self.curr_mapping['partition_col'])):
                 col = self.curr_mapping['partition_col'][i].lower()
                 col_form = self.curr_mapping['partition_col_format'][i]
-                parq_col = "parquet_format_" + col
+                parq_col = f"parquet_format_{col}"
                 if(col == 'migration_snapshot_date' or col_form == 'datetime'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
+                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
                     temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
-                    df[parq_col + "_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
-                    df[parq_col + "_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
-                    df[parq_col + "_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
+                    df[f"{parq_col}_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
+                    df[f"{parq_col}_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
+                    df[f"{parq_col}_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
                 elif(col_form == 'str'):
                     self.partition_for_parquet.extend([parq_col])
                     df[parq_col] = df[col].astype(str)
@@ -172,7 +172,7 @@ class PGSQLMigrate:
                     self.partition_for_parquet.extend([parq_col])
                     df[parq_col] = df[col].fillna(0).astype(int)
                 else:
-                    raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, str or datetime.") 
+                    raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, str or datetime.") 
         else:
             self.warn(message="Unable to find partition_col. Continuing without partitioning.")
         return df
@@ -318,16 +318,14 @@ class PGSQLMigrate:
                 with conn.cursor() as curs:
                     curs.execute(sql_stmt)
                     rows = curs.fetchall()
-                    table_names = [str(t[0] + "." + t[1]) for t in rows]
+                    table_names = [str(f"{t[0]}.{t[1]}") for t in rows]
                     return table_names
             except Exception as e:
-                self.err(error=str(e))
-                raise ProcessingError("Caught some exception while getting list of all tables.")
+                raise ProcessingError("Caught some exception while getting list of all tables.") from e
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(error=str(e))
-            raise ConnectionError("Unable to connect to source.")
+            raise ConnectionError("Unable to connect to source.") from e
 
 
     def get_column_dtypes(self, conn: Any = None, curr_table_name: str = None) -> Dict[str, str]:
@@ -398,6 +396,8 @@ class PGSQLMigrate:
                     curs.scroll(-1)
                     start_logging = True
                     while(True):
+                        if('cut_off_time' in settings.keys() and settings['cut_off_time'] and datetime.datetime.now(tz=self.tz_info).time() > settings['cut_off_time']):
+                            raise Sigterm(f"Need to stop. Time beyond cut-off-time: {str(settings['cut_off_time'])}")
                         rows = curs.fetchmany(self.batch_size)
                         if (not rows):
                             ## If no more rows are present, break
@@ -519,15 +519,13 @@ class PGSQLMigrate:
             except Sigterm as e:
                 raise
             except Exception as e:
-                self.err(error=str(e))
-                raise ProcessingError("Caught some exception while processing records.")
+                raise ProcessingError("Caught some exception while processing records.") from e
         except Sigterm as e:
-                raise    
+            raise    
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(error=str(e))
-            raise ConnectionError("Unable to connect to source.")
+            raise ConnectionError("Unable to connect to source.") from e
 
         if(mode == 'syncing' and sync_mode == 2 and processed_data):
             ## If processing updates are completed, and total updated records present in processed_data are less than batch_size, still save them now
@@ -559,13 +557,11 @@ class PGSQLMigrate:
                     curr_max_pkey = curs.fetchone()[0]
                     return curr_max_pkey
             except Exception as e:
-                self.err(error=str(e))
-                raise ProcessingError("Caught some exception while finding maximum value of primary_key till now.")
+                raise ProcessingError("Caught some exception while finding maximum value of primary_key till now.") from e
         except ProcessingError:
             raise
         except Exception as e:
-            self.err(error=str(e))
-            raise ConnectionError("Unable to connect to source.")
+            raise ConnectionError("Unable to connect to source.") from e
 
 
     def dumping_process(self, table_name: str = None) -> None:
@@ -783,11 +779,11 @@ class PGSQLMigrate:
         ## NOW, UPDATION IS ALSO COMPLETE
         ## WE NEED TO UPDATE/DOUBLE-CHECK THAT DATA WHICH WAS INSERTED DURING CURRENT MIGRATION, BUT UPDATED 2-3 MINUTES BEFORE THE JOB STARTED
         if('buffer_updation_lag' in self.curr_mapping.keys() and self.curr_mapping['buffer_updation_lag']):
+            buffer_days = 0 if 'days' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['days'] else self.curr_mapping['buffer_updation_lag']['days']
             buffer_hours = 0 if 'hours' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['hours'] else self.curr_mapping['buffer_updation_lag']['hours']
             buffer_minutes = 0 if 'minutes' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['minutes'] else self.curr_mapping['buffer_updation_lag']['minutes']
-            buffer_seconds = 0 if 'seconds' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['seconds'] else self.curr_mapping['buffer_updation_lag']['seconds']
             self.inform("")
-            self.inform(f"Starting updation-check for newly inserted records which were updated in the {buffer_hours} hours, {buffer_minutes} minutes and {buffer_seconds} minutes before the job started.")
+            self.inform(f"Starting updation-check for newly inserted records which were updated in the {buffer_days} days, {buffer_hours} hours, {buffer_minutes} and minutes before the job started.")
             curr = get_last_migrated_record(self.curr_mapping['unique_id'])
             if(curr and self.n_insertions > 0 and 'record_id' in curr.keys() and curr['record_id']):
                 ## If some records were inserted, we need to check updates for last few records as per precise time 
@@ -806,7 +802,7 @@ class PGSQLMigrate:
                 else:
                     IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
                 
-                last1 = (self.curr_run_cron_job - datetime.timedelta(hours=buffer_hours, minutes=buffer_minutes, seconds=buffer_seconds)).astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
+                last1 = (self.curr_run_cron_job - datetime.timedelta(days=buffer_days, hours=buffer_hours, minutes=buffer_minutes)).astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
                 last2 = self.curr_run_cron_job.astimezone(self.tz_info).strftime('%Y-%m-%d %H:%M:%S')
                 if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark']): 
                     if('improper_bookmarks' in self.curr_mapping.keys() and self.curr_mapping['improper_bookmarks']): 
@@ -814,7 +810,7 @@ class PGSQLMigrate:
                     else:
                         sql_stmt += f" AND {self.curr_mapping['bookmark']} > \'{last1}\'::timestamp AND {self.curr_mapping['bookmark']} <= \'{last2}\'::timestamp"
                 self.process_sql_query(table_name, sql_stmt, mode='syncing', sync_mode = 2)
-                self.inform(f"Double-checked for updations in last {buffer_hours} hours, {buffer_minutes} minutes and {buffer_seconds} minutes.")
+                self.inform(f"Double-checked for updations in last {buffer_days} days, {buffer_hours} hours and {buffer_minutes} minutes.")
 
 
     def set_basic_job_params(self, table_name: str = None) -> None:
@@ -863,8 +859,8 @@ class PGSQLMigrate:
                 self.inform("Data is deleted, now starting migration again.")
             else:
                 self.inform('No discrepancy, let\'s start the migration')
-        except ProcessingError:
-            raise Exception("Unable to verify datatypes of table from source and destination.")
+        except ProcessingError as e:
+            raise Exception("Unable to verify datatypes of table from source and destination.") from e
 
 
     def process(self) -> Tuple[int]:

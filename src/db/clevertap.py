@@ -86,7 +86,7 @@ class ClevertapManager(EventsAPIManager):
             try:
                 tf_record = validate_or_convert(tf_record, curr_mapping['fields'], self.tz_info)
                 tf_records.append(tf_record)
-            except:
+            except Exception as e:
                 logger.err(curr_mapping['unique_id'], f"{curr_mapping['unique_id']}: Could not process record for event {event_name}. Record: ```{str(tf_record)}```")
         return tf_records
 

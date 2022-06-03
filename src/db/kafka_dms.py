@@ -85,7 +85,7 @@ class KafkaMigrate:
                 for i in range(len(self.curr_mapping['partition_col'])):
                     col = self.curr_mapping['partition_col'][i]
                     col_form = self.curr_mapping['partition_col_format'][i]
-                    parq_col = "parquet_format_" + col
+                    parq_col = f"parquet_format_{col}"
                     if(col_form == 'str'):
                         self.partition_for_parquet.extend([parq_col])
                         self.curr_mapping['fields'][parq_col] = 'str'
@@ -96,12 +96,12 @@ class KafkaMigrate:
                         self.partition_for_parquet.extend([parq_col])
                         self.curr_mapping['fields'][parq_col] = 'float'
                     elif(col_form == 'datetime'):
-                        self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                        self.curr_mapping['fields'][parq_col + "_year"] = 'int'
-                        self.curr_mapping['fields'][parq_col + "_month"] = 'int'
-                        self.curr_mapping['fields'][parq_col + "_day"] = 'int'
+                        self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
+                        self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                        self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                        self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
                     else:
-                        raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+                        raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
             else:
                 self.warn(message="Unable to find partition_col. Continuing without partitioning.")
         self.curr_mapping['fields']['dms_pkey'] = 'int'
@@ -119,18 +119,18 @@ class KafkaMigrate:
         for i in range(len(self.curr_mapping['partition_col'])):
             col = self.curr_mapping['partition_col'][i]
             col_form = self.curr_mapping['partition_col_format'][i]
-            parq_col = "parquet_format_" + col
+            parq_col = f"parquet_format_{col}"
             if(col_form == 'datetime'):
                 temp = pd.to_datetime(df[col], errors='coerce', utc=True).apply(lambda x: pd.Timestamp(x))
-                df[parq_col + "_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
-                df[parq_col + "_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
-                df[parq_col + "_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
+                df[f"{parq_col}_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
+                df[f"{parq_col}_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
+                df[f"{parq_col}_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
             elif(col_form == 'str'):
                 df[parq_col] = df[col].astype(str)
             elif(col_form == 'int'):
                 df[parq_col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int, copy=False, errors='ignore')
             else:
-                raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, str or datetime.") 
+                raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, str or datetime.") 
         return df
 
 
