@@ -19,6 +19,7 @@ Before starting creating our data pipelines, we need to set up some things.
 1. Install version ```21.2.4``` of pip, 
 2. Install the command line interface tools for Amazon web services (AWS)
 3. Install pip-tools for keeping track of python dependencies
+
 ```
 pip3 install --upgrade pip==21.2.4
 pip3 --no-cache-dir install --upgrade awscli
@@ -35,7 +36,9 @@ These commands with first create a ```requirements.txt``` file, and then do the 
 
 Once the installations are done, we are ready to start creating our data pipelines.
 
+### Creating Data Pipelines and Custom Configuring the Script
 
+All the Data Pipelines are created and stored inside location ```src/config/jobs```
 1. Create the pipeline configurations in the ```config/migration_mapping.py``` file as per requirements.
 Documentation to write the migration_mapping is provided in [Migration Mapping Documentation](config/README.md)
 
