@@ -15,7 +15,7 @@ This script is written in ```Python 3.8.0```
 
 ### Setting things up
 
-Before starting creating our data pipelines, we need to set up some things. 
+As a first step, we need to set up some things. 
 1. Install version ```21.2.4``` of pip, 
 2. Install the command line interface tools for Amazon web services (AWS)
 3. Install pip-tools for keeping track of python dependencies
@@ -34,9 +34,49 @@ pip-sync
 
 These commands with first create a ```requirements.txt``` file, and then do the required installations.
 
-Once the installations are done, we are ready to start creating our data pipelines.
+Once the installations are done, we are just 1 step away from starting creating our data pipelines.
 
-### Creating Data Pipelines and Custom Configuring the Script
+### Configuring settings
+
+This DMS can be customized as per requirements by creating your own settings. Here is a sample settings file
+
+```python
+import os
+from dotenv import load_dotenv
+load_dotenv()
+import datetime
+import pytz
+
+settings = {
+    'fastapi_server': False,
+    'timezone': 'Asia/Kolkata',
+    'notify': True,
+    'encryption_store': {
+        'url': os.getenv('ENCR_MONGO_URL'),
+        'db_name': os.getenv('DB_NAME'),
+        'collection_name': os.getenv('COLLECTION_NAME')
+    },
+    'logging_store': {
+        'url': os.getenv('LOG_MONGO_URL'),
+        'db_name': os.getenv('LOG_DB_NAME'),
+        'collection_name': os.getenv('LOG_COLLECTION_NAME')
+    },
+    'dashboard_store': {
+        'url': os.getenv('ENCR_MONGO_URL'),
+        'db_name': os.getenv('DB_NAME'),
+        'collection_name': 'dms_history'
+    },
+    'slack_notif': {
+        'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
+        'channel': "C035WQHD291"
+    },
+    'cut_off_time': datetime.time(hour=9, minute=0, second=0, microsecond=0, tzinfo=pytz.timezone('Asia/Kolkata')),
+    'save_logs': False
+}
+```
+
+
+### Creating Data Pipelines
 
 All configuration files are stored inside folder ```src/config```
 1. The Data Pipelines are created and stored inside folder ```src/config/jobs```
