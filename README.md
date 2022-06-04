@@ -38,7 +38,7 @@ Once the installations are done, we are just 1 step away from starting creating 
 
 ### Configuring settings
 
-This DMS can be customized as per requirements by creating your own settings. Here is a sample settings file
+This DMS can be customized as per the requirements by creating a settings file (``src/config/settings.py````). Here is a sample settings file:
 
 ```python
 import os
@@ -56,22 +56,16 @@ settings = {
         'db_name': os.getenv('DB_NAME'),
         'collection_name': os.getenv('COLLECTION_NAME')
     },
-    'logging_store': {
-        'url': os.getenv('LOG_MONGO_URL'),
-        'db_name': os.getenv('LOG_DB_NAME'),
-        'collection_name': os.getenv('LOG_COLLECTION_NAME')
-    },
     'dashboard_store': {
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),
         'collection_name': 'dms_history'
     },
     'slack_notif': {
-        'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C035WQHD291"
+        'slack_token': 'x**Z-88*********7-421*********6-F0x****************xv3Z',
+        'channel': "C042ANGF320"
     },
     'cut_off_time': datetime.time(hour=9, minute=0, second=0, microsecond=0, tzinfo=pytz.timezone('Asia/Kolkata')),
-    'save_logs': False
 }
 ```
 
