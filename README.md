@@ -38,7 +38,7 @@ Once the installations are done, we are just 1 step away from starting creating 
 
 ### Configuring settings
 
-This DMS can be customized as per the requirements by creating a settings file (``src/config/settings.py````). Here is a sample settings file:
+This DMS can be customized as per the requirements by creating a settings file (```src/config/settings.py```). Here is a sample settings file:
 
 ```python
 import os
