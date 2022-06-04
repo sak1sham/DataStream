@@ -38,7 +38,11 @@ Once the installations are done, we are ready to start creating our data pipelin
 
 ### Creating Data Pipelines and Custom Configuring the Script
 
-All the Data Pipelines are created and stored inside location ```src/config/jobs```
+All configuration files are stored inside folder ```src/config```
+1. All the Data Pipelines are created and stored inside location ```src/config/jobs```
+2. All script settings can be customized in ```src/config/settings.py``` file
+
+
 1. Create the pipeline configurations in the ```config/migration_mapping.py``` file as per requirements.
 Documentation to write the migration_mapping is provided in [Migration Mapping Documentation](config/README.md)
 
