@@ -38,7 +38,7 @@ Once the installations are done, we are just 1 step away from starting creating 
 
 ### Configuring settings
 
-This DMS can be customized as per the requirements by creating a settings file (```src/config/settings.py```). For a sample configuration file, check [this file](sample_config/settings.py)
+This DMS can be customized as per the requirements by creating a settings file (```src/config/settings.py```). For a sample on how to create settings file, check [this file](sample_config/settings.py)
 
 ### Creating Data Pipelines
 
