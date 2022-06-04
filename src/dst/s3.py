@@ -54,6 +54,18 @@ def update_s3_file(df: pd.DataFrame = pd.DataFrame({}), path: str = None, compre
         logger.err(s = str(e))
         raise
 
+
+@retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000)
+def get_file_df(s3: Any = None, bucket_name_read: str = "", file_name_read: str = "") -> pd.DataFrame:
+    try:
+        obj_read = s3.get_object(Bucket=bucket_name_read, Key=file_name_read)
+        df_to_be_updated = pd.read_parquet(io.BytesIO(obj_read['Body'].read()))
+        return df_to_be_updated
+    except Exception as e:
+        logger.err(s = str(e))
+        raise
+
+
 class s3Saver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, c_partition: List[str] = [], unique_id: str = "") -> None:
         self.s3_location = f"s3://{db_destination['s3_bucket_name']}/{db_source['source_type']}/{db_source['db_name']}/"
@@ -126,8 +138,7 @@ class s3Saver:
                     file_o = urlparse(file_, allow_fragments=False)
                     bucket_name_read = file_o.netloc
                     file_name_read = file_o.path[1:]
-                    obj_read = s3.get_object(Bucket=bucket_name_read, Key=file_name_read)
-                    df_to_be_updated = pd.read_parquet(io.BytesIO(obj_read['Body'].read()))
+                    df_to_be_updated = get_file_df(s3, bucket_name_read, file_name_read)
                     df_to_be_updated, modified, df_u = df_update_records(df=df_to_be_updated, df_u=df_u, primary_key=primary_keys[0])
                     if(modified):
                         update_s3_file(

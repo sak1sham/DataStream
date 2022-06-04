@@ -2,6 +2,7 @@ import psycopg2
 import pandas as pd
 from typing import List, Dict, Any
 import datetime
+from retrying import retry
 
 from helper.logger import logger
 from helper.util import utc_to_local
@@ -82,7 +83,7 @@ class PgSQLSaver:
             conn.commit()
         conn.close()
 
-
+    @retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000)
     def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = []) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
