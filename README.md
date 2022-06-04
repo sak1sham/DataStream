@@ -45,9 +45,6 @@ All configuration files are stored inside folder ```src/config```
 The documentation to create Data Pipelines is present [here](src/config/README.md).
 
 
-1. Create the pipeline configurations in the ```config/migration_mapping.py``` file as per requirements.
-Documentation to write the migration_mapping is provided in [Migration Mapping Documentation](config/README.md)
-
 2. Modify the ```CMD``` command in ```Dockerfile``` as per requirements. Also, set the environment variables in ```docker-compose.yml``` file.
 ```
 ENCR_MONGO_URL=<Temp_Mongo_DB_URL>
