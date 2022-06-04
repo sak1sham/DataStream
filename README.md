@@ -1,14 +1,53 @@
-# Database Migration Service
-## Tech Stack
+# Data Migration Service
 
-1. Python version 3.9.1
-- Fastapi, Pymongo, pandas, numpy, SQLAlchemy, APScheduler, awswrangler, psycopg2 and other libraries listed in ```requirements.txt```
-2. Docker version 20.10.12
+## Introduction
+
+A migration service with multiple capabilities for creating data pipelines seamlessly:
+1. Migrate data from PgSQL, MongoDB, API services, Kafka Consumer
+2. Store data into Amazon S3, Redshift or a PgSQL database
+3. 3 Modes of operation (Dumping, Logging and Syncing)
+4. Internal or external pipeline scheduling
+5. Data cleaning and correction
+
+This script is written in ```Python 3.8.0```
 
 ## Usage
 
-1. Modify the ```config/migration_mapping.py``` file as per requirements.
-Documentation to write the migration_mapping is provided in [Migration Mapping Documentation](config/README.md)
+### Setting things up
+
+As a first step, we need to set up some things. 
+1. Install version ```21.2.4``` of pip, 
+2. Install the command line interface tools for Amazon web services (AWS)
+3. Install pip-tools for keeping track of python dependencies
+
+```
+pip3 install --upgrade pip==21.2.4
+pip3 --no-cache-dir install --upgrade awscli
+pip3 install pip-tools
+```
+
+Next, we need to setup the environment by installing the required dependencies for the script.
+```
+pip-compile
+pip-sync
+```
+
+These commands with first create a ```requirements.txt``` file, and then do the required installations.
+
+Once the installations are done, we are just 1 step away from starting creating our data pipelines.
+
+### Configuring settings
+
+This DMS can be customized as per the requirements by creating a settings file (```src/config/settings.py```). For a sample on how to create settings file, check [this file](sample_config/settings.py).
+
+### Creating Data Pipelines
+
+All configuration files are stored inside folder ```src/config```
+1. The Data Pipelines are created and stored inside folder ```src/config/jobs```
+2. The general script settings can be customized in ```src/config/settings.py``` file
+
+The documentation to create Data Pipelines is present [here](src/config/README.md).
+
 
 2. Modify the ```CMD``` command in ```Dockerfile``` as per requirements. Also, set the environment variables in ```docker-compose.yml``` file.
 ```

@@ -46,7 +46,7 @@ def healthcheck():
     pass
 
 def migration_service_of_job(db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
-    obj = DMS_importer(db, curr_mapping)
+    obj = DMS_importer(db=db, curr_mapping=curr_mapping, tz__=tz__)
     obj.process()
 
 def create_new_job(db, list_specs, uid, is_fastapi):
