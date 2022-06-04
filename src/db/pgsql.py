@@ -36,7 +36,17 @@ class PGSQLMigrate:
         self.start_time = datetime.datetime.utcnow()
         self.curr_megabytes_processed = 0
         self.json_cols = []
-    
+        self.stop_time = None
+        if('cut_off_time' in settings.keys() and settings['cut_off_time']):
+            if(not settings['cut_off_time'].tzinfo):
+                settings['cut_off_time'] = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date(), settings['cut_off_time']).astimezone(tz=self.tz_info).time()
+            curr_time = datetime.datetime.now(tz=self.tz_info).time()
+            self.inform(f"current_time: {curr_time} vs cut_off_time: {settings['cut_off_time']}")
+            if(curr_time < settings['cut_off_time']):
+                self.stop_time = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date(), settings['cut_off_time']).astimezone(tz=self.tz_info)
+            else:
+                self.stop_time = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date() + datetime.timedelta(days=1), settings['cut_off_time']).astimezone(tz=self.tz_info)
+            self.inform(f"Cut-off time specified. Will be stopping after {str(self.stop_time)}")
 
     def inform(self, message: str = None) -> None:
         logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
@@ -396,8 +406,19 @@ class PGSQLMigrate:
                     curs.scroll(-1)
                     start_logging = True
                     while(True):
-                        if('cut_off_time' in settings.keys() and settings['cut_off_time'] and datetime.datetime.now(tz=self.tz_info).time() > settings['cut_off_time']):
-                            raise Sigterm(f"Need to stop. Time beyond cut-off-time: {str(settings['cut_off_time'])}")
+                        if(self.stop_time and datetime.datetime.now(tz=self.tz_info) > self.stop_time):
+                            self.save_job_working_data(table_name=table_name, status=False)
+                            msg = f"<!channel>Migration stopped for *{self.curr_mapping['table_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
+                            msg += f"Reason: Shut-down (time already past cut-off time {settings['cut_off_time']}) :warning:\n"
+                            ins_str = "{:,}".format(self.n_insertions)
+                            upd_str = "{:,}".format(self.n_updations)
+                            msg += f"Insertions: {ins_str}\nUpdations: {upd_str}"
+                            slack_token = settings['slack_notif']['slack_token']
+                            channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
+                            if('notify' in settings.keys() and settings['notify']):
+                                send_message(msg = msg, channel = channel, slack_token = slack_token)
+                                self.inform('Notification sent.')
+                            raise Sigterm(f"Need to stop. Time already beyond cut-off-time: {datetime.datetime.now(tz=self.tz_info)} > {self.stop_time}")
                         rows = curs.fetchmany(self.batch_size)
                         if (not rows):
                             ## If no more rows are present, break

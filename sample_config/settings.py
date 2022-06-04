@@ -22,5 +22,5 @@ settings = {
         'slack_token': 'x**Z-88*********7-421*********6-F0x****************xv3Z',
         'channel': "C042ANGF320"
     },
-    'cut_off_time': datetime.time(hour=9, minute=0, second=0, microsecond=0, tzinfo=pytz.timezone('Asia/Kolkata')),     ## We don't want the script to run past 9 AM IST, so specified a cut-off timing after which the script will send a sigterm and stop automatically
+    'cut_off_time': datetime.time(hour=9, minute=0, second=0, microsecond=0),     ## We don't want the script to run past 9 AM IST, so specified a cut-off timing after which the script will send a sigterm and stop automatically
 }
