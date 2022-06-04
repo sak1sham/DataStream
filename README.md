@@ -15,7 +15,10 @@ This script is written in ```Python 3.8.0```
 
 ### Setting things up
 
-Before starting creating our files, we need to set some things up. We need to install version ```21.2.4``` of pip, command line interface tools for Amazon web services (AWS), and pip-tools.
+Before starting creating our data pipelines, we need to set up some things. 
+1. Install version ```21.2.4``` of pip, 
+2. Install the command line interface tools for Amazon web services (AWS)
+3. Install pip-tools for keeping track of python dependencies
 ```
 pip3 install --upgrade pip==21.2.4
 pip3 --no-cache-dir install --upgrade awscli
