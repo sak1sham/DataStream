@@ -23,7 +23,7 @@ for uid in not_present:
     with open("deployment/jenkins/production/commands/adminroles-values.yaml", 'r') as f:
         new_text = f.read()
     
-    new_text.replace('adminroles', uid)
+    new_text = new_text.replace('adminroles', uid)
     
     cron = "30 16 * * *"
     if 'redshift' in uid:
