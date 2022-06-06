@@ -23,7 +23,7 @@ mapping = {
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
-            'batch_size': 10000,
+            'batch_size': 100000,
             'lob_fields_length': {
                 'review_cl': 65535,
                 'review_cx': 65535,

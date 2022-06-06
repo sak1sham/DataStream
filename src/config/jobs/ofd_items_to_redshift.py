@@ -23,7 +23,7 @@ mapping = {
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
-            'batch_size': 10000,
+            'batch_size': 100000,
             'lob_fields_length': {
                 'shipments': 65535,
                 'order_item_status': 3036,
