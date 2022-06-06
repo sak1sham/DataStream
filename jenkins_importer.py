@@ -53,7 +53,7 @@ for uid in not_present:
         vals = m.group(0)
         jobs = vals.split(':')[1][1:-1]
         new_jobs = f"{jobs},{uid}"
-        new_vals = f"values:'{new_jobs}'"
+        new_vals = f"value:'{new_jobs}'"
         new_text = re.sub(pat, new_vals, text)
 
     with open('deployment/jenkins/production/jenkinsfiles/serviceDeployment', 'w') as f:
