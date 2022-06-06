@@ -1,4 +1,5 @@
 import os
+import re
 github_actions = os.listdir('.github/workflows/')
 jenkins_files = os.listdir('deployment/jenkins/production/commands/')
 
@@ -41,4 +42,19 @@ for uid in not_present:
 
     
     with open(f"deployment/jenkins/production/commands/{uid}-values.yaml", 'w') as f:
+        f.write(new_text)
+    
+    text = ''
+    new_text = ''
+    with open('deployment/jenkins/production/jenkinsfiles/serviceDeployment', 'r') as file:
+        text = file.read()
+        pat = r"value:'[a-zA-Z,-]*'"
+        m = re.search(pat, text)
+        vals = m.group(0)
+        jobs = vals.split(':')[1][1:-1]
+        new_jobs = f"{jobs},{uid}"
+        new_vals = f"values:'{new_jobs}'"
+        new_text = re.sub(pat, new_vals, text)
+
+    with open('deployment/jenkins/production/jenkinsfiles/serviceDeployment', 'w') as f:
         f.write(new_text)
