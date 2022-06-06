@@ -106,9 +106,10 @@ for index, row in df.iterrows():
         text = f'FROM python:3.8\n\nRUN pip3 install --upgrade pip==21.2.4\n\nRUN pip3 --no-cache-dir install --upgrade awscli &&\ \n\tpip3 install pip-tools\n\nCOPY requirements.in .\n\nRUN pip-compile &&\ \n\tpip-sync\n\nCOPY ./src /src\nWORKDIR "/src"\n\nCMD python main.py {file_name[:-3]}'
         f.write(text)
 
-    with open(f'deployment/dockerfiles/{dockerfile_pg}', 'w') as f:
-        text = f'FROM python:3.8\n\nRUN pip3 install --upgrade pip==21.2.4\n\nRUN pip3 --no-cache-dir install --upgrade awscli &&\ \n\tpip3 install pip-tools\n\nCOPY requirements.in .\n\nRUN pip-compile &&\ \n\tpip-sync\n\nCOPY ./src /src\nWORKDIR "/src"\n\nCMD python main.py {file_name_pg[:-3]}'
-        f.write(text)
+    if(row['mode'] != 'dumping'):
+        with open(f'deployment/dockerfiles/{dockerfile_pg}', 'w') as f:
+            text = f'FROM python:3.8\n\nRUN pip3 install --upgrade pip==21.2.4\n\nRUN pip3 --no-cache-dir install --upgrade awscli &&\ \n\tpip3 install pip-tools\n\nCOPY requirements.in .\n\nRUN pip-compile &&\ \n\tpip-sync\n\nCOPY ./src /src\nWORKDIR "/src"\n\nCMD python main.py {file_name_pg[:-3]}'
+            f.write(text)
 
     with open(f".github/workflows/prod.kube.{file_name[:-3].replace('_', '-')}.yaml", 'w') as f:
         text = ''
@@ -117,12 +118,13 @@ for index, row in df.iterrows():
         text = text.replace('analytics-cl-funnel', file_name[:-3].replace('_', '-'))
         f.write(text)
 
-    with open(f".github/workflows/prod.kube.{file_name_pg[:-3].replace('_', '-')}.yaml", 'w') as f:
-        text = ''
-        with open('.github/workflows/prod.kube.analytics-cl-funnel-to-analytics-pgsql.yaml', 'r') as file:
-            text = file.read()
-        text = text.replace('analytics-cl-funnel-to-analytics-pgsql', file_name_pg[:-3].replace('_', '-'))
-        f.write(text)
+    if(row['mode'] != 'dumping'):
+        with open(f".github/workflows/prod.kube.{file_name_pg[:-3].replace('_', '-')}.yaml", 'w') as f:
+            text = ''
+            with open('.github/workflows/prod.kube.analytics-cl-funnel-to-analytics-pgsql.yaml', 'r') as file:
+                text = file.read()
+            text = text.replace('analytics-cl-funnel-to-analytics-pgsql', file_name_pg[:-3].replace('_', '-'))
+            f.write(text)
         
     with open(f"deployment/jenkins/production/commands/{file_name[:-3].replace('_', '-')}-values.yaml", 'w') as f:
         text = ''
@@ -131,12 +133,13 @@ for index, row in df.iterrows():
         text = text.replace('analytics-cl-funnel', file_name[:-3].replace('_', '-'))
         f.write(text)
 
-    with open(f"deployment/jenkins/production/commands/{file_name_pg[:-3].replace('_', '-')}-values.yaml", 'w') as f:
-        text = ''
-        with open('deployment/jenkins/production/commands/analytics-cl-funnel-to-analytics-pgsql-values.yaml', 'r') as file:
-            text = file.read()
-        text = text.replace('analytics-cl-funnel-to-analytics-pgsql', file_name_pg[:-3].replace('_', '-'))
-        f.write(text)
+    if(row['mode'] != 'dumping'):
+        with open(f"deployment/jenkins/production/commands/{file_name_pg[:-3].replace('_', '-')}-values.yaml", 'w') as f:
+            text = ''
+            with open('deployment/jenkins/production/commands/analytics-cl-funnel-to-analytics-pgsql-values.yaml', 'r') as file:
+                text = file.read()
+            text = text.replace('analytics-cl-funnel-to-analytics-pgsql', file_name_pg[:-3].replace('_', '-'))
+            f.write(text)
 
     text = ''
     new_text = ''
@@ -146,7 +149,9 @@ for index, row in df.iterrows():
         m = re.search(pat, text)
         vals = m.group(0)
         jobs = vals.split(':')[1][1:-1]
-        new_jobs = f"{jobs},{file_name[:-3].replace('_', '-')},{file_name_pg[:-3].replace('_', '-')}"
+        new_jobs = f"{jobs},{file_name[:-3].replace('_', '-')}"
+        if(row['mode'] != 'dumping'):
+            new_jobs = f"{new_jobs},{file_name_pg[:-3].replace('_', '-')}"
         new_vals = f"values:'{new_jobs}'"
         new_text = re.sub(pat, new_vals, text)
 
