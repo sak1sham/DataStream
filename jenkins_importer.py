@@ -15,7 +15,7 @@ for l in github_actions:
 
 j_map = {}
 for l in jenkins_files:
-    g_map[l.replace('-values.yaml', '')] = l
+    j_map[l.replace('-values.yaml', '')] = l
 
 not_present = [x for x in g_map.keys() if x not in j_map.keys()]
 not_present.sort()
