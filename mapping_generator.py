@@ -152,7 +152,7 @@ for index, row in df.iterrows():
         new_jobs = f"{jobs},{file_name[:-3].replace('_', '-')}"
         if(row['mode'] != 'dumping'):
             new_jobs = f"{new_jobs},{file_name_pg[:-3].replace('_', '-')}"
-        new_vals = f"values:'{new_jobs}'"
+        new_vals = f"value:'{new_jobs}'"
         new_text = re.sub(pat, new_vals, text)
 
     with open('deployment/jenkins/production/jenkinsfiles/serviceDeployment', 'w') as f:
