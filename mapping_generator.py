@@ -145,7 +145,7 @@ for index, row in df.iterrows():
     new_text = ''
     with open('deployment/jenkins/production/jenkinsfiles/serviceDeployment', 'r') as file:
         text = file.read()
-        pat = r"value:'[a-zA-Z,-]*'"
+        pat = r"value:'[a-zA-Z0-9,-]*'"
         m = re.search(pat, text)
         vals = m.group(0)
         jobs = vals.split(':')[1][1:-1]
