@@ -81,18 +81,12 @@ class PGSQLMigrate:
         self.db['destination'].pop('specifications')
         self.saver_list = []
         for destination in list_destinations:
-            for key in self.db['destination'].keys():
-                if(key == 'destination_type'):
-                    continue
-                self.db['destination'].pop(key)
+            self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
             for key in destination.keys():
                 self.db['destination'][key] = destination[key]
             self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], mirroring=mirroring, table_name=self.curr_mapping['table_name']))
         
-        for key in self.db['destination'].keys():
-            if(key == 'destination_type'):
-                continue
-            self.db['destination'].pop(key)
+        self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
         self.db['destination']['specifications'] = list_destinations
 
     def save_job_working_data(self, table_name: str = None, status: bool = True) -> None:

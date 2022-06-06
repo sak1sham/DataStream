@@ -48,18 +48,12 @@ class APIMigrate:
         self.db['destination'].pop('specifications')
         self.saver_list = []
         for destination in list_destinations:
-            for key in self.db['destination'].keys():
-                if(key == 'destination_type'):
-                    continue
-                self.db['destination'].pop(key)
+            self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
             for key in destination.keys():
                 self.db['destination'][key] = destination[key]
             self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id']))
 
-        for key in self.db['destination'].keys():
-            if(key == 'destination_type'):
-                continue
-            self.db['destination'].pop(key)
+        self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
         self.db['destination']['specifications'] = list_destinations
 
         self.channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
