@@ -6,10 +6,14 @@ mapping = {
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
-    'destination': {
-        'destination_type': 's3',
-        's3_bucket_name': 'database-migration-service-prod'
-    },
+    'destination': { 
+        'destination_type': 's3', 
+        'specifications': [
+            {
+                's3_bucket_name': 'database-migration-service-prod' 
+            }
+        ]
+    }, 
     'tables': [
         {
             'table_name': 'leads',

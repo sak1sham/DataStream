@@ -12,7 +12,11 @@ mapping = {
     },
     'destination': {
         'destination_type': 's3',
-        's3_bucket_name': 'dms-kafka',
+        'specifications': [
+            {
+                's3_bucket_name': 'dms-kafka',
+            }
+        ]
     },
     'topics': [
         {
