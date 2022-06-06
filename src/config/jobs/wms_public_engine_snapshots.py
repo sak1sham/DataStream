@@ -11,7 +11,7 @@ mapping = {
         's3_bucket_name': 'database-migration-service-prod' 
     }, 
     'tables': [ 
-                {
+        {
             'table_name': 'engine_snapshots',
             'mode': 'logging',
             'primary_key': 'id',
