@@ -30,6 +30,10 @@ class KafkaMigrate:
         redis_password = db['redis']['password']
         self.redis_db = redis.StrictRedis.from_url(url = redis_url, password=redis_password, decode_responses=True)
         self.redis_key = self.curr_mapping['unique_id']
+        
+        if('specifications' not in self.db['destination'].keys() or not self.db['destination']['specifications'] or not isinstance(self.db['destination']['specifications'], list)):
+            raise IncorrectMapping("Destination specifications should be supplied as an instance of list")
+        
 
     def get_kafka_connection(self, topic, kafka_group, kafka_server, KafkaPassword, KafkaUsername, enable_auto_commit = True):
         if "aws" in kafka_server:
@@ -105,7 +109,26 @@ class KafkaMigrate:
             else:
                 self.warn(message="Unable to find partition_col. Continuing without partitioning.")
         self.curr_mapping['fields']['dms_pkey'] = 'int'
-        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
+
+        self.saver_list = []
+        list_destinations = self.db['destination']['specifications']
+        self.db['destination'].pop('specifications')
+        self.saver_list = []
+        for destination in list_destinations:
+            for key in self.db['destination'].keys():
+                if(key == 'destination_type'):
+                    continue
+                self.db['destination'].pop(key)
+            for key in destination.keys():
+                self.db['destination'][key] = destination[key]
+            self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet))
+
+        for key in self.db['destination'].keys():
+            if(key == 'destination_type'):
+                continue
+            self.db['destination'].pop(key)
+        self.db['destination']['specifications'] = list_destinations
+
         self.athena_dtypes = get_athena_dtypes(self.curr_mapping['fields'])
         if('col_rename' in self.curr_mapping.keys() and self.curr_mapping['col_rename']):
             for key, val in self.curr_mapping['col_rename'].items():
@@ -161,7 +184,8 @@ class KafkaMigrate:
             if('dtypes' not in processed_data.keys()):
                 processed_data['dtypes'] = self.athena_dtypes
             primary_keys = ['dms_pkey']
-            self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
+            for saver_i in self.saver_list:
+                saver_i.save(processed_data = processed_data, primary_keys = primary_keys)
 
 
     def value_deserializer(self, x):
