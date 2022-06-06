@@ -38,9 +38,12 @@ class PGSQLMigrate:
         self.json_cols = []
         self.stop_time = None
         if('cut_off_time' in settings.keys() and settings['cut_off_time']):
-            if(not settings['cut_off_time'].tzinfo):
-                settings['cut_off_time'] = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date(), settings['cut_off_time']).astimezone(tz=self.tz_info).time()
-            curr_time = datetime.datetime.now(tz=self.tz_info).time()
+            if(isinstance(settings['cut_off_time'], datetime.time)):
+                temp = datetime.datetime(year = 2000, month = 1, day = 1, hour = settings['cut_off_time'].hour, minute=settings['cut_off_time'].minute, second=settings['cut_off_time'].second, microsecond=settings['cut_off_time'].microsecond, tzinfo=self.tz_info)
+                settings['cut_off_time'] = temp.timetz()
+            else:
+                raise IncorrectSettings("cut_off_time should be an instance of datetime.datetime.time()")
+            curr_time = datetime.datetime.now(tz=self.tz_info).timetz()
             self.inform(f"current_time: {curr_time} vs cut_off_time: {settings['cut_off_time']}")
             if(curr_time < settings['cut_off_time']):
                 self.stop_time = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date(), settings['cut_off_time']).astimezone(tz=self.tz_info)
