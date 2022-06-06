@@ -22,7 +22,7 @@ mapping = {
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
-            'batch_size': 10000,
+            'batch_size': 100000,
             'grace_updation_lag': {
                 'days': 1
             },

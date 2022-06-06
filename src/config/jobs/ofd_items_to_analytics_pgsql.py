@@ -22,7 +22,7 @@ mapping = {
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
-            'batch_size': 10000,
+            'batch_size': 100000,
             'col_rename': {
                 'tag': 'tag_'
             },
