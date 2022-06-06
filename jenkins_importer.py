@@ -1,10 +1,3 @@
-'''with open(f"deployment/jenkins/production/commands/{file_name_pg[:-3].replace('_', '-')}-values.yaml", 'w') as f:
-    text = ''
-    with open('deployment/jenkins/production/commands/analytics-cl-funnel-to-analytics-pgsql-values.yaml', 'r') as file:
-        text = file.read()
-    text = text.replace('analytics-cl-funnel-to-analytics-pgsql', file_name_pg[:-3].replace('_', '-'))
-    f.write(text)'''
-
 import os
 github_actions = os.listdir('.github/workflows/')
 jenkins_files = os.listdir('deployment/jenkins/production/commands/')
