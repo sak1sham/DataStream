@@ -38,15 +38,22 @@ class PGSQLMigrate:
         self.json_cols = []
         self.stop_time = None
         if('cut_off_time' in settings.keys() and settings['cut_off_time']):
-            if(not settings['cut_off_time'].tzinfo):
-                settings['cut_off_time'] = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date(), settings['cut_off_time']).astimezone(tz=self.tz_info).time()
-            curr_time = datetime.datetime.now(tz=self.tz_info).time()
+            if(isinstance(settings['cut_off_time'], datetime.time)):
+                temp = datetime.datetime(year = 2000, month = 1, day = 1, hour = settings['cut_off_time'].hour, minute=settings['cut_off_time'].minute, second=settings['cut_off_time'].second, microsecond=settings['cut_off_time'].microsecond, tzinfo=self.tz_info)
+                settings['cut_off_time'] = temp.timetz()
+            else:
+                raise IncorrectSettings("cut_off_time should be an instance of datetime.datetime.time()")
+            curr_time = datetime.datetime.now(tz=self.tz_info).timetz()
             self.inform(f"current_time: {curr_time} vs cut_off_time: {settings['cut_off_time']}")
             if(curr_time < settings['cut_off_time']):
                 self.stop_time = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date(), settings['cut_off_time']).astimezone(tz=self.tz_info)
             else:
                 self.stop_time = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date() + datetime.timedelta(days=1), settings['cut_off_time']).astimezone(tz=self.tz_info)
             self.inform(f"Cut-off time specified. Will be stopping after {str(self.stop_time)}")
+        
+        if('specifications' not in self.db['destination'].keys() or not self.db['destination']['specifications'] or not isinstance(self.db['destination']['specifications'], list)):
+            raise IncorrectMapping("Destination specifications should be supplied as an instance of list")
+        
 
     def inform(self, message: str = None) -> None:
         logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
@@ -69,12 +76,22 @@ class PGSQLMigrate:
         self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
 
         mirroring = (self.curr_mapping['mode'] == 'mirroring')
-        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], mirroring=mirroring, table_name=self.curr_mapping['table_name'])
-
+        self.saver_list = []
+        list_destinations = self.db['destination']['specifications']
+        self.db['destination'].pop('specifications')
+        self.saver_list = []
+        for destination in list_destinations:
+            self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
+            for key in destination.keys():
+                self.db['destination'][key] = destination[key]
+            self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], mirroring=mirroring, table_name=self.curr_mapping['table_name']))
+        
+        self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
+        self.db['destination']['specifications'] = list_destinations
 
     def save_job_working_data(self, table_name: str = None, status: bool = True) -> None:
         self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
-        total_records = self.saver.count_n_records(table_name = table_name)
+        total_records = self.saver_list[0].count_n_records(table_name = table_name)
         total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
         total_megabytes = 0
         if(self.n_insertions + self.n_updations > 0):
@@ -304,7 +321,8 @@ class PGSQLMigrate:
                 else:
                     self.warn("logging_flag works only in logging mode.")
             processed_data['json_cols'] = self.json_cols
-            self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
+            for saver_i in self.saver_list:
+                saver_i.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
 
     def get_list_tables(self) -> List[str]:
@@ -408,7 +426,7 @@ class PGSQLMigrate:
                     while(True):
                         if(self.stop_time and datetime.datetime.now(tz=self.tz_info) > self.stop_time):
                             self.save_job_working_data(table_name=table_name, status=False)
-                            msg = f"<!channel>Migration stopped for *{self.curr_mapping['table_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
+                            msg = f"<!channel> Migration stopped for *{self.curr_mapping['table_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
                             msg += f"Reason: Shut-down (time already past cut-off time {settings['cut_off_time']}) :warning:\n"
                             ins_str = "{:,}".format(self.n_insertions)
                             upd_str = "{:,}".format(self.n_updations)
@@ -842,7 +860,7 @@ class PGSQLMigrate:
 
 
     def preprocess_table(self, table_name: str = None) -> None:
-        n_columns_destination = self.saver.get_n_cols(table_name=table_name)
+        n_columns_destination = self.saver_list[0].get_n_cols(table_name=table_name)
         try:
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
@@ -875,7 +893,8 @@ class PGSQLMigrate:
                         n_columns_pgsql += 1
             if(n_columns_destination > 0 and n_columns_pgsql != n_columns_destination):
                 self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
-                self.saver.drop_table(table_name=table_name)
+                for saver_i in self.saver_list:
+                    saver_i.drop_table(table_name=table_name)
                 delete_metadata_from_mongodb(self.curr_mapping['unique_id'])
                 self.inform("Data is deleted, now starting migration again.")
             else:
@@ -966,13 +985,15 @@ class PGSQLMigrate:
                 
         self.inform(message="Overall migration complete.")
         if(self.curr_mapping['mode'] == 'dumping' and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
-            self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
+            for saver_i in self.saver_list:
+                saver_i.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform(message="Expired data removed.")
 
         self.postprocess()
         self.inform(message="Post processing completed.")
 
-        self.saver.close()
+        for saver_i in self.saver_list:
+            saver_i.close()
         self.inform(message="Hope to see you again :')")
 
         return (self.n_insertions, self.n_updations)

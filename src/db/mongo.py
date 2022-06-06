@@ -48,6 +48,10 @@ class MongoMigrate:
         self.n_updations = 0
         self.start_time = datetime.datetime.utcnow()
         self.curr_megabytes_processed = 0
+        
+        if('specifications' not in self.db['destination'].keys() or not self.db['destination']['specifications'] or not isinstance(self.db['destination']['specifications'], list)):
+            raise IncorrectMapping("Destination specifications should be supplied as an instance of list")
+        
 
 
     def inform(self, message: str = None) -> None:
@@ -161,12 +165,23 @@ class MongoMigrate:
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
 
         mirroring = (self.curr_mapping['mode'] == 'mirroring')
-        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet, mirroring=mirroring, table_name=self.curr_mapping['collection_name'])        
+        self.saver_list = []
+        list_destinations = self.db['destination']['specifications']
+        self.db['destination'].pop('specifications')
+        self.saver_list = []
+        for destination in list_destinations:
+            self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
+            for key in destination.keys():
+                self.db['destination'][key] = destination[key]
+            self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet, mirroring=mirroring, table_name=self.curr_mapping['collection_name']))
+
+        self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
+        self.db['destination']['specifications'] = list_destinations
 
 
     def save_job_working_data(self, status: bool = True) -> None:
         self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
-        total_records = self.saver.count_n_records(table_name = self.curr_mapping['collection_name'])
+        total_records = self.saver_list[0].count_n_records(table_name = self.curr_mapping['collection_name'])
         total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
         total_megabytes = 0
         if (self.n_insertions + self.n_updations > 0):
@@ -637,7 +652,8 @@ class MongoMigrate:
             time.sleep(self.time_delay)
         self.inform(message = "Migration Complete.")
         if('expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
-            self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
+            for saver_i in self.saver_list:
+                saver_i.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform(message = "Expired data removed.")
 
 
@@ -890,7 +906,8 @@ class MongoMigrate:
                 self.curr_megabytes_processed += processed_collection['df_insert'].memory_usage(index=True).sum()
             if(processed_collection['df_update'].shape[0]):
                 self.curr_megabytes_processed += processed_collection['df_update'].memory_usage(index=True).sum()
-            self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
+            for saver_i in self.saver_list:
+                saver_i.save(processed_data = processed_collection, primary_keys = primary_keys)
 
 
     def process(self) -> Tuple[int]:
@@ -936,7 +953,8 @@ class MongoMigrate:
         self.postprocess()
         self.inform(message="Post processing completed.")
 
-        self.saver.close()
+        for saver_i in self.saver_list:
+            saver_i.close()
         self.inform(message="Hope to see you again :')")
 
         return (self.n_insertions, self.n_updations)

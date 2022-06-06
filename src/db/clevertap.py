@@ -109,24 +109,24 @@ class ClevertapManager(EventsAPIManager):
             'total_records': total_records
         }
     
-    def cleaned_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], dst_saver: DMS_exporter, sync_date: datetime):
+    def cleaned_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], dst_saver: List[DMS_exporter], sync_date: datetime):
         sync_date = get_yyyymmdd_from_date(sync_date)
         year = str(sync_date)[0:4]
         month = str(sync_date)[4:6]
         day = str(sync_date)[6:8]
-
-        if dst_saver.type=='redshift':
-            try:
-                cur = dst_saver.saver.conn.cursor()
-                cur.execute("select 1 from pg_tables where schemaname = %s and tablename = %s", (dst_saver.saver.schema, curr_mapping['api_name']))
-                result = cur.fetchone()
-                if result:
-                    delete_query = f"delete from {dst_saver.saver.schema}.{curr_mapping['api_name']} where DATE(timestamp) = '{year}-{month}-{day}' and event_name='{event_name}'"
-                    cur.execute(delete_query)
-                dst_saver.saver.conn.commit()
-                cur.close()
-            except Exception as e:
-                logger.err(traceback.format_exc())
-                logger.err(f"{curr_mapping['unique_id']}: Error in deleting existing event - {event_name} for date {sync_date} in redshift. Exception: {str(e)}")
+        for saver_i in dst_saver:
+            if saver_i.type=='redshift':
+                try:
+                    cur = saver_i.saver.conn.cursor()
+                    cur.execute("select 1 from pg_tables where schemaname = %s and tablename = %s", (saver_i.saver.schema, curr_mapping['api_name']))
+                    result = cur.fetchone()
+                    if result:
+                        delete_query = f"delete from {saver_i.saver.schema}.{curr_mapping['api_name']} where DATE(timestamp) = '{year}-{month}-{day}' and event_name='{event_name}'"
+                        cur.execute(delete_query)
+                    saver_i.saver.conn.commit()
+                    cur.close()
+                except Exception as e:
+                    logger.err(traceback.format_exc())
+                    logger.err(f"{curr_mapping['unique_id']}: Error in deleting existing event - {event_name} for date {sync_date} in redshift. Exception: {str(e)}")
 
 
