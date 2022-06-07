@@ -24,7 +24,6 @@ cmdb,invoices,logging,invoice_number,str,,created_at,72179
 wmsdb,rm_events,logging,id,int,,timestamp,57662139
 wmsdb,inventory_engine_commands,logging,command_serial,int,,timestamp,82150660
 wmsdb,inventory_engine_logs,logging,id,int,,created_at,25704531
-wmsdb,engine_snapshots,logging,id,int,,created_at,485583
 cmdb,recent_user_searches,logging,id,int,,created_at,3094249
 cmdb,price_perception,logging,id,int,,created_at,3002025
 cmdb,recent_user_searches_archive,logging,id,int,,created_at,22607170
