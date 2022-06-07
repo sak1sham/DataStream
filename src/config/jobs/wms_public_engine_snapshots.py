@@ -10,7 +10,7 @@ mapping = {
         'destination_type': 's3', 
         'specifications': [
             {
-                's3_bucket_name': 'database-migration-service-prod' 
+                's3_bucket_name': 'data-migration-server' 
             }
         ]
     },
@@ -24,7 +24,7 @@ mapping = {
             'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
-            'batch_size': 100000,
+            'batch_size': 1000,
         }
     ]
 }
