@@ -1,4 +1,4 @@
-db,table_name,mode,pkey,pkey_type,bookmark,partition,Table Count
+db,table_name,mode,pkey,pkey_type,bookmark,partition,size
 wmsdb,rm_skus_area_wise_with_mrp_snapshot,dumping,id,int,,created_at,53929323
 wmsdb,rm_skus_area_wise,dumping,,,,,233447
 wmsdb,rm_skus_warehouse_wise,dumping,,,,,70322
