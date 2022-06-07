@@ -26,11 +26,11 @@ for uid in not_present:
     
     new_text = new_text.replace('adminroles', uid)
     
-    cron = "30 16 * * *"
+    cron = '"30 16 * * *"'
     if 'redshift' in uid:
-        cron = "30 18 * * *"
+        cron = '"30 18 * * *"'
     if 'pgsql' in uid:
-        cron = "30 20 * * *"
+        cron = '"30 20 * * *"'
 
     new_text = new_text.replace('"0 16 * * *"', cron)
 
