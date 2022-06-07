@@ -42,12 +42,12 @@ for index, row in df.iterrows():
             'cron': 'self-managed',
             'mode': row['mode'],
             'primary_key': row['pkey'],
-            'primary_key_datatype': row['pkey_type'], 
+            'primary_key_datatype': row['pkey_type'],
+            'improper_bookmarks': False 
         }
     ]
     if(row['mode'] == 'syncing'):
         mapping['tables'][0]['bookmark'] = row['bookmark']
-        mapping['tables'][0]['improper_bookmarks'] = False,
         mapping['tables'][0]['buffer_updation_lag'] = {
             'hours': 2,
         }
@@ -58,6 +58,10 @@ for index, row in df.iterrows():
     elif(row['mode'] == 'dumping'):
         mapping['tables'][0].pop('primary_key')
         mapping['tables'][0].pop('primary_key_datatype')
+        mapping['tables'][0].pop('improper_bookmarks')
+    
+    else:
+        mapping['tables'][0].pop('improper_bookmarks')
 
     
     if(row['size'] >= 7500000):
