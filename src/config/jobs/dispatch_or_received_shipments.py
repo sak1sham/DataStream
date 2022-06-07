@@ -24,7 +24,7 @@ mapping = {
             'partition_col': 'scanned_at',
             'partition_col_format': 'datetime',
             'mode': 'logging',
-            'batch_size': 10000,
+            'batch_size': 100000,
             'buffer_updation_lag':{
                 'hours': 2,
             },
