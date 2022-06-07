@@ -24,7 +24,7 @@ mapping = {
             'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
-            'batch_size': 1000,
+            'batch_size': 10000,
         }
     ]
 }
