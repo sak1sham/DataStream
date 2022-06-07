@@ -40,6 +40,8 @@ for uid in not_present:
     else:
         new_text = new_text.replace('deploymentEnabled: false', 'deploymentEnabled: true').replace('jobsEnabled: true', 'jobsEnabled: false')
 
+    if 'memory: "5000Mi"\n                cpu: "1"' in text:
+        new_text = new_text.replace('requests:\n    memory: "1500Mi"\n    cpu: "750m"\n  limits:\n    memory: "2000Mi"\n    cpu: "1"', 'requests:\n    memory: "5000Mi"\n    cpu: "1"\n  limits:\n    memory: "7500Mi"\n    cpu: "2"')
     
     with open(f"deployment/jenkins/production/commands/{uid}-values.yaml", 'w') as f:
         f.write(new_text)
