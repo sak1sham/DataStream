@@ -24,7 +24,7 @@ mapping = {
             'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'batch_size': 10000,
+            'batch_size': 100000,
             'grace_updation_lag': {
                 'days': 1
             },
