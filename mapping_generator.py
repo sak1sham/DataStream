@@ -121,7 +121,7 @@ for index, row in df.iterrows():
         with open('.github/workflows/prod.kube.analytics-cl-funnel.yaml', 'r') as file:
             text = file.read()
         text = text.replace('analytics-cl-funnel', file_name[:-3].replace('_', '-'))
-        text = text.replace('0 16 * * *', '30 16 * * *')
+        text = text.replace('"0 16 * * *"', '"30 16 * * *"')
         if(row['size'] >= 7500000):
             text = text.replace('memory: "1500Mi"', 'memory: "5000Mi"')
             text = text.replace('memory: "2000Mi"', 'memory: "7500Mi"')
@@ -135,7 +135,7 @@ for index, row in df.iterrows():
             with open('.github/workflows/prod.kube.analytics-cl-funnel-to-analytics-pgsql.yaml', 'r') as file:
                 text = file.read()
             text = text.replace('analytics-cl-funnel-to-analytics-pgsql', file_name_pg[:-3].replace('_', '-'))
-            text = text.replace('0 16 * * *', '30 20 * * *')
+            text = text.replace('"0 16 * * *"', '"30 20 * * *"')
             if(row['size'] >= 7500000):
                 text = text.replace('memory: "1500Mi"', 'memory: "5000Mi"')
                 text = text.replace('memory: "2000Mi"', 'memory: "7500Mi"')
@@ -148,7 +148,7 @@ for index, row in df.iterrows():
         with open('deployment/jenkins/production/commands/analytics-cl-funnel-values.yaml', 'r') as file:
             text = file.read()
         text = text.replace('analytics-cl-funnel', file_name[:-3].replace('_', '-'))
-        text = text.replace('0 16 * * *', '30 16 * * *')
+        text = text.replace('"0 16 * * *"', '"30 16 * * *"')
         if(row['size'] >= 7500000):
             text = text.replace('memory: "1500Mi"', 'memory: "5000Mi"')
             text = text.replace('memory: "2000Mi"', 'memory: "7500Mi"')
@@ -162,7 +162,7 @@ for index, row in df.iterrows():
             with open('deployment/jenkins/production/commands/analytics-cl-funnel-to-analytics-pgsql-values.yaml', 'r') as file:
                 text = file.read()
             text = text.replace('analytics-cl-funnel-to-analytics-pgsql', file_name_pg[:-3].replace('_', '-'))
-            text = text.replace('0 16 * * *', '30 20 * * *')
+            text = text.replace('"0 16 * * *"', '"30 20 * * *"')
             if(row['size'] >= 7500000):
                 text = text.replace('memory: "1500Mi"', 'memory: "5000Mi"')
                 text = text.replace('memory: "2000Mi"', 'memory: "7500Mi"')
