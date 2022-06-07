@@ -32,8 +32,7 @@ for uid in not_present:
     if 'pgsql' in uid:
         cron = "30 20 * * *"
 
-    cron_str = f'{uid}: "{cron}"'
-    new_text = new_text.replace('adminroles: "0 16 * * *"', cron_str)
+    new_text = new_text.replace('"0 16 * * *"', cron)
 
     if 'deploymentEnabled: false' in text:
         new_text = new_text.replace('deploymentEnabled: true', 'deploymentEnabled: false').replace('jobsEnabled: false', 'jobsEnabled: true')
