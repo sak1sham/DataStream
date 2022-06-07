@@ -58,11 +58,7 @@ for index, row in df.iterrows():
     elif(row['mode'] == 'dumping'):
         mapping['tables'][0].pop('primary_key')
         mapping['tables'][0].pop('primary_key_datatype')
-        mapping['tables'][0].pop('improper_bookmarks')
 
-    else:
-        mapping['tables'][0].pop('improper_bookmarks')
-    
     
     if(row['size'] >= 7500000):
         mapping['tables'][0]['batch_size'] = 100000
