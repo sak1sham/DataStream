@@ -42,12 +42,12 @@ for index, row in df.iterrows():
             'cron': 'self-managed',
             'mode': row['mode'],
             'primary_key': row['pkey'],
-            'primary_key_datatype': row['pkey_type'],
-            'improper_bookmarks': False, 
+            'primary_key_datatype': row['pkey_type'], 
         }
     ]
     if(row['mode'] == 'syncing'):
         mapping['tables'][0]['bookmark'] = row['bookmark']
+        mapping['tables'][0]['improper_bookmarks'] = False,
         mapping['tables'][0]['buffer_updation_lag'] = {
             'hours': 2,
         }
@@ -125,11 +125,12 @@ for index, row in df.iterrows():
         with open('.github/workflows/prod.kube.analytics-cl-funnel.yaml', 'r') as file:
             text = file.read()
         text = text.replace('analytics-cl-funnel', file_name[:-3].replace('_', '-'))
+        text = text.replace('0 16 * * *', '30 16 * * *')
         if(row['size'] >= 7500000):
             text = text.replace('memory: "1500Mi"', 'memory: "5000Mi"')
             text = text.replace('memory: "2000Mi"', 'memory: "7500Mi"')
-            text = text.replace('cpu: "750m"', 'memory: "cpu: "1"')
             text = text.replace('cpu: "1"', 'cpu: "2"')
+            text = text.replace('cpu: "750m"', 'cpu: "1"')
         f.write(text)
 
     if(row['mode'] != 'dumping'):
@@ -138,11 +139,12 @@ for index, row in df.iterrows():
             with open('.github/workflows/prod.kube.analytics-cl-funnel-to-analytics-pgsql.yaml', 'r') as file:
                 text = file.read()
             text = text.replace('analytics-cl-funnel-to-analytics-pgsql', file_name_pg[:-3].replace('_', '-'))
+            text = text.replace('0 16 * * *', '30 20 * * *')
             if(row['size'] >= 7500000):
                 text = text.replace('memory: "1500Mi"', 'memory: "5000Mi"')
                 text = text.replace('memory: "2000Mi"', 'memory: "7500Mi"')
-                text = text.replace('cpu: "750m"', 'memory: "cpu: "1"')
                 text = text.replace('cpu: "1"', 'cpu: "2"')
+                text = text.replace('cpu: "750m"', 'cpu: "1"')
             f.write(text)
         
     with open(f"deployment/jenkins/production/commands/{file_name[:-3].replace('_', '-')}-values.yaml", 'w') as f:
@@ -150,11 +152,12 @@ for index, row in df.iterrows():
         with open('deployment/jenkins/production/commands/analytics-cl-funnel-values.yaml', 'r') as file:
             text = file.read()
         text = text.replace('analytics-cl-funnel', file_name[:-3].replace('_', '-'))
+        text = text.replace('0 16 * * *', '30 16 * * *')
         if(row['size'] >= 7500000):
             text = text.replace('memory: "1500Mi"', 'memory: "5000Mi"')
             text = text.replace('memory: "2000Mi"', 'memory: "7500Mi"')
-            text = text.replace('cpu: "750m"', 'memory: "cpu: "1"')
             text = text.replace('cpu: "1"', 'cpu: "2"')
+            text = text.replace('cpu: "750m"', 'cpu: "1"')
         f.write(text)
 
     if(row['mode'] != 'dumping'):
@@ -163,11 +166,12 @@ for index, row in df.iterrows():
             with open('deployment/jenkins/production/commands/analytics-cl-funnel-to-analytics-pgsql-values.yaml', 'r') as file:
                 text = file.read()
             text = text.replace('analytics-cl-funnel-to-analytics-pgsql', file_name_pg[:-3].replace('_', '-'))
+            text = text.replace('0 16 * * *', '30 20 * * *')
             if(row['size'] >= 7500000):
                 text = text.replace('memory: "1500Mi"', 'memory: "5000Mi"')
                 text = text.replace('memory: "2000Mi"', 'memory: "7500Mi"')
-                text = text.replace('cpu: "750m"', 'memory: "cpu: "1"')
                 text = text.replace('cpu: "1"', 'cpu: "2"')
+                text = text.replace('cpu: "750m"', 'cpu: "1"')
             f.write(text)
 
     text = ''
