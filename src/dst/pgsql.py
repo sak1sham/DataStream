@@ -339,8 +339,23 @@ class PgSQLSaver:
                 str_pkey = f"'{pkey_max}'"
             else:
                 str_pkey = f"CAST('{str_pkey.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
+
+            start = True
+            del_pkeys_list = ""
+            for key in data_df[primary_key].tolist():
+                if(primary_key_dtype == 'int'):
+                    key_str = str(key)
+                elif(primary_key_dtype in ['str', 'uuid']):
+                    key_str = f"'{key}'"
+                else:
+                    key_str = f"CAST('{key.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
+                if(start):
+                    del_pkeys_list = f"{key_str}"
+                    start = False
+                else:
+                    del_pkeys_list = f"{del_pkeys_list}, {key_str}"
             
-            sql_stmt = f"SELECT {primary_key} FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} ORDER BY {primary_key}"
+            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} not in ({del_pkeys_list})"
             self.inform(sql_stmt)
 
             conn = psycopg2.connect(
@@ -349,41 +364,12 @@ class PgSQLSaver:
                 user = self.db_destination['username'],
                 password = self.db_destination['password']
             )
-            count_del = 0
-            with conn.cursor('cursor-mirroring-primary-keys') as cursor:
+
+            with conn.cursor() as cursor:
                 cursor.execute(sql_stmt)
-                while(True):
-                    recs = cursor.fetchmany(1000)
-                    if(not recs):
-                        break
-                    data_df2 = pd.DataFrame(recs, columns=[primary_key])
-                    list_1 = data_df[primary_key].tolist()
-                    list_2 = data_df2[primary_key].tolist()
-                    delete_pkeys = [x for x in list_2 if x not in list_1]
-                    count_del += len(delete_pkeys)
-                    start = True
-                    str_pkeys = ""
-                    for key in delete_pkeys:
-                        if(primary_key_dtype == 'int'):
-                            key_str = str(key)
-                        elif(primary_key_dtype in ['str', 'uuid']):
-                            key_str = f"'{key}'"
-                        else:
-                            key_str = f"CAST('{key.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
-                        if(start):
-                            str_pkeys = f"{key_str}"
-                        else:
-                            str_pkeys = f"{str_pkey}, {key_str}"
-                    print()
-                    print()
-                    print(delete_pkeys)
-                    print()
-                    print()
-                    if(len(delete_pkeys) > 0):
-                        sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} IN ({str_pkeys})"
-                        with conn.cursor() as cursor2:
-                            cursor2.execute(sql_stmt)
-            self.inform(f"Deleted {count_del} records from destination which no longer exist at source.")
+                conn.commit()
+
+            self.inform(f"Deleted some records from destination which no longer exist at source.")
             conn.close()
 
 

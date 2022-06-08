@@ -115,6 +115,7 @@ class RedshiftSaver:
         self.inform(query)
         with self.conn.cursor() as cursor:
             cursor.execute(query)
+            self.conn.commit()
         self.inform(f"Deleted {table_name} from Redshift schema {self.schema}")
 
 
@@ -191,37 +192,29 @@ class RedshiftSaver:
             else:
                 str_pkey = f"CAST('{str_pkey.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
             
-            sql_stmt = f"SELECT {primary_key} FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} ORDER BY {primary_key}"
+            start = True
+            del_pkeys_list = ""
+            for key in data_df[primary_key].tolist():
+                if(primary_key_dtype == 'int'):
+                    key_str = str(key)
+                elif(primary_key_dtype in ['str', 'uuid']):
+                    key_str = f"'{key}'"
+                else:
+                    key_str = f"CAST('{key.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
+                if(start):
+                    del_pkeys_list = f"{key_str}"
+                    start = False
+                else:
+                    del_pkeys_list = f"{del_pkeys_list}, {key_str}"
+            
+            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} not in ({del_pkeys_list})"
             self.inform(sql_stmt)
-            data_df_gen = wr.redshift.read_sql_query(
-                sql = sql_stmt,
-                con = self.conn,
-                chunksize = 10000
-            )
-            count_del = 0
-            for data_df2 in data_df_gen:
-                list_1 = data_df[primary_key].tolist()
-                list_2 = data_df2[primary_key].tolist()
-                delete_pkeys = [x for x in list_2 if x not in list_1]
-                count_del += len(delete_pkeys)
-                start = True
-                str_pkeys = ""
-                for key in delete_pkeys:
-                    if(primary_key_dtype == 'int'):
-                        key_str = str(key)
-                    elif(primary_key_dtype in ['str', 'uuid']):
-                        key_str = f"'{key}'"
-                    else:
-                        key_str = f"CAST('{key.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
-                    if(start):
-                        str_pkeys = f"{key_str}"
-                    else:
-                        str_pkeys = f"{str_pkey}, {key_str}"
-                if(len(delete_pkeys)):
-                    sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} IN ({str_pkeys})"
-                    with self.conn.cursor() as cursor:
-                        cursor.execute(sql_stmt)
-            self.inform(f"Deleted {count_del} records from destination which no longer exist at source.")
+            with self.conn.cursor() as cursor:
+                cursor.execute(sql_stmt)
+                self.conn.commit()
+
+            self.inform(f"Deleted some records from destination which no longer exist at source.")
+            self.conn.close()
 
     def close(self):
         self.conn.close()
