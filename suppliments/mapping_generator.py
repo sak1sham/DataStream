@@ -93,7 +93,7 @@ for index, row in df.iterrows():
                 "username": "saksham_garg"
             },
             {
-               "db_name": "dms",
+                "db_name": "dms",
                 "password": "3y5HMs^2qy%&Kma",
                 "url": "13.233.225.181",
                 "username": "saksham_garg"
