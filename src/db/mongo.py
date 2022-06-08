@@ -913,8 +913,8 @@ class MongoMigrate:
         '''
             This function handles the entire flow of preprocessing, processing, saving and postprocessing data.
         '''
-        if(self.curr_mapping['mode'] == 'mirroring' and self.db['destination']['destination_type'] == 's3'):
-            raise IncorrectMapping("Mirroring mode not supported for destination S3")
+        if(self.curr_mapping['mode'] == 'mirroring'):
+            raise IncorrectMapping("Mirroring mode not supported for source mongodb")
         
         self.get_connectivity()
         self.inform(message="Connected to database and collection.")
@@ -934,8 +934,6 @@ class MongoMigrate:
             elif(self.curr_mapping['mode'] == 'logging'):
                 self.logging_process()
             elif(self.curr_mapping['mode'] == 'syncing'):
-                self.syncing_process()
-            elif(self.curr_mapping['mode'] == 'mirroring'):
                 self.syncing_process()
             else:
                 raise IncorrectMapping("Please specify a mode of operation.")
