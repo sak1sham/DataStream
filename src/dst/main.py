@@ -3,9 +3,9 @@ from dst.s3 import s3Saver
 from dst.pgsql import PgSQLSaver
 from helper.exceptions import *
 from typing import List, Dict, Any
-
+import pandas as pd
 class DMS_exporter:
-    def __init__(self, db: Dict[str, Any] = None, uid: str = None, partition: List[str] = None, mirroring: bool = False, table_name: str = None) -> None:
+    def __init__(self, db: Dict[str, Any] = None, uid: str = None, partition: List[str] = None) -> None:
         self.type = db['destination']['destination_type']
         self.source_type = db['source']['source_type']
         if(self.type == 's3'):
@@ -16,12 +16,8 @@ class DMS_exporter:
                 self.saver = RedshiftSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid, is_small_data = bulk_data)
             else:
                 self.saver = RedshiftSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid)
-            if(mirroring):
-                self.saver.delete_table(table_name=table_name)
         elif(self.type == 'pgsql'):
             self.saver = PgSQLSaver(db_source = db['source'], db_destination = db['destination'], unique_id = uid)
-            if(mirroring):
-                self.saver.delete_table(table_name=table_name)
         else:
             raise DestinationNotFound("Destination type not recognized. Choose from s3, redshift, pgsql")
 
@@ -39,6 +35,11 @@ class DMS_exporter:
             self.saver.save(processed_data = processed_data, c_partition = c_partition, primary_keys = primary_keys)
         else:
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
+    
+    def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
+        if(isinstance(self.saver, s3Saver)):
+            raise IncorrectMapping("Can't have mirroring mode with destination S3")
+        self.saver.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
 
     def expire(self, expiry: Dict[str, int] = None, tz_info: Any = None):
         if(expiry):

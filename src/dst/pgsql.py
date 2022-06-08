@@ -329,5 +329,49 @@ class PgSQLSaver:
                 cursor.execute(query)
             conn.close()
     
+
+    def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
+        if(data_df.shape[0]):
+            pkey_max = data_df[primary_key].max()
+            if(primary_key_dtype == 'int'):
+                str_pkey = str(pkey_max)
+            elif(primary_key_dtype in ['str', 'uuid']):
+                str_pkey = f"'{pkey_max}'"
+            else:
+                str_pkey = f"CAST('{str_pkey.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
+
+            start = True
+            del_pkeys_list = ""
+            for key in data_df[primary_key].tolist():
+                if(primary_key_dtype == 'int'):
+                    key_str = str(key)
+                elif(primary_key_dtype in ['str', 'uuid']):
+                    key_str = f"'{key}'"
+                else:
+                    key_str = f"CAST('{key.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
+                if(start):
+                    del_pkeys_list = f"{key_str}"
+                    start = False
+                else:
+                    del_pkeys_list = f"{del_pkeys_list}, {key_str}"
+            
+            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} not in ({del_pkeys_list})"
+            self.inform(sql_stmt)
+
+            conn = psycopg2.connect(
+                host = self.db_destination['url'],
+                database = self.db_destination['db_name'],
+                user = self.db_destination['username'],
+                password = self.db_destination['password']
+            )
+
+            with conn.cursor() as cursor:
+                cursor.execute(sql_stmt)
+                conn.commit()
+
+            self.inform(f"Deleted some records from destination which no longer exist at source.")
+            conn.close()
+
+
     def close(self):
         pass

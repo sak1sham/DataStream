@@ -161,19 +161,18 @@ class MongoMigrate:
                 else:
                     raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
         
-        if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
+        if(self.curr_mapping['mode'] == 'dumping'):
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
 
-        mirroring = (self.curr_mapping['mode'] == 'mirroring')
-        self.saver_list = []
+        self.saver_list: List[DMS_exporter] = []
         list_destinations = self.db['destination']['specifications']
         self.db['destination'].pop('specifications')
-        self.saver_list = []
+        self.saver_list: List[DMS_exporter] = []
         for destination in list_destinations:
             self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
             for key in destination.keys():
                 self.db['destination'][key] = destination[key]
-            self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet, mirroring=mirroring, table_name=self.curr_mapping['collection_name']))
+            self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet))
 
         self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
         self.db['destination']['specifications'] = list_destinations
@@ -245,7 +244,7 @@ class MongoMigrate:
 
     def dumping_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
         '''
-            When we are dumping/mirroring data, snapshots of the datastore are captured at regular intervals inside destination
+            When we are dumping data, snapshots of the datastore are captured at regular intervals inside destination
             We insert the snapshots, and no updation is performed
             All the records are inserted, there is no need for bookmarks
             By default, we add a column 'migration_snapshot_date' to capture the starting time of migration
@@ -634,7 +633,7 @@ class MongoMigrate:
         '''
             DUMPING: Everytime the job runs, entire data present in the collection is migrated to destination,
             Multiple copies of the same data are created.
-            This function handles the dumping/mirroring process.
+            This function handles the dumping process.
             While dumping, we add another column 'migration_snapshot_date' that indicates the datetime when migration was performed.
         '''
         start = 0
@@ -914,8 +913,8 @@ class MongoMigrate:
         '''
             This function handles the entire flow of preprocessing, processing, saving and postprocessing data.
         '''
-        if(self.curr_mapping['mode'] == 'mirroring' and self.db['destination']['destination_type'] == 's3'):
-            raise IncorrectMapping("Mirroring mode not supported for destination S3")
+        if(self.curr_mapping['mode'] == 'mirroring'):
+            raise IncorrectMapping("Mirroring mode not supported for source mongodb")
         
         self.get_connectivity()
         self.inform(message="Connected to database and collection.")
@@ -936,8 +935,6 @@ class MongoMigrate:
                 self.logging_process()
             elif(self.curr_mapping['mode'] == 'syncing'):
                 self.syncing_process()
-            elif(self.curr_mapping['mode'] == 'mirroring'):
-                self.dumping_process()
             else:
                 raise IncorrectMapping("Please specify a mode of operation.")
         except KeyboardInterrupt:
