@@ -374,6 +374,11 @@ class PgSQLSaver:
                             str_pkeys = f"{key_str}"
                         else:
                             str_pkeys = f"{str_pkey}, {key_str}"
+                    print()
+                    print()
+                    print(delete_pkeys)
+                    print()
+                    print()
                     if(len(delete_pkeys) > 0):
                         sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} IN ({str_pkeys})"
                         with conn.cursor() as cursor2:
