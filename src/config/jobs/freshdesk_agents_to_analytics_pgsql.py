@@ -14,6 +14,12 @@ mapping = {
                 'db_name': 'dms',
                 'username': 'saksham_garg',
                 'password': '3y5HMs^2qy%&Kma'
+            },
+            {
+                'url': '13.233.225.181',
+                'db_name': 'dms',
+                'username': 'saksham_garg',
+                'password': '3y5HMs^2qy%&Kma'
             }
         ]
     },
