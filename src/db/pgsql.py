@@ -983,8 +983,8 @@ class PGSQLMigrate:
                 elif(self.curr_mapping['mode'] == 'syncing'):
                     self.syncing_process(table_name)
                 elif(self.curr_mapping['mode'] == 'mirroring'):
-                    self.mirror_primary_keys(table_name=table_name, primary_key=self.curr_mapping['primary_key'], primary_key_dtype=self.curr_mapping['primary_key_dtype'])
                     self.syncing_process(table_name)
+                    self.mirror_primary_keys(table_name=table_name, primary_key=self.curr_mapping['primary_key'], primary_key_dtype=self.curr_mapping['primary_key_datatype'])
                 else:
                     raise IncorrectMapping("Wrong mode of operation: can be syncing, logging, mirroring or dumping only.")
                 self.inform(message = f"Migration completed for table {str(table_name)}")

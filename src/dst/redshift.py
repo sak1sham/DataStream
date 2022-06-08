@@ -182,44 +182,46 @@ class RedshiftSaver:
     
     
     def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
-        pkey_max = data_df[primary_key].max()
-        if(primary_key_dtype == 'int'):
-            str_pkey = str(pkey_max)
-        elif(primary_key_dtype in ['str', 'uuid']):
-            str_pkey = f"'{pkey_max}'"
-        else:
-            str_pkey = f"CAST('{str_pkey.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
-        
-        sql_stmt = f"SELECT {primary_key} FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} ORDER BY {primary_key}"
-        self.inform(sql_stmt)
-        data_df_gen = wr.redshift.read_sql_query(
-            sql = sql_stmt,
-            con = self.conn,
-            chunksize = 10000
-        )
-        count_del = 0
-        for data_df2 in data_df_gen:
-            data_df3 = data_df2[~data_df[primary_key].isin(data_df[primary_key])].copy()
-            delete_pkeys = data_df3[primary_key].tolist()
-            count_del += len(delete_pkeys)
-            start = True
-            str_pkeys = ""
-            for key in delete_pkeys:
-                if(primary_key_dtype == 'int'):
-                    key_str = str(key)
-                elif(primary_key_dtype in ['str', 'uuid']):
-                    key_str = f"'{key}'"
-                else:
-                    key_str = f"CAST('{key.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
-                if(start):
-                    str_pkeys = f"{key_str}"
-                else:
-                    str_pkeys = f"{str_pkey}, {key_str}"
-
-            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} IN ({str_pkeys})"
-            with self.conn.cursor() as cursor:
-                cursor.execute(sql_stmt)
-        self.inform(f"Deleted {count_del} records from source.")
+        if(data_df.shape[0]):
+            pkey_max = data_df[primary_key].max()
+            if(primary_key_dtype == 'int'):
+                str_pkey = str(pkey_max)
+            elif(primary_key_dtype in ['str', 'uuid']):
+                str_pkey = f"'{pkey_max}'"
+            else:
+                str_pkey = f"CAST('{str_pkey.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
+            
+            sql_stmt = f"SELECT {primary_key} FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} ORDER BY {primary_key}"
+            self.inform(sql_stmt)
+            data_df_gen = wr.redshift.read_sql_query(
+                sql = sql_stmt,
+                con = self.conn,
+                chunksize = 10000
+            )
+            count_del = 0
+            for data_df2 in data_df_gen:
+                list_1 = data_df[primary_key].tolist()
+                list_2 = data_df2[primary_key].tolist()
+                delete_pkeys = [x for x in list_2 if x not in list_1]
+                count_del += len(delete_pkeys)
+                start = True
+                str_pkeys = ""
+                for key in delete_pkeys:
+                    if(primary_key_dtype == 'int'):
+                        key_str = str(key)
+                    elif(primary_key_dtype in ['str', 'uuid']):
+                        key_str = f"'{key}'"
+                    else:
+                        key_str = f"CAST('{key.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
+                    if(start):
+                        str_pkeys = f"{key_str}"
+                    else:
+                        str_pkeys = f"{str_pkey}, {key_str}"
+                if(len(delete_pkeys)):
+                    sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} IN ({str_pkeys})"
+                    with self.conn.cursor() as cursor:
+                        cursor.execute(sql_stmt)
+            self.inform(f"Deleted {count_del} records from destination which no longer exist at source.")
 
     def close(self):
         self.conn.close()
