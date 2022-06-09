@@ -31,6 +31,8 @@ mapping = {
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'batch_size': 10000,
+            "to_partition": True,
+            'partition_col': 'created_at',
             'grace_updation_lag': {
                 'days': 1
             },

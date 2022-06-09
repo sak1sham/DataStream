@@ -30,6 +30,8 @@ mapping = {
             'mode': 'syncing',
             'primary_key': 'user_id',
             'primary_key_datatype': 'int',
+            'to_partition': True,
+            'partition_col': 'first_order_created_date',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
