@@ -503,9 +503,7 @@ class PGSQLMigrate:
                                     ## In syncing-insertion mode, we first process and save the data of the batch
                                     ## After saving every batch, we save the record_id of the last migrated record
                                     ## resume mode is thus supported.
-                                    print(data_df.shape)
                                     processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, mode = 'syncing')
-                                    print(processed_data['df_insert'].shape)
                                     killer = NormalKiller()
                                     if(self.curr_mapping['cron'] == 'self-managed'):
                                         killer = GracefulKiller()
