@@ -6,14 +6,20 @@ mapping = {
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
-    'destination': {
-        'destination_type': 'pgsql',
-        'specifications': [
+    "destination": {
+        "destination_type": "pgsql",
+        "specifications": [
             {
-                'url': '3.108.43.163',
-                'db_name': 'dms',
-                'username': 'saksham_garg',
-                'password': '3y5HMs^2qy%&Kma'
+                "db_name": "dms",
+                "password": "3y5HMs^2qy%&Kma",
+                "url": "3.108.43.163",
+                "username": "saksham_garg"
+            },
+            {
+                "db_name": "dms",
+                "password": "3y5HMs^2qy%&Kma",
+                "url": "13.233.225.181",
+                "username": "saksham_garg"
             }
         ]
     },
@@ -25,6 +31,9 @@ mapping = {
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'batch_size': 10000,
+            'strict': True,
+            "to_partition": True,
+            'partition_col': 'created_at',
             'grace_updation_lag': {
                 'days': 1
             },

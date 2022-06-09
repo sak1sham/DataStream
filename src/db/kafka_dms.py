@@ -112,10 +112,10 @@ class KafkaMigrate:
                 self.warn(message="Unable to find partition_col. Continuing without partitioning.")
         self.curr_mapping['fields']['dms_pkey'] = 'int'
 
-        self.saver_list = []
+        self.saver_list: List[DMS_exporter] = []
         list_destinations = self.db['destination']['specifications']
         self.db['destination'].pop('specifications')
-        self.saver_list = []
+        self.saver_list: List[DMS_exporter] = []
         for destination in list_destinations:
             self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
             for key in destination.keys():

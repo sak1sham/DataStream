@@ -1,4 +1,4 @@
-from helper.util import convert_to_datetime, convert_to_dtype, get_athena_dtypes
+from helper.util import convert_to_datetime, convert_to_dtype, get_athena_dtypes, convert_to_dtype_strict
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb, save_recovery_data, get_recovery_data, delete_recovery_data, get_job_records, save_job_data, get_job_mb
 from helper.exceptions import *
 from helper.logger import logger
@@ -39,7 +39,7 @@ class PGSQLMigrate:
         self.stop_time = None
         if('cut_off_time' in settings.keys() and settings['cut_off_time']):
             if(isinstance(settings['cut_off_time'], datetime.time)):
-                temp = datetime.datetime(year = 2000, month = 1, day = 1, hour = settings['cut_off_time'].hour, minute=settings['cut_off_time'].minute, second=settings['cut_off_time'].second, microsecond=settings['cut_off_time'].microsecond, tzinfo=self.tz_info)
+                temp = self.tz_info.localize(datetime.datetime(year = 2000, month = 1, day = 1, hour = settings['cut_off_time'].hour, minute=settings['cut_off_time'].minute, second=settings['cut_off_time'].second, microsecond=settings['cut_off_time'].microsecond))
                 settings['cut_off_time'] = temp.timetz()
             else:
                 raise IncorrectSettings("cut_off_time should be an instance of datetime.datetime.time()")
@@ -75,16 +75,15 @@ class PGSQLMigrate:
         self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
         self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
 
-        mirroring = (self.curr_mapping['mode'] == 'mirroring')
-        self.saver_list = []
+        self.saver_list: List[DMS_exporter] = []
         list_destinations = self.db['destination']['specifications']
         self.db['destination'].pop('specifications')
-        self.saver_list = []
+        self.saver_list: List[DMS_exporter] = []
         for destination in list_destinations:
             self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
             for key in destination.keys():
                 self.db['destination'][key] = destination[key]
-            self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], mirroring=mirroring, table_name=self.curr_mapping['table_name']))
+            self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id']))
         
         self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
         self.db['destination']['specifications'] = list_destinations
@@ -207,7 +206,7 @@ class PGSQLMigrate:
 
     def dumping_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}) -> Dict[str, Any]:
         '''
-            Function that takes in dataframe and processes it assuming dumping/mirroring mode of operation
+            Function that takes in dataframe and processes it assuming dumping mode of operation
                 1. Adds migration_snapshot_date column to differentiate snapshots of data
                 2. Add partitions if required
                 3. Final conversion of every column in dataframe to required datatypes
@@ -218,9 +217,12 @@ class PGSQLMigrate:
         self.partition_for_parquet = []
         if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
             self.add_partitions(df)
-        df_insert = convert_to_dtype(df, col_dtypes)
+        if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+            df = convert_to_dtype_strict(df=df, schema=col_dtypes)
+        else:
+            df = convert_to_dtype(df=df, schema=col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
-        return {'name': table_name, 'df_insert': df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
+        return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
 
     def inserting_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}, mode: str = None) -> Dict[str, Any]:
@@ -250,7 +252,10 @@ class PGSQLMigrate:
             df, _ = self.distribute_records(collection_encr, df, mode='insert')
 
         ## Convert to required data types and return
-        df = convert_to_dtype(df, col_dtypes)
+        if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+            df = convert_to_dtype_strict(df=df, schema=col_dtypes)
+        else:
+            df = convert_to_dtype(df=df, schema=col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
         return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
@@ -280,7 +285,10 @@ class PGSQLMigrate:
             _, df = self.distribute_records(collection_encr, df, mode='update')
         
         ## Convert to required data types and return
-        df = convert_to_dtype(df, col_dtypes)
+        if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+            df = convert_to_dtype_strict(df=df, schema=col_dtypes)
+        else:
+            df = convert_to_dtype(df=df, schema=col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
         return {'name': table_name, 'df_insert': pd.DataFrame({}), 'df_update': df, 'dtypes': dtypes}
 
@@ -307,7 +315,7 @@ class PGSQLMigrate:
                 processed_data['col_rename'] = self.curr_mapping['col_rename']
             processed_data['varchar_lengths'] = self.varchar_lengths
             primary_keys = []
-            if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring'):
+            if(self.curr_mapping['mode'] != 'dumping'):
                 primary_keys = ['unique_migration_record_id']
             if(processed_data['df_insert'].shape[0]):
                 self.curr_megabytes_processed += processed_data['df_insert'].memory_usage(index=True).sum()
@@ -321,6 +329,8 @@ class PGSQLMigrate:
                 else:
                     self.warn("logging_flag works only in logging mode.")
             processed_data['json_cols'] = self.json_cols
+            processed_data['strict'] = True if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']) else False
+            processed_data['partition_col'] = self.curr_mapping['partition_col'][0] if 'to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition'] and 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] else None
             for saver_i in self.saver_list:
                 saver_i.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
@@ -364,7 +374,7 @@ class PGSQLMigrate:
             ret_dtype = {}
             if('fields' in self.curr_mapping.keys()):
                 ret_dtype = self.curr_mapping['fields']
-            if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
+            if(self.curr_mapping['mode'] == 'dumping'):
                 ret_dtype['migration_snapshot_date'] = 'datetime'
             return ret_dtype
         tn = curr_table_name.split('.')
@@ -389,7 +399,7 @@ class PGSQLMigrate:
                     self.json_cols.append(row[0])
                 if(row[2]):
                     self.varchar_lengths[row[0]] = row[2]
-        if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
+        if(self.curr_mapping['mode'] == 'dumping'):
             col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
 
@@ -399,7 +409,6 @@ class PGSQLMigrate:
             The pgsql query is prepared by various processing functions. This function helps in processing and saving data in accordance to that PGSQL query
             sync_mode = 1 means insertion has to be performed
             sync_mode = 2 means updation has to be performed
-            mode = 'syncing', 'dumping' 'mirroring' or 'logging'
         '''
         self.inform(message = str(sql_stmt))
         processed_data = {}
@@ -414,7 +423,8 @@ class PGSQLMigrate:
             )
             try:
                 self.col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
-                with conn.cursor('cursor-name', scrollable = True) as curs:
+                cursor_name = self.curr_mapping['unique_id'].replace('_', '-').replace('.', '-')
+                with conn.cursor(cursor_name, scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
                     self.inform("Executed the sql statement")
@@ -422,7 +432,6 @@ class PGSQLMigrate:
                     columns = [desc[0] for desc in curs.description]
                     ## Now, we have the names of the columns. Next, go back right to the starting of table (-1) and fetch records from the cursor in batches.
                     curs.scroll(-1)
-                    start_logging = True
                     while(True):
                         if(self.stop_time and datetime.datetime.now(tz=self.tz_info) > self.stop_time):
                             self.save_job_working_data(table_name=table_name, status=False)
@@ -443,8 +452,8 @@ class PGSQLMigrate:
                             break
                         else:
                             data_df = pd.DataFrame(rows, columns = columns)
-                            if(mode == "dumping" or mode == "mirroring"):
-                                ## In Dumping/mirroring mode, resume mode is not supported
+                            if(mode == "dumping"):
+                                ## In Dumping mode, resume mode is not supported
                                 ## Processes the data in the batch and save that batch
                                 ## If any error is encountered, DMS needs to restart
                                 processed_data = self.dumping_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes)
@@ -456,11 +465,7 @@ class PGSQLMigrate:
                                 ## After saving every batch, we save the record_id of the last migrated record
                                 ## resume mode is thus supported.
                                 processed_data = {}
-                                if(start_logging):
-                                    processed_data = self.updating_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, filter = False)
-                                    start_logging = False
-                                else:
-                                    processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, mode = 'logging')
+                                processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, mode = 'logging')
                                 killer = NormalKiller()
                                 if(self.curr_mapping['cron'] == 'self-managed'):
                                     killer = GracefulKiller()
@@ -605,7 +610,7 @@ class PGSQLMigrate:
 
     def dumping_process(self, table_name: str = None) -> None:
         '''
-            Function to create PGSQL query for dumping/mirroring mode and then send it further for processing.
+            Function to create PGSQL query for dumping mode and then send it further for processing.
         '''
         sql_stmt = f"SELECT * FROM {table_name}"
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
@@ -620,7 +625,8 @@ class PGSQLMigrate:
         sql_stmt = f"SELECT * FROM {table_name}"
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
-       
+        self.warn(f"Kindly check that the primary key {self.curr_mapping['primary_key']} in table {table_name} is always auto-incremental. Logging mode doesn\'t support random primary keys")
+        
         if(self.curr_mapping['primary_key_datatype'] == 'int'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = -2147483648
@@ -630,13 +636,6 @@ class PGSQLMigrate:
             curr = str(curr)
             last = str(last)
             sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= {last} AND {self.curr_mapping['primary_key']} <= {curr}"
-        elif(self.curr_mapping['primary_key_datatype'] == 'str'):
-            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
-            last = ""
-            curr = str(self.get_last_pkey(table_name = table_name))
-            if(last_rec):
-                last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= \'{last}\' AND {self.curr_mapping['primary_key']} <= \'{curr}\'"
         elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
@@ -648,13 +647,8 @@ class PGSQLMigrate:
             if(last_rec):
                 last = pytz.utc.localize(last_rec['record_id']).astimezone(self.tz_info)
             sql_stmt += f" WHERE Cast({self.curr_mapping['primary_key']} as timestamp) >= Cast(\'{last.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp) AND Cast({self.curr_mapping['primary_key']} as timestamp) <= Cast(\'{curr.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp)"
-        elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
-            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
-            last = '00000000-0000-0000-0000-000000000000'
-            curr = str(self.get_last_pkey(table_name = table_name))
-            if(last_rec):
-                last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid)"
+        elif(self.curr_mapping['primary_key_datatype'] in ['str', 'uuid']):
+            raise IncorrectMapping(f"Primary key cant be of type {self.curr_mapping['primary_key_datatype']} in logging mode")
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         sql_stmt += f" ORDER BY {self.curr_mapping['primary_key']}"
@@ -871,7 +865,7 @@ class PGSQLMigrate:
             col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
             n_columns_pgsql = len(col_dtypes) + 1
             ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
-            ## In case of dumping/mirroring, migration_snapshot_date is present
+            ## In case of dumping, migration_snapshot_date is present
             ## we also need to account for those columns which are partitioned
             if('partition_col' in self.curr_mapping.keys()):
                 if(isinstance(self.curr_mapping['partition_col'], str)):
@@ -902,11 +896,36 @@ class PGSQLMigrate:
         except ProcessingError as e:
             raise Exception("Unable to verify datatypes of table from source and destination.") from e
 
+    
+    def mirror_primary_keys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None) -> None:
+        '''
+            primary key dtype can be str, datetime, int, uuid
+        '''
+        sql_stmt = f"SELECT {primary_key} FROM {table_name} ORDER BY {primary_key}"
+        self.inform(sql_stmt)
+        conn = psycopg2.connect(
+            host = self.db['source']['url'],
+            database = self.db['source']['db_name'],
+            user = self.db['source']['username'],
+            password = self.db['source']['password']
+        )
+        with conn.cursor('cursor-mirroring-primary-keys', scrollable = True) as curs:
+            curs.execute(sql_stmt)
+            self.inform("Executed the sql statement to get primary keys")
+            pkeys = curs.fetchmany(self.batch_size)
+            data_df = pd.DataFrame(pkeys, columns = [primary_key])
+            if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+                data_df = convert_to_dtype_strict(df = data_df, schema = {primary_key: primary_key_dtype})
+            else:
+                data_df = convert_to_dtype(df = data_df, schema = {primary_key: primary_key_dtype})
+            for saver_i in self.saver_list:
+                saver_i.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
+
 
     def process(self) -> Tuple[int]:
-        if(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):
-            raise IncorrectMapping('Need to specify a primary_key (strictly increasing and unique - int|string|datetime) inside the table for syncing or logging mode.')
-        elif(self.curr_mapping['mode'] != 'dumping' and self.curr_mapping['mode'] != 'mirroring' and 'primary_key_datatype' not in self.curr_mapping.keys()):
+        if(self.curr_mapping['mode'] != 'dumping' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):
+            raise IncorrectMapping('Need to specify a primary_key (strictly increasing and unique - int|string|datetime) inside the table for syncing, mirroring or logging mode.')
+        elif(self.curr_mapping['mode'] != 'dumping' and 'primary_key_datatype' not in self.curr_mapping.keys()):
             raise IncorrectMapping('primary_key_datatype not specified. Please specify primary_key_datatype as either str or int or datetime.')
 
         if(self.curr_mapping['mode'] == 'mirroring' and self.db['destination']['destination_type'] == 's3'):
@@ -968,7 +987,8 @@ class PGSQLMigrate:
                 elif(self.curr_mapping['mode'] == 'syncing'):
                     self.syncing_process(table_name)
                 elif(self.curr_mapping['mode'] == 'mirroring'):
-                    self.dumping_process(table_name)
+                    self.syncing_process(table_name)
+                    self.mirror_primary_keys(table_name=table_name, primary_key=self.curr_mapping['primary_key'], primary_key_dtype=self.curr_mapping['primary_key_datatype'])
                 else:
                     raise IncorrectMapping("Wrong mode of operation: can be syncing, logging, mirroring or dumping only.")
                 self.inform(message = f"Migration completed for table {str(table_name)}")
