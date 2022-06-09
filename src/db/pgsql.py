@@ -39,7 +39,7 @@ class PGSQLMigrate:
         self.stop_time = None
         if('cut_off_time' in settings.keys() and settings['cut_off_time']):
             if(isinstance(settings['cut_off_time'], datetime.time)):
-                temp = datetime.datetime(year = 2000, month = 1, day = 1, hour = settings['cut_off_time'].hour, minute=settings['cut_off_time'].minute, second=settings['cut_off_time'].second, microsecond=settings['cut_off_time'].microsecond, tzinfo=self.tz_info)
+                temp = self.tz_info.localize(datetime.datetime(year = 2000, month = 1, day = 1, hour = settings['cut_off_time'].hour, minute=settings['cut_off_time'].minute, second=settings['cut_off_time'].second, microsecond=settings['cut_off_time'].microsecond))
                 settings['cut_off_time'] = temp.timetz()
             else:
                 raise IncorrectSettings("cut_off_time should be an instance of datetime.datetime.time()")
