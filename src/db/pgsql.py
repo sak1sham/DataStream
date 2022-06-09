@@ -329,6 +329,7 @@ class PGSQLMigrate:
                 else:
                     self.warn("logging_flag works only in logging mode.")
             processed_data['json_cols'] = self.json_cols
+            processed_data['strict'] = True if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']) else False
             for saver_i in self.saver_list:
                 saver_i.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
