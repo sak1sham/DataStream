@@ -33,6 +33,7 @@ mapping = {
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 100000,
+            'strict': True,
             'col_rename': {
                 'tag': 'tag_'
             },

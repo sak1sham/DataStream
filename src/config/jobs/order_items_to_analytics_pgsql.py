@@ -35,6 +35,7 @@ mapping = {
             'to_partition': True,
             'partition_col': 'created_at',
             'batch_size': 100000,
+            'strict': True,
             'grace_updation_lag': {
                 'days': 1
             },

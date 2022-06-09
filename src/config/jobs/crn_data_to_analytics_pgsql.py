@@ -26,6 +26,7 @@
     "tables": [
         {
             "batch_size": 10000,
+            'strict': True,
             "bookmark": "updated_at_for_pipeline",
             "buffer_updation_lag": {
                 "hours": 2

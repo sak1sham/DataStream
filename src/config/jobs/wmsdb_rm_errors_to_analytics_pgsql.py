@@ -26,6 +26,7 @@
     "tables": [
         {
             "batch_size": 10000,
+            'strict': True,
             "cron": "self-managed",
             "mode": "logging",
             "partition_col": "created_at",

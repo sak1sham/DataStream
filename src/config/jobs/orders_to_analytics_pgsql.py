@@ -35,6 +35,7 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 100000,
+            'strict': True,
             'buffer_updation_lag':{
                 'hours': 2,
             },

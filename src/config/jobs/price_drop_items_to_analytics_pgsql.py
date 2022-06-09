@@ -29,6 +29,7 @@ mapping = {
             'cron': 'self-managed', 
             'mode': 'syncing',
             'primary_key': 'id',
+            'strict': True,
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline', 
             'improper_bookmarks': False, 
