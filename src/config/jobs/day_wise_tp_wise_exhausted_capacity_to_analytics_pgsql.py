@@ -26,6 +26,7 @@
     "tables": [
         {
             "batch_size": 10000,
+            'strict': True,
             "cron": "self-managed",
             "mode": "dumping",
             "table_name": "day_wise_tp_wise_exhausted_capacity"

@@ -26,6 +26,7 @@
     "tables": [
         {
             "batch_size": 100000,
+            'strict': True,
             "cron": "self-managed",
             "mode": "dumping",
             "partition_col": "created_at",

@@ -31,6 +31,7 @@ mapping = {
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'batch_size': 100000,
+            'strict': True,
             'grace_updation_lag': {
                 'days': 1
             },

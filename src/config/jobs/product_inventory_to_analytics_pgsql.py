@@ -33,6 +33,7 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'strict': True,
             'col_rename': {
                 'tag': 'tag_'
             },

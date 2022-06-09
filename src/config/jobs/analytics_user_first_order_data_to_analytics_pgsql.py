@@ -35,6 +35,7 @@ mapping = {
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'strict': True,
             'buffer_updation_lag': {
                 'hours': 2,
             } ,

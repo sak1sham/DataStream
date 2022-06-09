@@ -26,6 +26,7 @@
     "tables": [
         {
             "batch_size": 10000,
+            'strict': True,
             "cron": "self-managed",
             "mode": "dumping",
             "table_name": "rm_skus_area_wise"
