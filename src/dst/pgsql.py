@@ -83,6 +83,7 @@ class PgSQLSaver:
             conn.commit()
         conn.close()
 
+
     @retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000)
     def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = []) -> None:
         if(df.empty):
@@ -100,13 +101,13 @@ class PgSQLSaver:
             col_names = col_names[:-2]
             for key, val in dtypes.items():
                 if(val == 'timestamp'):
-                    df2[key] = df2[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isnull(x) else '')
+                    df2[key] = df2[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isna(x) else '')
 
             cols_def = ""
-            for index, row in df2.iterrows():
+            for _, row in df2.iterrows():
                 row_def = "("
                 for col in list_cols:
-                    if(pd.isna(row[col]) or (col in json_cols and len(row[col]) == 0)):
+                    if(pd.isna(row[col])):
                         row_def += "NULL"
                     elif(col not in dtypes.keys() or dtypes[col] == 'string'):
                         row_def += "\'{0}\'".format(row[col].replace("'", "''"))
@@ -120,8 +121,10 @@ class PgSQLSaver:
                             row_def += "True"
                         else:
                             row_def += "False"
-                    elif(dtypes[col] == 'bigint' or dtypes[col] == 'double'):
-                        row_def += f'{row[col]}'
+                    elif(dtypes[col] == 'bigint'):
+                        row_def += f'{int(row[col])}'
+                    elif(dtypes[col] == 'double'):
+                        row_def += f'{float(row[col])}'
                     row_def += ", "
                 row_def = row_def[:-2] + "),\n"
                 cols_def += row_def

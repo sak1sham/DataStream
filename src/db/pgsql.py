@@ -1,4 +1,4 @@
-from helper.util import convert_to_datetime, convert_to_dtype, get_athena_dtypes
+from helper.util import convert_to_datetime, convert_to_dtype, get_athena_dtypes, convert_to_dtype_strict
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb, save_recovery_data, get_recovery_data, delete_recovery_data, get_job_records, save_job_data, get_job_mb
 from helper.exceptions import *
 from helper.logger import logger
@@ -217,9 +217,12 @@ class PGSQLMigrate:
         self.partition_for_parquet = []
         if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
             self.add_partitions(df)
-        df_insert = convert_to_dtype(df, col_dtypes)
+        if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+            df = convert_to_dtype_strict(df=df, schema=col_dtypes)
+        else:
+            df = convert_to_dtype(df=df, schema=col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
-        return {'name': table_name, 'df_insert': df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
+        return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
 
     def inserting_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}, mode: str = None) -> Dict[str, Any]:
@@ -249,7 +252,10 @@ class PGSQLMigrate:
             df, _ = self.distribute_records(collection_encr, df, mode='insert')
 
         ## Convert to required data types and return
-        df = convert_to_dtype(df, col_dtypes)
+        if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+            df = convert_to_dtype_strict(df=df, schema=col_dtypes)
+        else:
+            df = convert_to_dtype(df=df, schema=col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
         return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
@@ -279,7 +285,10 @@ class PGSQLMigrate:
             _, df = self.distribute_records(collection_encr, df, mode='update')
         
         ## Convert to required data types and return
-        df = convert_to_dtype(df, col_dtypes)
+        if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+            df = convert_to_dtype_strict(df=df, schema=col_dtypes)
+        else:
+            df = convert_to_dtype(df=df, schema=col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
         return {'name': table_name, 'df_insert': pd.DataFrame({}), 'df_update': df, 'dtypes': dtypes}
 
@@ -412,7 +421,8 @@ class PGSQLMigrate:
             )
             try:
                 self.col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
-                with conn.cursor('cursor-name', scrollable = True) as curs:
+                cursor_name = self.curr_mapping['unique_id'].replace('_', '-').replace('.', '-')
+                with conn.cursor(cursor_name, scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
                     self.inform("Executed the sql statement")
@@ -493,7 +503,9 @@ class PGSQLMigrate:
                                     ## In syncing-insertion mode, we first process and save the data of the batch
                                     ## After saving every batch, we save the record_id of the last migrated record
                                     ## resume mode is thus supported.
+                                    print(data_df.shape)
                                     processed_data = self.inserting_data(df = data_df, table_name = table_name, col_dtypes = self.col_dtypes, mode = 'syncing')
+                                    print(processed_data['df_insert'].shape)
                                     killer = NormalKiller()
                                     if(self.curr_mapping['cron'] == 'self-managed'):
                                         killer = GracefulKiller()
@@ -613,7 +625,8 @@ class PGSQLMigrate:
         sql_stmt = f"SELECT * FROM {table_name}"
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
-       
+        self.warn(f"Kindly check that the primary key {self.curr_mapping['primary_key']} in table {table_name} is always auto-incremental. Logging mode doesn\'t support random primary keys")
+        
         if(self.curr_mapping['primary_key_datatype'] == 'int'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = -2147483648
@@ -623,13 +636,6 @@ class PGSQLMigrate:
             curr = str(curr)
             last = str(last)
             sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= {last} AND {self.curr_mapping['primary_key']} <= {curr}"
-        elif(self.curr_mapping['primary_key_datatype'] == 'str'):
-            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
-            last = ""
-            curr = str(self.get_last_pkey(table_name = table_name))
-            if(last_rec):
-                last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= \'{last}\' AND {self.curr_mapping['primary_key']} <= \'{curr}\'"
         elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
@@ -641,13 +647,8 @@ class PGSQLMigrate:
             if(last_rec):
                 last = pytz.utc.localize(last_rec['record_id']).astimezone(self.tz_info)
             sql_stmt += f" WHERE Cast({self.curr_mapping['primary_key']} as timestamp) >= Cast(\'{last.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp) AND Cast({self.curr_mapping['primary_key']} as timestamp) <= Cast(\'{curr.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp)"
-        elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
-            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
-            last = '00000000-0000-0000-0000-000000000000'
-            curr = str(self.get_last_pkey(table_name = table_name))
-            if(last_rec):
-                last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid)"
+        elif(self.curr_mapping['primary_key_datatype'] in ['str', 'uuid']):
+            raise IncorrectMapping(f"Primary key cant be of type {self.curr_mapping['primary_key_datatype']} in logging mode")
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         sql_stmt += f" ORDER BY {self.curr_mapping['primary_key']}"
@@ -913,7 +914,10 @@ class PGSQLMigrate:
             self.inform("Executed the sql statement to get primary keys")
             pkeys = curs.fetchmany(self.batch_size)
             data_df = pd.DataFrame(pkeys, columns = [primary_key])
-            data_df = convert_to_dtype(df = data_df, schema = {primary_key: primary_key_dtype})
+            if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+                data_df = convert_to_dtype_strict(df = data_df, schema = {primary_key: primary_key_dtype})
+            else:
+                data_df = convert_to_dtype(df = data_df, schema = {primary_key: primary_key_dtype})
             for saver_i in self.saver_list:
                 saver_i.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
 
