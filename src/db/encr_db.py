@@ -38,7 +38,7 @@ def get_last_run_cron_job(job_id: str) -> datetype:
         logger.inform(s = f"{job_id}: Glad to see this database again!")
         return pytz.utc.localize(timing)
     else:
-        timing = datetime.datetime(1999, 1, 1, 0, 0, 0, 0, tzinfo=pytz.utc)
+        timing = pytz.utc.localize(datetime.datetime(1999, 1, 1, 0, 0, 0, 0))
         logger.inform(s = f"{job_id}: Never seen it before. Taking previously run cron job time as on January 1, 1999.")
         return timing
 

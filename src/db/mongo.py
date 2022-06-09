@@ -1,4 +1,4 @@
-from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema, get_athena_dtypes
+from helper.util import validate_or_convert, convert_to_datetime, typecast_df_to_schema, get_athena_dtypes
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, save_recovery_data, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record, save_recovery_data, get_recovery_data, delete_recovery_data, get_job_records, save_job_data, get_job_mb
 from helper.exceptions import *
 from helper.logger import logger
