@@ -34,64 +34,110 @@ class PgSQLSaver:
         self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{db_source['source_type']}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
         self.name_ = ""
         self.table_list = []
+        self.table_exists = None
 
 
-    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = []) -> None:
-        if(df.empty):
-            raise EmptyDataframe("Dataframe can not be empty.")
-        table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
-        cols_def = ""
-        for col in df.columns.to_list():
-            cols_def = f"{cols_def} \n{col} "
-            if(col not in dtypes.keys() or dtypes[col] == 'string'):
-                if(col in json_cols):
-                    cols_def = f"{cols_def} JSON"
-                elif(col in varchar_length_source.keys() and varchar_length_source[col]):
-                    cols_def = cols_def + f"VARCHAR({varchar_length_source[col]})"
-                else:
-                    cols_def = f"{cols_def} TEXT"
-            elif(dtypes[col] == 'timestamp'):
-                cols_def = f"{cols_def} TIMESTAMP"
-            elif(dtypes[col] == 'boolean'):
-                cols_def = f"{cols_def} BOOLEAN"
-            elif(dtypes[col] == 'bigint'):
-                cols_def = f"{cols_def} BIGINT"
-            elif(dtypes[col] == 'double'):
-                cols_def = f"{cols_def} DOUBLE PRECISION"
-            if(not logging_flag and len(primary_keys) > 0 and primary_keys[0] == col):
-                cols_def = f"{cols_def}  PRIMARY KEY"
-            cols_def = f"{cols_def} ,"
-        cols_def = cols_def[:-1]
-
-        logging_query = ""
-        if(logging_flag):
-            cols = ""
-            for col in df.columns.to_list():
-                cols += f"{col}, "
-            if(len(cols) > 0):
-                logging_query = f", UNIQUE ({cols[:-2]})"
-
-        sql_query = f"CREATE TABLE IF NOT EXISTS {table_name} ({cols_def}\n{logging_query});"
+    def check_table_exists(self, table: str = None, schema: str = None) -> bool:
         conn = psycopg2.connect(
             host = self.db_destination['url'],
             database = self.db_destination['db_name'],
             user = self.db_destination['username'],
             password = self.db_destination['password']
         )
+        exists = False
         with conn.cursor() as curs:
-            curs.execute(sql_query)
+            curs.execute(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '{table}');")
+            recs = curs.fetchall()
+            exists = recs[0][0]
             conn.commit()
-        conn.close()
+        return exists
+
+
+    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], partition_col: str = None) -> None:
+        if(df.empty):
+            raise EmptyDataframe("Dataframe can not be empty.")
+        if(self.table_exists is None):
+            # Not checked before
+            self.table_exists = self.check_table_exists(table = self.name_, schema = self.schema)
+            if(self.table_exists):
+                self.inform("Table exists")
+            else:
+                self.inform("Table doesn't exist")
+        
+        if(self.table_exists):
+            # Already checked the existence of table, and it exists 
+            return
+        else:
+            table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
+            cols_def = ""
+            for col in df.columns.to_list():
+                cols_def = f"{cols_def} \n{col} "
+                if(col not in dtypes.keys() or dtypes[col] == 'string'):
+                    if(col in json_cols):
+                        cols_def = f"{cols_def} JSON"
+                    elif(col in varchar_length_source.keys() and varchar_length_source[col]):
+                        cols_def = cols_def + f"VARCHAR({varchar_length_source[col]})"
+                    else:
+                        cols_def = f"{cols_def} TEXT"
+                elif(dtypes[col] == 'timestamp'):
+                    cols_def = f"{cols_def} TIMESTAMP"
+                elif(dtypes[col] == 'boolean'):
+                    cols_def = f"{cols_def} BOOLEAN"
+                elif(dtypes[col] == 'bigint'):
+                    cols_def = f"{cols_def} BIGINT"
+                elif(dtypes[col] == 'double'):
+                    cols_def = f"{cols_def} DOUBLE PRECISION"
+                if(not logging_flag and len(primary_keys) > 0 and primary_keys[0] == col and not partition_col):
+                    cols_def = f"{cols_def}  PRIMARY KEY"
+                cols_def = f"{cols_def} ,"
+            if(partition_col and len(primary_keys) > 0):
+                cols_def = f"{cols_def} PRIMARY KEY ({primary_keys[0]}, {partition_col}),"
+            cols_def = cols_def[:-1]
+
+            logging_query = ""
+            if(logging_flag):
+                cols = ""
+                for col in df.columns.to_list():
+                    cols += f"{col}, "
+                if(len(cols) > 0):
+                    logging_query = f", UNIQUE ({cols[:-2]})"
+
+            partition_string = ""
+            if(partition_col):
+                partition_string = f"\nPARTITION BY RANGE ({partition_col})"
+
+            sql_query = f"CREATE TABLE {table_name} ({cols_def}\n{logging_query}){partition_string};"
+            self.inform(sql_query)
+            conn = psycopg2.connect(
+                host = self.db_destination['url'],
+                database = self.db_destination['db_name'],
+                user = self.db_destination['username'],
+                password = self.db_destination['password']
+            )
+            with conn.cursor() as curs:
+                curs.execute(sql_query)
+                conn.commit()
+
+            start_year = 2015
+            end_year = 2030
+            for year in range(start_year, end_year+1):
+                for month in range(1, 13):
+                    sql_query = f"CREATE TABLE {table_name}_{year}_{month} PARTITION OF {table_name} FOR VALUES FROM ('{year}-{month}-01') to ('{year + int(month==12)}-{((month%12)+1)}-01')"
+                    self.inform(sql_query)
+                    with conn.cursor() as curs:
+                        curs.execute(sql_query)
+                        conn.commit()
+            conn.close()
 
 
     @retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000)
-    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], strict_mode: bool = False) -> None:
+    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], strict_mode: bool = False, partition_col: str = None) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
             df2 = df.copy()
             table = table.replace('.', '_').replace('-', '_')
-            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source, logging_flag=logging_flag, json_cols = json_cols)
+            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source, logging_flag=logging_flag, json_cols = json_cols, partition_col=partition_col)
             table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
             col_names = ""
             list_cols = df2.columns.to_list()
@@ -138,7 +184,10 @@ class PgSQLSaver:
                         up_query += f"{col} = excluded.{col},\n"
                 if(len(up_query)>2):
                     up_query = up_query[:-2]
-                conflict_behaviour = f"ON CONFLICT ({primary_keys[0]}) DO UPDATE SET {up_query}"
+                if(partition_col):
+                    conflict_behaviour = f"ON CONFLICT ({primary_keys[0]}, {partition_col}) DO UPDATE SET {up_query}"
+                else:
+                    conflict_behaviour = f"ON CONFLICT ({primary_keys[0]}) DO UPDATE SET {up_query}"
 
             sql_query = f"INSERT INTO {table_name}({col_names})\nVALUES\n{cols_def}\n {conflict_behaviour};"
             conn = psycopg2.connect(
@@ -152,6 +201,7 @@ class PgSQLSaver:
                 conn.commit()
             conn.close()
         except Exception as e:
+            self.err(str(e))
             raise Exception("Unable to insert records in table.") from e
 
 
@@ -196,6 +246,10 @@ class PgSQLSaver:
                     ind = json_cols.index(key)
                     json_cols[ind] = val       
 
+        partition_col = None
+        if('partition_col' in processed_data.keys() and processed_data['partition_col']):
+            partition_col = processed_data['partition_col']
+
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
             if('col_rename' in processed_data and processed_data['col_rename']):
                 processed_data['df_insert'].rename(columns = processed_data['col_rename'], inplace = True)
@@ -209,7 +263,8 @@ class PgSQLSaver:
                 varchar_length_source = varchar_length_source,
                 logging_flag=logging_flag,
                 json_cols = json_cols,
-                strict_mode = strict_mode
+                strict_mode = strict_mode,
+                partition_col=partition_col
             )
             self.inform(message = f"Inserted {str(processed_data['df_insert'].shape[0])} records.")
         
@@ -227,7 +282,8 @@ class PgSQLSaver:
                 varchar_length_source = varchar_length_source,
                 logging_flag=logging_flag,
                 json_cols = json_cols,
-                strict_mode = strict_mode
+                strict_mode = strict_mode,
+                partition_col=partition_col
             )
             self.inform(message= f"{str(processed_data['df_update'].shape[0])} updations done.")
 
