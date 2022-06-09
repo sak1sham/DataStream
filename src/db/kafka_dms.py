@@ -1,3 +1,4 @@
+from logging import exception
 import traceback
 import pandas as pd
 import json
@@ -11,6 +12,7 @@ from helper.util import *
 from helper.logger import logger
 from helper.exceptions import *
 from dst.main import DMS_exporter
+from notifications.slack_notify import send_message
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
@@ -202,14 +204,25 @@ class KafkaMigrate:
         total_redis_insertion_time = 0
         for message in consumer:
             start_time = time.time()
-            self.redis_db.rpush(self.redis_key, message.value)
+            try:
+                self.redis_db.rpush(self.redis_key, message.value)
+            except Exception as e:
+                msg = "Redis overflow"
+                slack_token = settings['slack_notif']['slack_token']
+                send_message(msg = msg, channel = self.channel, slack_token = slack_token)
             total_redis_insertion_time += time.time() - start_time
             self.inform(f"Reached {self.redis_db.llen(self.redis_key)}/{self.batch_size}")
             if(self.redis_db.llen(self.redis_key) >= self.batch_size):
                 self.inform(f"Time taken in (consuming + redis insertions) of {self.batch_size} records: {time.time() - batch_start_time} seconds")
                 self.inform(f"Time taken in (redis insertions) of {self.batch_size} records: {total_redis_insertion_time} seconds")
                 start_time = time.time()
-                list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
+                try:
+                    list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
+                except Exception as e:
+                    msg = "Redis overflow"
+                    slack_token = settings['slack_notif']['slack_token']
+                    send_message(msg = msg, channel = self.channel, slack_token = slack_token)
+                # list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
                 segregated_recs = {}
                 for val in list_records:
                     val = json.loads(val)
