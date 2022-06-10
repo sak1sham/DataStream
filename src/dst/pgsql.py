@@ -294,6 +294,7 @@ class PgSQLSaver:
 
 
     def delete_table(self, table_name: str = None) -> None:
+        table_name = table_name.replace('.', '_').replace('-', '_')
         query = f"DROP TABLE  IF EXISTS {self.schema}.{table_name};"
         self.inform(query)
         conn = psycopg2.connect(
@@ -310,6 +311,7 @@ class PgSQLSaver:
 
 
     def get_n_cols(self, table_name: str = None) -> int:
+        table_name = table_name.replace('.', '_').replace('-', '_')
         query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
         self.inform(query)
         conn = psycopg2.connect(
@@ -327,6 +329,7 @@ class PgSQLSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
+            table_name = table_name.replace('.', '_').replace('-', '_')
             sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
             conn = psycopg2.connect(
@@ -350,6 +353,7 @@ class PgSQLSaver:
 
     def count_n_records(self, table_name: str = None) -> int:
         try:
+            table_name = table_name.replace('.', '_').replace('-', '_')
             if(self.is_exists(table_name=table_name)):
                 sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
                 self.inform(sql_query)
