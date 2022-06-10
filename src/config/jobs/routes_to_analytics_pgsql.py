@@ -29,6 +29,7 @@ mapping = {
             'cron': 'self-managed',
             'mode': 'syncing', 
             'partition_col': 'started_at',
+            "partition_col_format": "datetime",
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
