@@ -22,7 +22,6 @@
             "partition_col": "migration_snapshot_date",
             "partition_col_format": "datetime",
             "table_name": "product_category_tags",
-            "to_partition": True
         }
     ]
 }

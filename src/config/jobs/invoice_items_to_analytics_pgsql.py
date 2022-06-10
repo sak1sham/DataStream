@@ -34,7 +34,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "invoice_items",
-            "to_partition": True
         }
     ]
 }

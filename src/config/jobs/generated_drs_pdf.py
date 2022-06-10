@@ -32,7 +32,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "generated_drs_pdf",
-            "to_partition": True
         }
     ]
 }

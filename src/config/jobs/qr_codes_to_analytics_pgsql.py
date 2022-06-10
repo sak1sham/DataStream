@@ -42,7 +42,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "qr_codes",
-            "to_partition": True
         }
     ]
 }

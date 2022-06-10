@@ -28,7 +28,6 @@ mapping = {
             'table_name': 'user_cashback_transactions',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'to_partition': True,
             'partition_col': 'created_at',
             'primary_key': 'id',
             'primary_key_datatype': 'uuid',

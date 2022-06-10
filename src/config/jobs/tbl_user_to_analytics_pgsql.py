@@ -30,7 +30,6 @@ mapping = {
             'mode': 'syncing',
             'primary_key': 'user_id',
             'primary_key_datatype': 'int',
-            'to_partition': True,
             'partition_col': 'user_created',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,

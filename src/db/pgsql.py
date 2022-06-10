@@ -200,7 +200,7 @@ class PGSQLMigrate:
                 else:
                     raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, str or datetime.") 
         else:
-            self.warn(message="Unable to find partition_col. Continuing without partitioning.")
+            self.warn(message="Continuing without partitioning.")
         return df
 
 
@@ -215,8 +215,7 @@ class PGSQLMigrate:
         '''
         df['migration_snapshot_date'] = self.curr_run_cron_job
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            self.add_partitions(df)
+        self.add_partitions(df)
         if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
             df = convert_to_dtype_strict(df=df, schema=col_dtypes)
         else:
@@ -241,8 +240,7 @@ class PGSQLMigrate:
         
         ## Adding partition if required
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            self.add_partitions(df)
+        self.add_partitions(df)
  
         ## Adding a primary key "unique_migration_record_id" for every record
         df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
@@ -274,8 +272,7 @@ class PGSQLMigrate:
 
         ## Adding partition if required
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            self.add_partitions(df)
+        self.add_partitions(df)
 
         ## Adding a primary key "unique_migration_record_id" for every record
         df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
@@ -330,7 +327,7 @@ class PGSQLMigrate:
                     self.warn("logging_flag works only in logging mode.")
             processed_data['json_cols'] = self.json_cols
             processed_data['strict'] = True if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']) else False
-            processed_data['partition_col'] = self.curr_mapping['partition_col'][0] if 'to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition'] and 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] else None
+            processed_data['partition_col'] = self.curr_mapping['partition_col'][0] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] else None
             for saver_i in self.saver_list:
                 saver_i.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 

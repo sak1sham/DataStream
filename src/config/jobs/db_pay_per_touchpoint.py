@@ -32,7 +32,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "db_pay_per_touchpoint",
-            "to_partition": True
         }
     ]
 }

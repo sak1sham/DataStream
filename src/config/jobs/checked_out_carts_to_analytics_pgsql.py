@@ -42,7 +42,6 @@
             "primary_key": "cart_id",
             "primary_key_datatype": "int",
             "table_name": "checked_out_carts",
-            "to_partition": True
         }
     ]
 }

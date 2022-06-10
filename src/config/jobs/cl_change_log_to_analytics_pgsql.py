@@ -42,7 +42,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "cl_change_log",
-            "to_partition": True
         }
     ]
 }

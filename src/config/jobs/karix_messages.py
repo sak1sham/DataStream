@@ -21,7 +21,6 @@ mapping = {
             'mode': 'syncing',
             'primary_key': 'karix_message_id',
             'primary_key_datatype': 'int',
-            'to_partition': True,
             'partition_col': 'sent_at',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at_for_pipeline ',

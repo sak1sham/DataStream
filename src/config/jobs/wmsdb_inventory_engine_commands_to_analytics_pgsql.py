@@ -34,7 +34,6 @@
             "primary_key": "command_serial",
             "primary_key_datatype": "int",
             "table_name": "inventory_engine_commands",
-            "to_partition": True
         }
     ]
 }

@@ -42,7 +42,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "rvp_logs",
-            "to_partition": True
         }
     ]
 }

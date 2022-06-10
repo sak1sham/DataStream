@@ -27,8 +27,7 @@ mapping = {
         {
             'table_name': 'routes',
             'cron': 'self-managed',
-            'mode': 'syncing',
-            'to_partition': True, 
+            'mode': 'syncing', 
             'partition_col': 'started_at',
             'primary_key': 'id',
             'primary_key_datatype': 'int',

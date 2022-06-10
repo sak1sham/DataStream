@@ -42,7 +42,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "sku_wise_picking_details",
-            "to_partition": True
         }
     ]
 }

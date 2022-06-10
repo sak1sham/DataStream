@@ -32,7 +32,6 @@
             "primary_key": "po_id",
             "primary_key_datatype": "int",
             "table_name": "purchase_orders",
-            "to_partition": True
         }
     ]
 }

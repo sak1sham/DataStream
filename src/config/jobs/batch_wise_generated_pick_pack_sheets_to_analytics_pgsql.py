@@ -42,7 +42,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "batch_wise_generated_pick_pack_sheets",
-            "to_partition": True
         }
     ]
 }

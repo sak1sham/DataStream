@@ -30,7 +30,6 @@ mapping = {
             'mode': 'syncing',
             'primary_key': 'user_funnel_step_id',
             'primary_key_datatype': 'int',
-            'to_partition': True,
             'partition_col': 'funnel_date',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at_for_pipeline',

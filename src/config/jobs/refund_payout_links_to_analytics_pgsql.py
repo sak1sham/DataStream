@@ -42,7 +42,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "refund_payout_links",
-            "to_partition": True
         }
     ]
 }

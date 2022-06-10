@@ -24,7 +24,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "rm_errors",
-            "to_partition": True
         }
     ]
 }

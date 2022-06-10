@@ -32,7 +32,6 @@
             "primary_key": "event_id",
             "primary_key_datatype": "str",
             "table_name": "juspay_refunds",
-            "to_partition": True
         }
     ]
 }

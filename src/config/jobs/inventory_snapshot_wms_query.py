@@ -106,7 +106,6 @@ mapping = {
         {
             'table_name': 'inventory_snapshot_wms_query',
             'cron': 'self-managed',
-            'to_partition': True,
             'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
             'mode': 'dumping',

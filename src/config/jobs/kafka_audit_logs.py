@@ -35,7 +35,6 @@ mapping = {
                 'date': 'datetime',
             },
             'cron': 'self-managed',
-            'to_partition': True,
             'partition_col': 'date',
             'partition_col_format': ['datetime'],
             'col_rename': {

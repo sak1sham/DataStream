@@ -71,7 +71,6 @@ for index, row in df.iterrows():
     
     mapping_pg = mapping.copy()
     if(row['partition']):
-        mapping['tables'][0]['to_partition'] = True
         mapping['tables'][0]['partition_col'] = row['partition']
         mapping['tables'][0]['partition_col_format'] = 'datetime'
 

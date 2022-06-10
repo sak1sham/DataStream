@@ -34,7 +34,6 @@
             "primary_key": "invoice_number",
             "primary_key_datatype": "str",
             "table_name": "invoices",
-            "to_partition": True
         }
     ]
 }

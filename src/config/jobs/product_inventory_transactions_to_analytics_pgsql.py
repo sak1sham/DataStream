@@ -32,7 +32,6 @@
             "partition_col": "created_at",
             "partition_col_format": "datetime",
             "table_name": "product_inventory_transactions",
-            "to_partition": True
         }
     ]
 }

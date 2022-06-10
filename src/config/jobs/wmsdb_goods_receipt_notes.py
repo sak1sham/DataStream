@@ -32,7 +32,6 @@
             "primary_key": "transaction_group_id",
             "primary_key_datatype": "int",
             "table_name": "goods_receipt_notes",
-            "to_partition": True
         }
     ]
 }

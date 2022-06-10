@@ -42,7 +42,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "crn_data",
-            "to_partition": True
         }
     ]
 }

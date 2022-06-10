@@ -32,7 +32,6 @@
             "primary_key": "hash",
             "primary_key_datatype": "str",
             "table_name": "app_links",
-            "to_partition": True
         }
     ]
 }

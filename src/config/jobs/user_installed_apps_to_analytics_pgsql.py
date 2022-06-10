@@ -32,7 +32,6 @@
             "partition_col": "migration_snapshot_date",
             "partition_col_format": "datetime",
             "table_name": "user_installed_apps",
-            "to_partition": True
         }
     ]
 }
