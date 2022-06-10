@@ -326,7 +326,7 @@ class MongoMigrate:
         ## All fields in the document have been individually converted to destined data-types.
         ## Next and final processing step is to convert the documents into a dataframe, and type-cast the dataframe as a whole to destined data-types (as a double-check)
         ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.curr_mapping['fields'])
-        ## Processing is complete. While saving, we need to pass the datatypes of columns to Athena (to create pgsql table).
+        ## Processing is complete. While saving, we need to pass the datatypes of columns to Athena (to create table).
         dtypes = get_athena_dtypes(self.curr_mapping['fields'])
         return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 

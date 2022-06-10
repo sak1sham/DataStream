@@ -123,7 +123,7 @@ class RedshiftSaver:
         query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
         self.inform(query)
         df = wr.redshift.read_sql_query(
-            pgsql = query,
+            sql = query,
             con = self.conn
         )
         return df.iloc[0][0]
@@ -134,7 +134,7 @@ class RedshiftSaver:
             sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
             df = wr.redshift.read_sql_query(
-                pgsql = sql_query,
+                sql = sql_query,
                 con = self.conn
             )
             return df.shape[0] > 0
@@ -149,7 +149,7 @@ class RedshiftSaver:
                 sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
                 self.inform(sql_query)
                 df = wr.redshift.read_sql_query(
-                    pgsql = sql_query,
+                    sql = sql_query,
                     con = self.conn
                 )
                 return df.iloc[0][0]
