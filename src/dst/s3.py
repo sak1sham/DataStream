@@ -202,7 +202,7 @@ class s3Saver:
         try:
             sql_query = f"SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.database}\' AND TABLE_NAME = \'{table_name}\';"
             self.inform(sql_query)
-            df = wr.athena.read_sql_query(sql = sql_query, database = self.database)
+            df = wr.athena.read_sql_query(pgsql = sql_query, database = self.database)
             return df.shape[0] > 0
         except Exception as e:
             self.err("Unable to check the presence of the table at destination.")
@@ -213,7 +213,7 @@ class s3Saver:
             if(self.is_exists(table_name=table_name)):
                 sql_query = f"SELECT COUNT(*) as count FROM {table_name};"
                 self.inform(sql_query)
-                df = wr.athena.read_sql_query(sql = sql_query, database = self.database)
+                df = wr.athena.read_sql_query(pgsql = sql_query, database = self.database)
                 return df.iloc[0][0]
             else:
                 return 0

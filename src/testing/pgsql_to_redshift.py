@@ -209,7 +209,7 @@ class SqlTester():
                         str_id = ""
                         for _, row in data_df.iterrows():
                             str_id += "\'" + str(row['unique_migration_record_id']) + "\',"
-                        redshift_schema = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_') + "_dms"
+                        redshift_schema = "pgsql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_') + "_dms"
                         if('schema' in self.db['destination'].keys() and self.db['destination']['schema']):
                             redshift_schema = self.db['destination']['schema']
                         query = 'SELECT * FROM {0}.{1} WHERE unique_migration_record_id in ({2});'.format(redshift_schema, redshift_table, str(str_id[:-1]))
@@ -220,7 +220,7 @@ class SqlTester():
                             password = self.db['destination']['password']
                         )
                         df = wr.redshift.read_sql_query(
-                            sql = query, 
+                            pgsql = query, 
                             con = redshift_conn
                         )
                         
@@ -246,7 +246,7 @@ if __name__ == "__main__":
         if('username' not in mapping['source'].keys()):
             mapping['source']['username'] = ''
             mapping['source']['password'] = ''
-        if(mapping['source']['source_type'] == 'sql'):
+        if(mapping['source']['source_type'] == 'pgsql'):
             if('tables' not in mapping.keys()):
                 mapping['tables'] = []
             for table in mapping['tables']:

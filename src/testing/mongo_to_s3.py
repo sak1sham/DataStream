@@ -137,7 +137,7 @@ class MongoTester():
         if(n_recs):
             query = 'SELECT * FROM ' + self.col + ' WHERE _id in (' + str_id[:-1] + ');'
             database = "mongo" + "_" + self.db.replace('.', '_').replace('-', '_')
-            df = wr.athena.read_sql_query(sql = query, database = database)
+            df = wr.athena.read_sql_query(pgsql = query, database = database)
             for record in curs:
                 if('bookmark' in self.col_map.keys() and self.col_map['bookmark']):
                     if('improper_bookmarks' in self.col_map.keys() and not self.col_map['improper_bookmarks']):

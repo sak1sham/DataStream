@@ -198,8 +198,8 @@ class SqlTester():
                         for _, row in data_df.iterrows():
                             str_id += "\'" + str(row['unique_migration_record_id']) + "\',"
                         query = 'SELECT * FROM ' + athena_table + ' WHERE unique_migration_record_id in (' + str(str_id[:-1]) + ');'
-                        database = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
-                        df = wr.athena.read_sql_query(sql = query, database = database)
+                        database = "pgsql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_')
+                        df = wr.athena.read_sql_query(pgsql = query, database = database)
                         
                         for _, row in data_df.iterrows():
                             athena_record = df.loc[df['unique_migration_record_id'] == row['unique_migration_record_id']].to_dict(orient='records')
@@ -224,7 +224,7 @@ if __name__ == "__main__":
         if('username' not in mapping['source'].keys()):
             mapping['source']['username'] = ''
             mapping['source']['password'] = ''
-        if(mapping['source']['source_type'] == 'sql'):
+        if(mapping['source']['source_type'] == 'pgsql'):
             if('tables' not in mapping.keys()):
                 mapping['tables'] = []
             for table in mapping['tables']:

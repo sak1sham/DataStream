@@ -1,6 +1,6 @@
 mapping = { 
     'source': { 
-        'source_type': 'sql', 
+        'source_type': 'pgsql', 
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com', 
         'db_name': 'redshift', 
         'username': 'saksham_garg', 
