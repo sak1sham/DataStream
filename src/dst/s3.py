@@ -73,7 +73,10 @@ class s3Saver:
         self.unique_id = unique_id
         self.name_ = ""
         self.table_list = []
-        self.database = (f"{db_source['source_type']}_{db_source['db_name']}").replace(".", "_").replace("-", "_")
+        source_db = db_source['source_type']
+        if(source_db == 'pgsql'):
+            source_db = 'sql'
+        self.database = (f"{source_db}_{db_source['db_name']}").replace(".", "_").replace("-", "_")
         self.description = f"Data migrated from {self.database}"
 
     def inform(self, message: str = "") -> None:
@@ -133,7 +136,6 @@ class s3Saver:
                 prev_files = wr.s3.list_objects(file_name_u)
                 self.inform(message = f"Found {len(prev_files)} files while updating: {df_u.shape[0]}/{n_updations} records")
                 for file_ in prev_files:
-                    self.inform(file_)
                     s3 = boto3.client('s3') 
                     file_o = urlparse(file_, allow_fragments=False)
                     bucket_name_read = file_o.netloc

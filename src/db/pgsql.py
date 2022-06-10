@@ -854,24 +854,15 @@ class PGSQLMigrate:
             ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
             ## In case of dumping, migration_snapshot_date is present
             ## we also need to account for those columns which are partitioned
-            if('partition_col' in self.curr_mapping.keys()):
-                if(isinstance(self.curr_mapping['partition_col'], str)):
-                    self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+            if('partition_col' in self.curr_mapping.keys() and self.db['destination']['destination_type'] == 's3'):
                 if('partition_col_format' not in self.curr_mapping.keys()):
-                    self.curr_mapping['partition_col_format'] = ['str']
-                if(isinstance(self.curr_mapping['partition_col_format'], str)):
-                    self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
-                while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
-                    self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
-                for i in range(len(self.curr_mapping['partition_col'])):
-                    col = self.curr_mapping['partition_col'][i].lower()
-                    col_form = self.curr_mapping['partition_col_format'][i]
-                    if(col == 'migration_snapshot_date' or col_form == 'datetime'):
-                        n_columns_pgsql += 3
-                    elif(col_form == 'str'):
-                        n_columns_pgsql += 1
-                    elif(col_form == 'int'):
-                        n_columns_pgsql += 1
+                    self.curr_mapping['partition_col_format'] = 'str'
+                if(self.curr_mapping['partition_col'].lower() == 'migration_snapshot_date' or self.curr_mapping['partition_col_format'] == 'datetime'):
+                    n_columns_pgsql += 3
+                elif(self.curr_mapping['partition_col_format'] == 'str'):
+                    n_columns_pgsql += 1
+                elif(self.curr_mapping['partition_col_format'] == 'int'):
+                    n_columns_pgsql += 1
             if(n_columns_destination > 0 and n_columns_pgsql != n_columns_destination):
                 self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
                 for saver_i in self.saver_list:

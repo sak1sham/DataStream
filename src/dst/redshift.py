@@ -18,7 +18,10 @@ class RedshiftSaver:
             user = db_destination['user'],
             password = db_destination['password']
         )
-        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{db_source['source_type']}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
+        source_db = db_source['source_type']
+        if(source_db == 'pgsql'):
+            source_db = 'sql'
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{source_db}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
         self.is_small_data = is_small_data
         self.name_ = ""
         self.table_list = []
