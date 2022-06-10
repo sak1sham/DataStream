@@ -889,6 +889,8 @@ class MongoMigrate:
                 self.curr_megabytes_processed += processed_collection['df_insert'].memory_usage(index=True).sum()
             if(processed_collection['df_update'].shape[0]):
                 self.curr_megabytes_processed += processed_collection['df_update'].memory_usage(index=True).sum()
+            
+            processed_collection['partition_col'] = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and 'partition_col_format' in self.curr_mapping.keys() and self.curr_mapping['partition_col_format'] == 'datetime' else None
             for saver_i in self.saver_list:
                 saver_i.save(processed_data = processed_collection, primary_keys = primary_keys)
 

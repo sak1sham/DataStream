@@ -71,6 +71,7 @@ class PgSQLSaver:
             # Already checked the existence of table, and it exists 
             return
         else:
+            self.table_exists = True
             table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
             cols_def = ""
             for col in df.columns.to_list():
