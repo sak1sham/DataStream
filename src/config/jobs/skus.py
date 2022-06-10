@@ -1,4 +1,4 @@
-{
+mapping = {
     "destination": {
         "destination_type": "s3",
         "specifications": [
