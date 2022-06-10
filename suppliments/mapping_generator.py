@@ -11,7 +11,7 @@ for index, row in df.iterrows():
     mapping = {}
     if(row['db'] == 'cmdb'):
         mapping['source'] = {
-            'source_type': 'sql',
+            'source_type': 'pgsql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
             'db_name': 'cmdb',
             'username': 'saksham_garg',
@@ -19,7 +19,7 @@ for index, row in df.iterrows():
         }
     elif(row['db'] == 'wmsdb'):
         mapping['source'] = {
-            'source_type': 'sql',
+            'source_type': 'pgsql',
             'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
             'db_name': 'wmsdb',
             'username': 'saksham_garg',
@@ -27,7 +27,7 @@ for index, row in df.iterrows():
         }
     elif(row['db'] == 'crmdb'):
         mapping['source'] = {
-            'source_type': 'sql',
+            'source_type': 'pgsql',
             'url': 'crmdb.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
             'db_name': 'crmdb',
             'username': 'saksham_garg',
