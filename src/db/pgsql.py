@@ -427,7 +427,7 @@ class PGSQLMigrate:
                 with conn.cursor(cursor_name, scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
-                    self.inform("Executed the sql statement")
+                    self.inform("Executed the pgsql statement")
                     _ = curs.fetchone()
                     columns = [desc[0] for desc in curs.description]
                     ## Now, we have the names of the columns. Next, go back right to the starting of table (-1) and fetch records from the cursor in batches.
@@ -911,7 +911,7 @@ class PGSQLMigrate:
         )
         with conn.cursor('cursor-mirroring-primary-keys', scrollable = True) as curs:
             curs.execute(sql_stmt)
-            self.inform("Executed the sql statement to get primary keys")
+            self.inform("Executed the pgsql statement to get primary keys")
             pkeys = curs.fetchmany(self.batch_size)
             data_df = pd.DataFrame(pkeys, columns = [primary_key])
             if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):

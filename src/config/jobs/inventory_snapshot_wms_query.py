@@ -88,7 +88,7 @@ with all_products as (
 
 mapping = {
     'source': {
-        'source_type': 'sql',
+        'source_type': 'pgsql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'cmdb',
         'username': 'saksham_garg',
