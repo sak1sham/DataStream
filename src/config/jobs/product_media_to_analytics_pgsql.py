@@ -1,4 +1,4 @@
-{
+mapping = {
     "destination": {
         "destination_type": "pgsql",
         "specifications": [
