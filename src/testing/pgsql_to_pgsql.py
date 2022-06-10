@@ -204,7 +204,7 @@ class SqlTester():
                         str_id = ""
                         for _, row in data_df.iterrows():
                             str_id += "\'" + str(row['unique_migration_record_id']) + "\',"
-                        pgsql_schema = "pgsql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_') + "_dms"
+                        pgsql_schema = "sql" + "_" + self.db['source']['db_name'].replace('.', '_').replace('-', '_') + "_dms"
                         if('schema' in self.db['destination'].keys() and self.db['destination']['schema']):
                             pgsql_schema = self.db['destination']['schema']
                         query = 'SELECT * FROM {0}.{1} WHERE unique_migration_record_id in ({2});'.format(pgsql_schema, pgsql_table, str(str_id[:-1]))
