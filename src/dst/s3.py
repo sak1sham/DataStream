@@ -68,15 +68,15 @@ def get_file_df(s3: Any = None, bucket_name_read: str = "", file_name_read: str 
 
 class s3Saver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, c_partition: List[str] = [], unique_id: str = "") -> None:
-        self.s3_location = f"s3://{db_destination['s3_bucket_name']}/{db_source['source_type']}/{db_source['db_name']}/"
+        self.source_type = db_source['source_type']
+        if(self.source_type == 'pgsql'):
+            self.source_type = 'sql'
+        self.s3_location = f"s3://{db_destination['s3_bucket_name']}/{self.source_type}/{db_source['db_name']}/"
         self.partition_cols = convert_heads_to_lowercase(c_partition)
         self.unique_id = unique_id
         self.name_ = ""
         self.table_list = []
-        source_db = db_source['source_type']
-        if(source_db == 'pgsql'):
-            source_db = 'sql'
-        self.database = (f"{source_db}_{db_source['db_name']}").replace(".", "_").replace("-", "_")
+        self.database = (f"{self.source_type}_{db_source['db_name']}").replace(".", "_").replace("-", "_")
         self.description = f"Data migrated from {self.database}"
 
     def inform(self, message: str = "") -> None:

@@ -10,7 +10,10 @@ from helper.exceptions import *
 
 class PgSQLSaver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, unique_id: str = "") -> None:
-        # s3_location is required as a staging area to push into PgSQL
+        self.source_type = db_source['source_type']
+        if(self.source_type == 'pgsql'):
+            self.source_type = 'sql'
+        
         self.unique_id = unique_id
         if('username' not in db_destination.keys() or not db_destination['username']):
             db_destination['username'] = ''
@@ -31,10 +34,7 @@ class PgSQLSaver:
         else:
             self.inform("Successfully tested connection with destination db.")
         
-        source_db = db_source['source_type']
-        if(source_db == 'pgsql'):
-            source_db = 'sql'
-        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{source_db}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{self.source_type}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
         self.name_ = ""
         self.table_list = []
         self.table_exists = None
@@ -121,15 +121,16 @@ class PgSQLSaver:
                 curs.execute(sql_query)
                 conn.commit()
 
-            start_year = 2015
-            end_year = 2030
-            for year in range(start_year, end_year+1):
-                for month in range(1, 13):
-                    sql_query = f"CREATE TABLE {table_name}_{year}_{month} PARTITION OF {table_name} FOR VALUES FROM ('{year}-{month}-01') to ('{year + int(month==12)}-{((month%12)+1)}-01')"
-                    self.inform(sql_query)
-                    with conn.cursor() as curs:
-                        curs.execute(sql_query)
-                        conn.commit()
+            if(partition_col):
+                start_year = 2015
+                end_year = 2030
+                for year in range(start_year, end_year+1):
+                    for month in range(1, 13):
+                        sql_query = f"CREATE TABLE {table_name}_{year}_{month} PARTITION OF {table_name} FOR VALUES FROM ('{year}-{month}-01') to ('{year + int(month==12)}-{((month%12)+1)}-01')"
+                        self.inform(sql_query)
+                        with conn.cursor() as curs:
+                            curs.execute(sql_query)
+                            conn.commit()
             conn.close()
 
 
