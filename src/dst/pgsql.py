@@ -294,7 +294,7 @@ class PgSQLSaver:
 
 
     def delete_table(self, table_name: str = None) -> None:
-        query = f"DROP TABLE {self.schema}.{table_name};"
+        query = f"DROP TABLE  IF EXISTS {self.schema}.{table_name};"
         self.inform(query)
         conn = psycopg2.connect(
             host = self.db_destination['url'],
