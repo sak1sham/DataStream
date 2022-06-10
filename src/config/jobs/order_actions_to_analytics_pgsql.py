@@ -33,6 +33,7 @@ mapping = {
             'batch_size': 10000,
             'strict': True,
             'partition_col': 'created_at',
+            "partition_col_format": "datetime",
             'grace_updation_lag': {
                 'days': 1
             },

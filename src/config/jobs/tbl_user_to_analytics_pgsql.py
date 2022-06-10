@@ -31,6 +31,7 @@ mapping = {
             'primary_key': 'user_id',
             'primary_key_datatype': 'int',
             'partition_col': 'user_created',
+            "partition_col_format": "datetime",
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,

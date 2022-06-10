@@ -33,6 +33,7 @@ mapping = {
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'partition_col': 'created_at',
+            "partition_col_format": "datetime",
             'batch_size': 100000,
             'strict': True,
             'grace_updation_lag': {

@@ -31,6 +31,7 @@ mapping = {
             'primary_key': 'order_id',
             'primary_key_datatype': 'int',
             'partition_col': 'created_at',
+            "partition_col_format": "datetime",
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 100000,
