@@ -32,7 +32,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "freshdesk_commands",
-            "to_partition": True
         }
     ]
 }

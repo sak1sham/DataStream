@@ -22,7 +22,6 @@
             "partition_col": "migration_snapshot_date",
             "partition_col_format": "datetime",
             "table_name": "branch_io_imports_archive",
-            "to_partition": True
         }
     ]
 }

@@ -22,7 +22,6 @@
             "partition_col": "migration_snapshot_date",
             "partition_col_format": "datetime",
             "table_name": "request_logs",
-            "to_partition": True
         }
     ]
 }

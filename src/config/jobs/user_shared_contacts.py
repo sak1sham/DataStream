@@ -22,7 +22,6 @@
             "partition_col": "migration_snapshot_date",
             "partition_col_format": "datetime",
             "table_name": "user_shared_contacts",
-            "to_partition": True
         }
     ]
 }

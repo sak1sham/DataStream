@@ -9,8 +9,11 @@ from helper.util import utc_to_local
 
 class RedshiftSaver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, unique_id: str = "", is_small_data: bool = False) -> None:
+        self.source_type = db_source['source_type']
+        if(self.source_type == 'pgsql'):
+            self.source_type = 'sql'
         # s3_location is required as a staging area to push into redshift
-        self.s3_location = f"s3://{db_destination['s3_bucket_name']}/Redshift/{db_source['source_type']}/{db_source['db_name']}/"
+        self.s3_location = f"s3://{db_destination['s3_bucket_name']}/Redshift/{self.source_type}/{db_source['db_name']}/"
         self.unique_id = unique_id
         self.conn = redshift_connector.connect(
             host = db_destination['host'],
@@ -18,7 +21,7 @@ class RedshiftSaver:
             user = db_destination['user'],
             password = db_destination['password']
         )
-        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{db_source['source_type']}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{self.source_type}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
         self.is_small_data = is_small_data
         self.name_ = ""
         self.table_list = []

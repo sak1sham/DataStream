@@ -24,7 +24,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "price_perception",
-            "to_partition": True
         }
     ]
 }

@@ -32,7 +32,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "phone_number_otp",
-            "to_partition": True
         }
     ]
 }

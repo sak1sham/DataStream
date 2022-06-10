@@ -32,7 +32,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "online_refunds2",
-            "to_partition": True
         }
     ]
 }

@@ -74,40 +74,39 @@ class KafkaMigrate:
             self.curr_mapping['fields'] = {}
         
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col']):
-                if(isinstance(self.curr_mapping['partition_col'], str)):
-                    self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
-                
-                if('partition_col_format' not in self.curr_mapping.keys()):
-                    self.curr_mapping['partition_col_format'] = ['str']
-                if(isinstance(self.curr_mapping['partition_col_format'], str)):
-                    self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
-                while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
-                    self.curr_mapping['partition_col_format'].append('str')
-                
-                for i in range(len(self.curr_mapping['partition_col'])):
-                    col = self.curr_mapping['partition_col'][i]
-                    col_form = self.curr_mapping['partition_col_format'][i]
-                    parq_col = f"parquet_format_{col}"
-                    if(col_form == 'str'):
-                        self.partition_for_parquet.extend([parq_col])
-                        self.curr_mapping['fields'][parq_col] = 'str'
-                    elif(col_form == 'int'):
-                        self.partition_for_parquet.extend([parq_col])
-                        self.curr_mapping['fields'][parq_col] = 'int'
-                    elif(col_form == 'float'):
-                        self.partition_for_parquet.extend([parq_col])
-                        self.curr_mapping['fields'][parq_col] = 'float'
-                    elif(col_form == 'datetime'):
-                        self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
-                        self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
-                        self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
-                        self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
-                    else:
-                        raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
-            else:
-                self.warn(message="Unable to find partition_col. Continuing without partitioning.")
+        if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col']):
+            if(isinstance(self.curr_mapping['partition_col'], str)):
+                self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+            
+            if('partition_col_format' not in self.curr_mapping.keys()):
+                self.curr_mapping['partition_col_format'] = ['str']
+            if(isinstance(self.curr_mapping['partition_col_format'], str)):
+                self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
+            while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
+                self.curr_mapping['partition_col_format'].append('str')
+            
+            for i in range(len(self.curr_mapping['partition_col'])):
+                col = self.curr_mapping['partition_col'][i]
+                col_form = self.curr_mapping['partition_col_format'][i]
+                parq_col = f"parquet_format_{col}"
+                if(col_form == 'str'):
+                    self.partition_for_parquet.extend([parq_col])
+                    self.curr_mapping['fields'][parq_col] = 'str'
+                elif(col_form == 'int'):
+                    self.partition_for_parquet.extend([parq_col])
+                    self.curr_mapping['fields'][parq_col] = 'int'
+                elif(col_form == 'float'):
+                    self.partition_for_parquet.extend([parq_col])
+                    self.curr_mapping['fields'][parq_col] = 'float'
+                elif(col_form == 'datetime'):
+                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
+                    self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                    self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                    self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
+                else:
+                    raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
+        else:
+            self.warn(message="Continuing without partitioning data.")
         self.curr_mapping['fields']['dms_pkey'] = 'int'
 
         self.saver_list: List[DMS_exporter] = []

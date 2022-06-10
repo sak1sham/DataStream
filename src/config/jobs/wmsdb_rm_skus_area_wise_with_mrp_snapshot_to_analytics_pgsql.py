@@ -32,7 +32,6 @@
             "partition_col": "created_at",
             "partition_col_format": "datetime",
             "table_name": "rm_skus_area_wise_with_mrp_snapshot",
-            "to_partition": True
         }
     ]
 }

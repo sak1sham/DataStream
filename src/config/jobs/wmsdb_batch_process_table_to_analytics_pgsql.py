@@ -42,7 +42,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "batch_process_table",
-            "to_partition": True
         }
     ]
 }

@@ -21,7 +21,6 @@ mapping = {
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',
-            'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'batch_size': 10000,

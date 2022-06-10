@@ -32,7 +32,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "db_check_in",
-            "to_partition": True
         }
     ]
 }

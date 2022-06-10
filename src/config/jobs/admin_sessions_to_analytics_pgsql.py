@@ -42,7 +42,6 @@
             "primary_key": "id",
             "primary_key_datatype": "uuid",
             "table_name": "admin_sessions",
-            "to_partition": True
         }
     ]
 }

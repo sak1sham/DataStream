@@ -22,7 +22,6 @@
             "partition_col": "created_at",
             "partition_col_format": "datetime",
             "table_name": "online_refunds",
-            "to_partition": True
         }
     ]
 }

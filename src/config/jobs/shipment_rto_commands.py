@@ -32,7 +32,6 @@
             "primary_key": "command_id",
             "primary_key_datatype": "uuid",
             "table_name": "shipment_rto_commands",
-            "to_partition": True
         }
     ]
 }

@@ -32,7 +32,6 @@ mapping = {
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
-            'to_partition': True,
             'partition_col': 'created_at',
             'batch_size': 100000,
             'strict': True,

@@ -24,7 +24,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "recent_user_searches",
-            "to_partition": True
         }
     ]
 }

@@ -32,7 +32,6 @@
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "errored_shipment_transitions",
-            "to_partition": True
         }
     ]
 }

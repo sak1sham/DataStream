@@ -113,53 +113,44 @@ class MongoMigrate:
         self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
 
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
+        if(self.db['destination']['destination_type'] == 's3'):
             if('partition_col' not in self.curr_mapping.keys() or not self.curr_mapping['partition_col']):
-                self.warn(message="Partition_col not specified. Making partition using _id.")
-                self.curr_mapping['partition_col'] = ['_id']
-                self.curr_mapping['partition_col_format'] = ['datetime']
-            if(isinstance(self.curr_mapping['partition_col'], str)):
-                self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+                self.warn(message="Partition_col not specified, still making partition using _id.")
+                self.curr_mapping['partition_col'] = '_id'
+                self.curr_mapping['partition_col_format'] = 'datetime'
             
             if('partition_col_format' not in self.curr_mapping.keys()):
-                self.curr_mapping['partition_col_format'] = ['str']
-            if(isinstance(self.curr_mapping['partition_col_format'], str)):
-                self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
-            while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
-                self.curr_mapping['partition_col_format'].append('str')
+                self.curr_mapping['partition_col_format'] = 'str'
             
-            for i in range(len(self.curr_mapping['partition_col'])):
-                col = self.curr_mapping['partition_col'][i]
-                col_form = self.curr_mapping['partition_col_format'][i]
-                parq_col = f"parquet_format_{col}"
-                if(col == 'migration_snapshot_date'):
-                    self.curr_mapping['partition_col_format'][i] = 'datetime'
-                    self.curr_mapping['fields'][col] = 'datetime'
-                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
-                    self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
-                    self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
-                    self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
-                elif(col == '_id' and col_form == 'datetime'):
-                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
-                    self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
-                    self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
-                    self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
-                elif(col_form == 'str'):
-                    self.partition_for_parquet.extend([parq_col])
-                    self.curr_mapping['fields'][parq_col] = 'str'
-                elif(col_form == 'int'):
-                    self.partition_for_parquet.extend([parq_col])
-                    self.curr_mapping['fields'][parq_col] = 'int'
-                elif(col_form == 'float'):
-                    self.partition_for_parquet.extend([parq_col])
-                    self.curr_mapping['fields'][parq_col] = 'float'
-                elif(col_form == 'datetime'):
-                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
-                    self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
-                    self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
-                    self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
-                else:
-                    raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
+            parq_col = f"parquet_format_{self.curr_mapping['partition_col']}"
+            if(self.curr_mapping['partition_col'] == 'migration_snapshot_date'):
+                self.curr_mapping['partition_col_format'] = 'datetime'
+                self.curr_mapping['fields'][self.curr_mapping['partition_col']] = 'datetime'
+                self.partition_for_parquet = [f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"]
+                self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
+            elif(self.curr_mapping['partition_col'] == '_id' and self.curr_mapping['partition_col_format'] == 'datetime'):
+                self.partition_for_parquet = [f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"]
+                self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
+            elif(self.curr_mapping['partition_col_format'] == 'str'):
+                self.partition_for_parquet = [parq_col]
+                self.curr_mapping['fields'][parq_col] = 'str'
+            elif(self.curr_mapping['partition_col_format'] == 'int'):
+                self.partition_for_parquet =  [parq_col]
+                self.curr_mapping['fields'][parq_col] = 'int'
+            elif(self.curr_mapping['partition_col_format'] == 'float'):
+                self.partition_for_parquet =  [parq_col]
+                self.curr_mapping['fields'][parq_col] = 'float'
+            elif(self.curr_mapping['partition_col_format'] == 'datetime'):
+                self.partition_for_parquet =  [f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"]
+                self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
+            else:
+                raise UnrecognizedFormat(f"{str(self.curr_mapping['partition_col_format'])}. Partition_col_format can be int, float, str or datetime")
         
         if(self.curr_mapping['mode'] == 'dumping'):
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
@@ -218,27 +209,25 @@ class MongoMigrate:
         '''
             If partitions are specified in mapping, add partition fields to the documents.
         '''
-        for i in range(len(self.curr_mapping['partition_col'])):
-            col = self.curr_mapping['partition_col'][i]
-            col_form = self.curr_mapping['partition_col_format'][i]
-            parq_col = f"parquet_format_{col}"
-            if(col == '_id'):
+        if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and self.db['destination']['destination_type'] == 's3'):
+            parq_col = f"parquet_format_{self.curr_mapping['partition_col']}"
+            if(self.curr_mapping['partition_col'] == '_id'):
                 document[f"{parq_col}_year"] = insertion_time.year
                 document[f"{parq_col}_month"] = insertion_time.month
                 document[f"{parq_col}_day"] = insertion_time.day
-            elif(col_form == 'str'):
-                document[parq_col] = str(document[col])
-            elif(col_form == 'int'):
-                document[parq_col] = int(document[col])
-            elif(col_form == 'float'):
-                document[parq_col] = float(document[col])
-            elif(col_form == 'datetime'):
-                document[col] = convert_to_datetime(document[col], pytz.utc)
-                document[f"{parq_col}_year"] = str(float(document[col].year))
-                document[f"{parq_col}_month"] = str(float(document[col].month))
-                document[f"{parq_col}_day"] = str(float(document[col].day))
+            elif(self.curr_mapping['partition_col_format'] == 'str'):
+                document[parq_col] = str(document[self.curr_mapping['partition_col']])
+            elif(self.curr_mapping['partition_col_format'] == 'int'):
+                document[parq_col] = int(document[self.curr_mapping['partition_col']])
+            elif(self.curr_mapping['partition_col_format'] == 'float'):
+                document[parq_col] = float(document[self.curr_mapping['partition_col']])
+            elif(self.curr_mapping['partition_col_format'] == 'datetime'):
+                document[self.curr_mapping['partition_col']] = convert_to_datetime(document[self.curr_mapping['partition_col']], pytz.utc)
+                document[f"{parq_col}_year"] = str(float(document[self.curr_mapping['partition_col']].year))
+                document[f"{parq_col}_month"] = str(float(document[self.curr_mapping['partition_col']].month))
+                document[f"{parq_col}_day"] = str(float(document[self.curr_mapping['partition_col']].day))
             else:
-                raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
+                raise UnrecognizedFormat(f"{str(self.curr_mapping['partition_col_format'])}. Partition_col_format can be int, float, str or datetime")
         return document
 
 
@@ -258,8 +247,7 @@ class MongoMigrate:
         for document in all_documents:
             insertion_time = document['_id'].generation_time
             document['migration_snapshot_date'] = self.curr_run_cron_job
-            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-                document = self.add_partitions(document=document, insertion_time=insertion_time)        
+            document = self.add_partitions(document=document, insertion_time=insertion_time)        
             document = validate_or_convert(document, self.curr_mapping['fields'], pytz.utc)
             docu_insert.append(document)
         ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.curr_mapping['fields'])
@@ -308,9 +296,8 @@ class MongoMigrate:
         
         for document in all_documents:
             insertion_time = document['_id'].generation_time
-            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
-                document = self.add_partitions(document=document, insertion_time=insertion_time)
+            ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
+            document = self.add_partitions(document=document, insertion_time=insertion_time)
             if(mode == 'syncing' and ('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark'])):
                 ## if updation bookmark (for example - 'updated_at', or 'modified_at') is not present, we need to store hashes as metadata to check for updates later
                 document['_id'] = str(document['_id'])
@@ -389,9 +376,8 @@ class MongoMigrate:
 
         for document in all_documents:
             insertion_time = document['_id'].generation_time
-            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
-                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
-                document = self.add_partitions(document=document, insertion_time=insertion_time)
+            ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
+            document = self.add_partitions(document=document, insertion_time=insertion_time)
 
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and improper_bookmarks):
                 if(self.curr_mapping['bookmark'] not in document.keys()):
@@ -499,9 +485,8 @@ class MongoMigrate:
 
         for document in all_documents:
             insertion_time = document['_id'].generation_time
-            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
-                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
-                document = self.add_partitions(document=document, insertion_time=insertion_time)
+            ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
+            document = self.add_partitions(document=document, insertion_time=insertion_time)
 
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and improper_bookmarks):
                 if(self.curr_mapping['bookmark'] not in document.keys()):
@@ -591,9 +576,8 @@ class MongoMigrate:
 
         for document in all_documents:
             insertion_time = document['_id'].generation_time
-            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
-                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
-                document = self.add_partitions(document=document, insertion_time=insertion_time)
+            ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
+            document = self.add_partitions(document=document, insertion_time=insertion_time)
 
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and improper_bookmarks):
                 if(self.curr_mapping['bookmark'] not in document.keys()):
@@ -905,6 +889,8 @@ class MongoMigrate:
                 self.curr_megabytes_processed += processed_collection['df_insert'].memory_usage(index=True).sum()
             if(processed_collection['df_update'].shape[0]):
                 self.curr_megabytes_processed += processed_collection['df_update'].memory_usage(index=True).sum()
+            
+            processed_collection['partition_col'] = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and 'partition_col_format' in self.curr_mapping.keys() and self.curr_mapping['partition_col_format'] == 'datetime' else None
             for saver_i in self.saver_list:
                 saver_i.save(processed_data = processed_collection, primary_keys = primary_keys)
 

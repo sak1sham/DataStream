@@ -32,7 +32,6 @@
             "primary_key": "order_id",
             "primary_key_datatype": "int",
             "table_name": "cm_custom_orders",
-            "to_partition": True
         }
     ]
 }

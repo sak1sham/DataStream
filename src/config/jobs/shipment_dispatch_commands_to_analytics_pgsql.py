@@ -42,7 +42,6 @@
             "primary_key": "command_id",
             "primary_key_datatype": "uuid",
             "table_name": "shipment_dispatch_commands",
-            "to_partition": True
         }
     ]
 }

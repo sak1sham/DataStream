@@ -19,7 +19,6 @@ mapping = {
             'table_name': 'localities_live',
             'cron': 'self-managed',
             'mode': 'dumping',
-            'to_partition': True,
             'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
             'batch_size': 10000,

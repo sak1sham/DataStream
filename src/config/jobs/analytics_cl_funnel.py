@@ -21,7 +21,6 @@ mapping = {
             'mode': 'syncing',
             'primary_key': 'cl_id',
             'primary_key_datatype': 'str',
-            'to_partition': True,
             'partition_col': 'cl_signup_date',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at',

@@ -88,6 +88,7 @@ class PGSQLMigrate:
         self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
         self.db['destination']['specifications'] = list_destinations
 
+
     def save_job_working_data(self, table_name: str = None, status: bool = True) -> None:
         self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
         total_records = self.saver_list[0].count_n_records(table_name = table_name)
@@ -172,35 +173,24 @@ class PGSQLMigrate:
             Function to add partition columns to dataframe if specified in migration_mapping.
         '''
         self.partition_for_parquet = []
-        if('partition_col' in self.curr_mapping.keys()):
-            if(isinstance(self.curr_mapping['partition_col'], str)):
-                self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+        if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and self.db['destination']['destination_type'] == 's3'):
             if('partition_col_format' not in self.curr_mapping.keys()):
-                self.curr_mapping['partition_col_format'] = ['str']
-            if(isinstance(self.curr_mapping['partition_col_format'], str)):
-                self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
-            while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
-                self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
-            for i in range(len(self.curr_mapping['partition_col'])):
-                col = self.curr_mapping['partition_col'][i].lower()
-                col_form = self.curr_mapping['partition_col_format'][i]
-                parq_col = f"parquet_format_{col}"
-                if(col == 'migration_snapshot_date' or col_form == 'datetime'):
-                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
-                    temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
-                    df[f"{parq_col}_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
-                    df[f"{parq_col}_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
-                    df[f"{parq_col}_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
-                elif(col_form == 'str'):
-                    self.partition_for_parquet.extend([parq_col])
-                    df[parq_col] = df[col].astype(str)
-                elif(col_form == 'int'):
-                    self.partition_for_parquet.extend([parq_col])
-                    df[parq_col] = df[col].fillna(0).astype(int)
-                else:
-                    raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, str or datetime.") 
-        else:
-            self.warn(message="Unable to find partition_col. Continuing without partitioning.")
+                self.curr_mapping['partition_col_format'] = 'str'
+            parq_col = f"parquet_format_{self.curr_mapping['partition_col'].lower()}"
+            if(self.curr_mapping['partition_col'].lower() == 'migration_snapshot_date' or self.curr_mapping['partition_col_format'] == 'datetime'):
+                self.partition_for_parquet = [f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"]
+                temp = df[self.curr_mapping['partition_col'].lower()].apply(lambda x: convert_to_datetime(x, self.tz_info))
+                df[f"{parq_col}_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
+                df[f"{parq_col}_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
+                df[f"{parq_col}_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
+            elif(self.curr_mapping['partition_col_format'] == 'str'):
+                self.partition_for_parquet = [parq_col]
+                df[parq_col] = df[self.curr_mapping['partition_col'].lower()].astype(str)
+            elif(self.curr_mapping['partition_col_format'] == 'int'):
+                self.partition_for_parquet = [parq_col]
+                df[parq_col] = df[self.curr_mapping['partition_col'].lower()].fillna(0).astype(int)
+            else:
+                raise UnrecognizedFormat(f"{str(self.curr_mapping['partition_col_format'])}. Partition_col_format can be int, str or datetime.") 
         return df
 
 
@@ -215,8 +205,7 @@ class PGSQLMigrate:
         '''
         df['migration_snapshot_date'] = self.curr_run_cron_job
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            self.add_partitions(df)
+        self.add_partitions(df)
         if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
             df = convert_to_dtype_strict(df=df, schema=col_dtypes)
         else:
@@ -241,8 +230,7 @@ class PGSQLMigrate:
         
         ## Adding partition if required
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            self.add_partitions(df)
+        self.add_partitions(df)
  
         ## Adding a primary key "unique_migration_record_id" for every record
         df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
@@ -274,8 +262,7 @@ class PGSQLMigrate:
 
         ## Adding partition if required
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            self.add_partitions(df)
+        self.add_partitions(df)
 
         ## Adding a primary key "unique_migration_record_id" for every record
         df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
@@ -330,7 +317,7 @@ class PGSQLMigrate:
                     self.warn("logging_flag works only in logging mode.")
             processed_data['json_cols'] = self.json_cols
             processed_data['strict'] = True if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']) else False
-            processed_data['partition_col'] = self.curr_mapping['partition_col'][0] if 'to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition'] and 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] else None
+            processed_data['partition_col'] = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and 'partition_col_format' in self.curr_mapping.keys() and self.curr_mapping['partition_col_format'] == 'datetime' else None
             for saver_i in self.saver_list:
                 saver_i.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
@@ -867,24 +854,15 @@ class PGSQLMigrate:
             ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
             ## In case of dumping, migration_snapshot_date is present
             ## we also need to account for those columns which are partitioned
-            if('partition_col' in self.curr_mapping.keys()):
-                if(isinstance(self.curr_mapping['partition_col'], str)):
-                    self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+            if('partition_col' in self.curr_mapping.keys() and self.db['destination']['destination_type'] == 's3'):
                 if('partition_col_format' not in self.curr_mapping.keys()):
-                    self.curr_mapping['partition_col_format'] = ['str']
-                if(isinstance(self.curr_mapping['partition_col_format'], str)):
-                    self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
-                while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
-                    self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
-                for i in range(len(self.curr_mapping['partition_col'])):
-                    col = self.curr_mapping['partition_col'][i].lower()
-                    col_form = self.curr_mapping['partition_col_format'][i]
-                    if(col == 'migration_snapshot_date' or col_form == 'datetime'):
-                        n_columns_pgsql += 3
-                    elif(col_form == 'str'):
-                        n_columns_pgsql += 1
-                    elif(col_form == 'int'):
-                        n_columns_pgsql += 1
+                    self.curr_mapping['partition_col_format'] = 'str'
+                if(self.curr_mapping['partition_col'].lower() == 'migration_snapshot_date' or self.curr_mapping['partition_col_format'] == 'datetime'):
+                    n_columns_pgsql += 3
+                elif(self.curr_mapping['partition_col_format'] == 'str'):
+                    n_columns_pgsql += 1
+                elif(self.curr_mapping['partition_col_format'] == 'int'):
+                    n_columns_pgsql += 1
             if(n_columns_destination > 0 and n_columns_pgsql != n_columns_destination):
                 self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
                 for saver_i in self.saver_list:
