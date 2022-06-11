@@ -96,31 +96,32 @@ class FacebookManager:
                        ": Error in retrieving data through API - {0} for date {1}. Exception: {2}".format(curr_mapping["api_name"], insights_date, str(e)))
         return final_campaigns_df
 
-    def cleaned_processed_data(self, curr_mapping: Dict[str, Any], dst_saver: DMS_exporter, start_date: datetime):
+    def cleaned_processed_data(self, curr_mapping: Dict[str, Any], dst_saver: List[DMS_exporter], start_date: datetime):
 
         year = start_date.strftime('%Y')
         month = start_date.strftime('%m')
         day = start_date.strftime('%d')
-
-        if dst_saver.type == 'redshift':
-            try:
-                cur = dst_saver.saver.conn.cursor()
-                cur.execute("select 1 from pg_tables where schemaname = %s and tablename = %s",
-                            (dst_saver.saver.schema, curr_mapping['api_name']))
-                result = cur.fetchone()
-                if result and curr_mapping["api_name"]:
-                    delete_query = "delete from {0}.{1} where {2}='{3}-{4}-{5}'".format(
-                        dst_saver.saver.schema,
-                        curr_mapping['api_name'],
-                        curr_mapping["date_column"],
-                        year,
-                        month,
-                        day
-                    )
-                    cur.execute(delete_query)
-                dst_saver.saver.conn.commit()
-                cur.close()
-            except Exception as e:
-                logger.err(curr_mapping['unique_id'], traceback.format_exc())
-                logger.err(curr_mapping['unique_id'], curr_mapping['unique_id'] +
-                           ": Error in deleting existing table - {0} for date {1} in redshift. Exception: {2}".format(curr_mapping["api_name"], start_date, str(e)))
+        
+        for saver_i in dst_saver:
+            if saver_i.type == 'redshift':
+                try:
+                    cur = saver_i.saver.conn.cursor()
+                    cur.execute("select 1 from pg_tables where schemaname = %s and tablename = %s",
+                                (saver_i.saver.schema, curr_mapping['api_name']))
+                    result = cur.fetchone()
+                    if result and curr_mapping["api_name"]:
+                        delete_query = "delete from {0}.{1} where {2}='{3}-{4}-{5}'".format(
+                            saver_i.saver.schema,
+                            curr_mapping['api_name'],
+                            curr_mapping["date_column"],
+                            year,
+                            month,
+                            day
+                        )
+                        cur.execute(delete_query)
+                    saver_i.saver.conn.commit()
+                    cur.close()
+                except Exception as e:
+                    logger.err(curr_mapping['unique_id'], traceback.format_exc())
+                    logger.err(curr_mapping['unique_id'], curr_mapping['unique_id'] +
+                            ": Error in deleting existing table - {0} for date {1} in redshift. Exception: {2}".format(curr_mapping["api_name"], start_date, str(e)))

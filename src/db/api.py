@@ -33,7 +33,7 @@ class APIMigrate:
     def err(self, error: Any = None) -> None:
         logger.err(s = f"{self.curr_mapping['unique_id']}: {error}")
 
-    def save_data_to_destination(self, processed_data: Dict[str, Any], primary_keys: List[str, Any] = None):
+    def save_data_to_destination(self, processed_data: Dict[str, Any], primary_keys = None):
         if(not processed_data):
             return
         else:
@@ -125,7 +125,7 @@ class APIMigrate:
                 'filename': self.curr_mapping['api_name']
             }
             if "insights" in self.curr_mapping["api_name"]:
-                self.client.cleaned_processed_data(self.curr_mapping, self.saver, start_date)
+                self.client.cleaned_processed_data(self.curr_mapping, self.saver_list, start_date)
                 processed_df = self.client.get_ad_insights_from_api(
                     start_date, self.curr_mapping)
                 processing_data["df_insert"] = processed_df
