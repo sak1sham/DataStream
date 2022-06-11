@@ -1,4 +1,5 @@
 from db.clevertap import ClevertapManager
+from db.facebook import FacebookManager
 from helper.logger import logger
 from typing import Dict, Any, List
 import pytz
@@ -32,12 +33,12 @@ class APIMigrate:
     def err(self, error: Any = None) -> None:
         logger.err(s = f"{self.curr_mapping['unique_id']}: {error}")
 
-    def save_data_to_destination(self, processed_data: Dict[str, Any]):
+    def save_data_to_destination(self, processed_data: Dict[str, Any], primary_keys: List[str, Any] = None):
         if(not processed_data):
             return
         else:
             for saver_i in self.saver_list:
-                saver_i.save(processed_data = processed_data)
+                saver_i.save(processed_data = processed_data, primary_keys=primary_keys)
 
     def presetup(self) -> None:
         if('fields' not in self.curr_mapping.keys()):
@@ -114,6 +115,39 @@ class APIMigrate:
         if len(other_failed_events) > 0:
             self.process_clevertap_events(other_failed_events, sync_date, max_attempts-2)
 
+    def process_facebook_events(self, start_date: datetime = None, max_attempts: int = 3):
+        if not start_date:
+            return
+        try:
+            processing_data = {
+                'name': self.curr_mapping['api_name'],
+                'lob_fields_length': self.curr_mapping['lob_fields'],
+                'filename': self.curr_mapping['api_name']
+            }
+            if "insights" in self.curr_mapping["api_name"]:
+                self.client.cleaned_processed_data(self.curr_mapping, self.saver, start_date)
+                processed_df = self.client.get_ad_insights_from_api(
+                    start_date, self.curr_mapping)
+                processing_data["df_insert"] = processed_df
+            elif "campaigns" in self.curr_mapping["api_name"]:
+                processed_df = self.client.get_ad_campaigns_from_api(start_date, self.curr_mapping)
+                processing_data["df_update"] = processed_df
+            
+            self.save_data_to_destination(processed_data=processing_data, primary_keys=self.curr_mapping["primary_keys"])
+        except APIRequestError as e:
+            msg = 'Error while fetching data for table: *{0}* for app *{1}* from source on *{2}*.'.format(
+                self.curr_mapping['api_name'], self.curr_mapping['project_name'], str(start_date))
+            send_message(msg=msg, channel=self.channel,
+                         slack_token=slack_token)
+            msg += '``` Exception: {0}```'.format(str(e))
+            self.err(msg)
+        except Exception as e:
+            msg = "Something went wrong! Could not process table *{0}* for project *{1}*.``` Exception: {2}```".format(
+                self.curr_mapping['api_name'], self.curr_mapping['project_name'], str(e))
+            send_message(msg=msg, channel=self.channel,
+                         slack_token=slack_token)
+            self.err(msg)
+
     def presetup_clevertap_process(self) -> None:
         start_day = self.curr_mapping.get('start_day', -1)
         end_day = self.curr_mapping.get('end_day', -1)
@@ -128,10 +162,29 @@ class APIMigrate:
             self.process_clevertap_events( event_names, start_date, 3)
             start_date += timedelta(1)
 
+    def presetup_facebook_process(self) -> None:
+        start_day = self.curr_mapping.get('start_day', -1)
+        end_day = self.curr_mapping.get('end_day', -1)
+        if not start_day or not end_day:
+            raise MissingData(
+                "please provide start_day and end_day in mapping")
+        start_date = get_date_from_days(start_day, self.tz_info)
+        end_date = get_date_from_days(end_day, self.tz_info)
+        while start_date <= end_date:
+            msg = "Migration started for *{1}* from database *{2}* to *{3}* for date: *{0}*".format(str(
+                start_date), self.curr_mapping['project_name'] + "_" + self.curr_mapping["api_name"], self.db['source']['db_name'], self.db['destination']['destination_type'])
+            send_message(msg, self.channel, slack_token)
+            self.process_facebook_events(start_date)
+            start_date += timedelta(1)
+
     def process(self) -> None:
         self.presetup()
         if (self.db['source']['db_name']=='clevertap'):
             self.client = ClevertapManager(self.curr_mapping['project_name'])
             self.presetup_clevertap_process()
+        elif (self.db["source"]["db_name"] == "facebook_ads"):
+            self.client = FacebookManager(
+                self.curr_mapping['project_name'], self.db["source"])
+            self.presetup_facebook_process()
         for saver_i in self.saver_list:
             saver_i.close()
