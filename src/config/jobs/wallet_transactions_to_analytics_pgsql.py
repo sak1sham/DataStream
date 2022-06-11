@@ -32,6 +32,8 @@ mapping = {
             'primary_key_datatype': 'uuid',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'batch_size': 10000,
             'strict': True,
             'grace_updation_lag': {

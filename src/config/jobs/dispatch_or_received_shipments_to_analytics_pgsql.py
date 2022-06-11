@@ -30,6 +30,8 @@ mapping = {
             'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
+            'partition_col': 'scanned_at',
+            'partition_col_format': 'datetime',
             'batch_size': 100000,
             'strict': True,
             'grace_updation_lag': {
