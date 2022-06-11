@@ -32,6 +32,8 @@ mapping = {
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'batch_size': 10000,
             'strict': True,
             'buffer_updation_lag':{

@@ -863,6 +863,7 @@ class PGSQLMigrate:
                     n_columns_pgsql += 1
                 elif(self.curr_mapping['partition_col_format'] == 'int'):
                     n_columns_pgsql += 1
+            self.inform(f"n_columns (source) = {n_columns_pgsql} and n_columns (destination) = {n_columns_destination}")
             if(n_columns_destination > 0 and n_columns_pgsql != n_columns_destination):
                 self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
                 for saver_i in self.saver_list:

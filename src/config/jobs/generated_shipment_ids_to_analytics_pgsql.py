@@ -31,6 +31,8 @@ mapping = {
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'improper_bookmarks': False,
             'batch_size': 10000,
             'strict': True,
