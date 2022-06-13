@@ -1,19 +1,11 @@
 mapping = {
     "destination": {
-        'ec2_1': {
-            "db_name": "dms",
-            "password": "3y5HMs^2qy%&Kma",
-            "url": "3.108.43.163",
-            "username": "saksham_garg",
-            "destination_type": "pgsql"
-        },
-        'ec2_2': {
-            "db_name": "dms",
-            "password": "3y5HMs^2qy%&Kma",
-            "url": "13.233.225.181",
-            "username": "saksham_garg",
-            "destination_type": "pgsql"
-        }
+        "destination_type": "s3",
+        "specifications": [
+            {
+                "s3_bucket_name": "database-migration-service-prod"
+            }
+        ]
     },
     "source": {
         "db_name": "cmdb",
@@ -25,7 +17,6 @@ mapping = {
     "tables": [
         {
             "batch_size": 10000,
-            'strict': True,
             "bookmark": "updated_at_for_pipeline",
             "buffer_updation_lag": {
                 "hours": 2
@@ -39,8 +30,8 @@ mapping = {
             "partition_col": "created_at",
             "partition_col_format": "datetime",
             "primary_key": "id",
-            "primary_key_datatype": "uuid",
-            "table_name": "admin_sessions",
+            "primary_key_datatype": "int",
+            "table_name": "scratch_cards",
         }
     ]
 }

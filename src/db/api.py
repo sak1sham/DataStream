@@ -20,9 +20,6 @@ class APIMigrate:
         self.curr_mapping = curr_mapping
         self.tz_info = pytz.timezone(tz_str)
         
-        if('specifications' not in self.db['destination'].keys() or not self.db['destination']['specifications'] or not isinstance(self.db['destination']['specifications'], list)):
-            raise IncorrectMapping("Destination specifications should be supplied as an instance of list")
-        
     
     def inform(self, message: str = None) -> None:
         logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
@@ -37,26 +34,12 @@ class APIMigrate:
         if(not processed_data):
             return
         else:
-            for saver_i in self.saver_list:
-                saver_i.save(processed_data = processed_data, primary_keys=primary_keys)
+            self.saver.save(processed_data = processed_data)
 
     def presetup(self) -> None:
         if('fields' not in self.curr_mapping.keys()):
             self.curr_mapping['fields'] = {}
-        
-        self.saver_list : List[DMS_exporter] = []
-        list_destinations = self.db['destination']['specifications']
-        self.db['destination'].pop('specifications')
-        self.saver_list: List[DMS_exporter] = []
-        for destination in list_destinations:
-            self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
-            for key in destination.keys():
-                self.db['destination'][key] = destination[key]
-            self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id']))
-
-        self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
-        self.db['destination']['specifications'] = list_destinations
-
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
         self.channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
     
     def process_clevertap_events(self, event_names: List[Any]=[], sync_date: datetime=None, max_attempts: int=3):
@@ -82,7 +65,7 @@ class APIMigrate:
             total_fetch_events = 0
             transformed_total_events = 0
             try:
-                self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver_list, sync_date)
+                self.client.cleaned_processed_data(event_name, self.curr_mapping, self.saver, sync_date)
                 have_more_data = True
                 event_cursor = None    
                 while have_more_data:
@@ -186,5 +169,4 @@ class APIMigrate:
             self.client = FacebookManager(
                 self.curr_mapping['project_name'], self.db["source"])
             self.presetup_facebook_process()
-        for saver_i in self.saver_list:
-            saver_i.close()
+        self.saver.close()

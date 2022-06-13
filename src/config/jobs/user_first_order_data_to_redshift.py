@@ -20,7 +20,7 @@ mapping = {
     },
     'tables': [            
         {
-            'table_name': 'user_first_order_data',
+            'table_name': 'analytics.user_first_order_data',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'user_id',
