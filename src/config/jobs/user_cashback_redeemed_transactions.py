@@ -18,13 +18,9 @@ mapping = {
         {
             'table_name': 'user_cashback_redeemed_transactions',
             'cron': 'self-managed',
-            'mode': 'syncing',
-            'primary_key': 'id',
-            'primary_key_datatype': 'uuid',
-            'partition_col': 'created_at',
+            'mode': 'dumping',
+            'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
-            'bookmark': 'updated_at_for_pipeline',
-            'improper_bookmarks': False,
             'batch_size': 10000,
             'buffer_updation_lag':{
                 'hours': 2,
