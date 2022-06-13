@@ -1,11 +1,11 @@
-mapping = { 
-    'source': { 
-        'source_type': 'pgsql', 
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com', 
-        'db_name': 'cmdb', 
-        'username': 'saksham_garg', 
-        'password': '3y5HMs^2qy%&Kma' 
-    }, 
+mapping = {
+    'source': {
+        'source_type': 'pgsql',
+        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'db_name': 'cmdb',
+        'username': 'saksham_garg',
+        'password': '3y5HMs^2qy%&Kma'
+    },
     'destination': { 
         'destination_type': 's3', 
         'specifications': [
@@ -14,9 +14,9 @@ mapping = {
             }
         ]
     }, 
-    'tables': [ 
+    'tables': [
         {
-            'table_name': 'discount_campaigns',
+            'table_name': 'team_leaders',
             'cron': 'self-managed',
             'mode': 'dumping',
             'partition_col': 'migration_snapshot_date',
