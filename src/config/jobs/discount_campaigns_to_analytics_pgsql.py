@@ -20,9 +20,6 @@ mapping = {
             "url": "13.233.225.181",
             "username": "saksham_garg",
             "destination_type": "pgsql"
-        },
-        'local': {
-            
         }
     },
     'tables': [            
