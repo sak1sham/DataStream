@@ -4,13 +4,15 @@ mapping = {
             "db_name": "dms",
             "password": "3y5HMs^2qy%&Kma",
             "url": "3.108.43.163",
-            "username": "saksham_garg"
+            "username": "saksham_garg",
+            "destination_type": "pgsql"
         },
         'ec2_2': {
             "db_name": "dms",
             "password": "3y5HMs^2qy%&Kma",
             "url": "13.233.225.181",
-            "username": "saksham_garg"
+            "username": "saksham_garg",
+            "destination_type": "pgsql"
         }
     },
     "source": {
