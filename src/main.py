@@ -68,6 +68,7 @@ def create_new_job(db, list_specs, uid, is_fastapi):
         else:
             logger.warn(s = f"Jobs can be scheduled only if fastapi_server is enabled. Skipping {str(uid)}.")
 
+
 def use_mapping(db, key, is_fastapi):
     if(key not in db.keys()):
         db[key] = []
