@@ -68,6 +68,7 @@ class PgSQLSaver:
                 self.inform("Table doesn't exist")
         
         if(self.table_exists):
+
             # Already checked the existence of table, and it exists 
             return
         else:
@@ -76,20 +77,20 @@ class PgSQLSaver:
             cols_def = ""
             for col in df.columns.to_list():
                 cols_def = f"{cols_def} \n{col} "
-                if(col not in dtypes.keys() or dtypes[col] == 'string'):
+                if(col not in dtypes.keys() or dtypes[col] == 'string' or dtypes[col] == 'str'):
                     if(col in json_cols):
                         cols_def = f"{cols_def} JSON"
                     elif(col in varchar_length_source.keys() and varchar_length_source[col]):
                         cols_def = cols_def + f"VARCHAR({varchar_length_source[col]})"
                     else:
                         cols_def = f"{cols_def} TEXT"
-                elif(dtypes[col] == 'timestamp'):
+                elif(dtypes[col] == 'timestamp' or dtypes[col] == "datetime"):
                     cols_def = f"{cols_def} TIMESTAMP"
-                elif(dtypes[col] == 'boolean'):
+                elif(dtypes[col] == 'boolean' or dtypes[col] == "bool"):
                     cols_def = f"{cols_def} BOOLEAN"
-                elif(dtypes[col] == 'bigint'):
+                elif(dtypes[col] == 'bigint' or dtypes[col] == "int"):
                     cols_def = f"{cols_def} BIGINT"
-                elif(dtypes[col] == 'double'):
+                elif(dtypes[col] == 'double' or dtypes[col] == "float"):
                     cols_def = f"{cols_def} DOUBLE PRECISION"
                 if(not logging_flag and len(primary_keys) > 0 and primary_keys[0] == col and not partition_col):
                     cols_def = f"{cols_def}  PRIMARY KEY"
@@ -160,21 +161,22 @@ class PgSQLSaver:
                 for col in list_cols:
                     if(pd.isna(row[col]) or (not strict_mode and col in json_cols and len(row[col]) == 0)):
                         row_def += "NULL"
-                    elif(col not in dtypes.keys() or dtypes[col] == 'string'):
+                    elif(col not in dtypes.keys() or dtypes[col] == 'string' or dtypes[col] == "str"):
                         row_def += "\'{0}\'".format(row[col].replace("'", "''"))
-                    elif(dtypes[col] == 'timestamp'):
-                        if(len(row[col]) > 0):
+                    elif(dtypes[col] == 'timestamp' or dtypes[col] == "datetime"):
+                        # if(len(row[col]) > 0):
+                        if row[col] is not None:
                             row_def += f"CAST(\'{row[col]}\' AS TIMESTAMP)"
                         else:
                             row_def += "NULL"
-                    elif(dtypes[col] == 'boolean'):
+                    elif(dtypes[col] == 'boolean' or dtypes[col] == "bool"):
                         if(row[col]):
                             row_def += "True"
                         else:
                             row_def += "False"
-                    elif(dtypes[col] == 'bigint'):
+                    elif(dtypes[col] == 'bigint' or dtypes[col] == "int"):
                         row_def += f'{int(row[col])}'
-                    elif(dtypes[col] == 'double'):
+                    elif(dtypes[col] == 'double' or dtypes[col] == "float"):
                         row_def += f'{float(row[col])}'
                     row_def += ", "
                 row_def = row_def[:-2] + "),\n"

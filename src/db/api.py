@@ -121,11 +121,11 @@ class APIMigrate:
         try:
             processing_data = {
                 'name': self.curr_mapping['api_name'],
-                'lob_fields_length': self.curr_mapping['lob_fields'],
-                'filename': self.curr_mapping['api_name']
+                'dtypes': self.curr_mapping['fields']
             }
             if "insights" in self.curr_mapping["api_name"]:
-                self.client.cleaned_processed_data(self.curr_mapping, self.saver_list, start_date)
+                if self.db['destination']['destination_type'] == "redshift":
+                    self.client.cleaned_processed_data(self.curr_mapping, self.saver_list, start_date)
                 processed_df = self.client.get_ad_insights_from_api(
                     start_date, self.curr_mapping)
                 processing_data["df_insert"] = processed_df
