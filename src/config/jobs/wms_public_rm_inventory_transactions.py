@@ -18,13 +18,11 @@ mapping = {
         {
             'table_name': 'rm_inventory_transactions', 
             'cron': 'self-managed', 
-            'mode': 'syncing',
+            'mode': 'logging',
             'primary_key': 'inventory_transaction_id',
             'primary_key_datatype': 'uuid',
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
-            'bookmark': 'updated_at_for_pipeline', 
-            'improper_bookmarks': False, 
             'batch_size': 100000, 
             'buffer_updation_lag': {
                 'hours': 2,
