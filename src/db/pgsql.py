@@ -51,9 +51,6 @@ class PGSQLMigrate:
                 self.stop_time = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date() + datetime.timedelta(days=1), settings['cut_off_time']).astimezone(tz=self.tz_info)
             self.inform(f"Cut-off time specified. Will be stopping after {str(self.stop_time)}")
         
-        if('specifications' not in self.db['destination'].keys() or not self.db['destination']['specifications'] or not isinstance(self.db['destination']['specifications'], list)):
-            raise IncorrectMapping("Destination specifications should be supplied as an instance of list")
-        
 
     def inform(self, message: str = None) -> None:
         logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")

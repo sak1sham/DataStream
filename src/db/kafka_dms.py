@@ -30,10 +30,7 @@ class KafkaMigrate:
         redis_password = db['redis']['password']
         self.redis_db = redis.StrictRedis.from_url(url = redis_url, password=redis_password, decode_responses=True)
         self.redis_key = self.curr_mapping['unique_id']
-        
-        if('specifications' not in self.db['destination'].keys() or not self.db['destination']['specifications'] or not isinstance(self.db['destination']['specifications'], list)):
-            raise IncorrectMapping("Destination specifications should be supplied as an instance of list")
-        
+
 
     def get_kafka_connection(self, topic, kafka_group, kafka_server, KafkaPassword, KafkaUsername, enable_auto_commit = True):
         if "aws" in kafka_server:

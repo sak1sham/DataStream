@@ -49,10 +49,6 @@ class MongoMigrate:
         self.start_time = datetime.datetime.utcnow()
         self.curr_megabytes_processed = 0
         
-        if('specifications' not in self.db['destination'].keys() or not self.db['destination']['specifications'] or not isinstance(self.db['destination']['specifications'], list)):
-            raise IncorrectMapping("Destination specifications should be supplied as an instance of list")
-        
-
 
     def inform(self, message: str = None) -> None:
         logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
