@@ -1,6 +1,6 @@
 mapping = {
     'source': {
-        'source_type': 'sql',
+        'source_type': 'pgsql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'cmdb',
         'username': 'saksham_garg',
@@ -27,12 +27,15 @@ mapping = {
         {
             'table_name': 'routes',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'syncing', 
+            'partition_col': 'started_at',
+            "partition_col_format": "datetime",
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
-            'batch_size': 10000,
+            'batch_size': 1000,
+            'strict': True,
             'grace_updation_lag': {
                 'days': 1
             },

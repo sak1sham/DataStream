@@ -1,6 +1,6 @@
 mapping = {
     'source': {
-        'source_type': 'sql',
+        'source_type': 'pgsql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'cmdb',
         'username': 'saksham_garg',
@@ -30,7 +30,10 @@ mapping = {
             'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
+            'partition_col': 'scanned_at',
+            'partition_col_format': 'datetime',
             'batch_size': 100000,
+            'strict': True,
             'grace_updation_lag': {
                 'days': 1
             },

@@ -35,7 +35,6 @@ mapping = {
                 'date': 'datetime',
             },
             'cron': 'self-managed',
-            'to_partition': True,
             'partition_col': 'date',
             'partition_col_format': ['datetime'],
             'col_rename': {
@@ -44,7 +43,7 @@ mapping = {
         },
     ],
     'testing': {
-        'test_type': 'sql',
+        'test_type': 'pgsql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'cmdb',
         'username': 'saksham_garg',

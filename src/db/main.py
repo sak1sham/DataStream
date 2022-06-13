@@ -24,7 +24,7 @@ class DMS_importer:
         if(db['source']['source_type'] == 'mongo'):
             self.name = curr_mapping['collection_name']
             self.obj = MongoMigrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
-        elif(db['source']['source_type'] == 'sql'):
+        elif(db['source']['source_type'] == 'pgsql'):
             self.name = curr_mapping['table_name']
             self.obj = PGSQLMigrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
         elif(db['source']['source_type'] == 'api'):
@@ -34,7 +34,7 @@ class DMS_importer:
             self.name = curr_mapping['topic_name']
             self.obj = KafkaMigrate(db = db, curr_mapping = curr_mapping, tz_str = tz__)
         else:
-            raise IncorrectMapping("source_type can be api, sql, mongo or kafka")
+            raise IncorrectMapping("source_type can be api, pgsql, mongo or kafka")
     
     def process(self):
         try:

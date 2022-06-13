@@ -68,12 +68,15 @@ def get_file_df(s3: Any = None, bucket_name_read: str = "", file_name_read: str 
 
 class s3Saver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, c_partition: List[str] = [], unique_id: str = "") -> None:
-        self.s3_location = f"s3://{db_destination['s3_bucket_name']}/{db_source['source_type']}/{db_source['db_name']}/"
+        self.source_type = db_source['source_type']
+        if(self.source_type == 'pgsql'):
+            self.source_type = 'sql'
+        self.s3_location = f"s3://{db_destination['s3_bucket_name']}/{self.source_type}/{db_source['db_name']}/"
         self.partition_cols = convert_heads_to_lowercase(c_partition)
         self.unique_id = unique_id
         self.name_ = ""
         self.table_list = []
-        self.database = (f"{db_source['source_type']}_{db_source['db_name']}").replace(".", "_").replace("-", "_")
+        self.database = (f"{self.source_type}_{db_source['db_name']}").replace(".", "_").replace("-", "_")
         self.description = f"Data migrated from {self.database}"
 
     def inform(self, message: str = "") -> None:
@@ -133,7 +136,6 @@ class s3Saver:
                 prev_files = wr.s3.list_objects(file_name_u)
                 self.inform(message = f"Found {len(prev_files)} files while updating: {df_u.shape[0]}/{n_updations} records")
                 for file_ in prev_files:
-                    self.inform(file_)
                     s3 = boto3.client('s3') 
                     file_o = urlparse(file_, allow_fragments=False)
                     bucket_name_read = file_o.netloc

@@ -1,6 +1,6 @@
 mapping = {
     'source': {
-        'source_type': 'sql',
+        'source_type': 'pgsql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'cmdb',
         'username': 'saksham_garg',
@@ -28,11 +28,14 @@ mapping = {
             'table_name': 'product_audit_logs',
             'cron': 'self-managed',
             'mode': 'syncing',
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 100000,
+            'strict': True,
             'col_rename': {
                 'tag': 'tag_'
             },

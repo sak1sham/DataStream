@@ -1,6 +1,6 @@
 mapping = {
     'source': {
-        'source_type': 'sql',
+        'source_type': 'pgsql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'cmdb',
         'username': 'saksham_garg',
@@ -32,7 +32,10 @@ mapping = {
             'primary_key_datatype': 'uuid',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'batch_size': 10000,
+            'strict': True,
             'buffer_updation_lag':{
                 'hours': 2,
             },

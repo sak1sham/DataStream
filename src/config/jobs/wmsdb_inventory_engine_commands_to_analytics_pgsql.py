@@ -1,4 +1,4 @@
-{
+mapping = {
     "destination": {
         "destination_type": "pgsql",
         "specifications": [
@@ -19,13 +19,14 @@
     "source": {
         "db_name": "wmsdb",
         "password": "3y5HMs^2qy%&Kma",
-        "source_type": "sql",
+        "source_type": "pgsql",
         "url": "cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com",
         "username": "saksham_garg"
     },
     "tables": [
         {
             "batch_size": 100000,
+            'strict': True,
             "cron": "self-managed",
             "mode": "logging",
             "partition_col": "timestamp",
@@ -33,7 +34,6 @@
             "primary_key": "command_serial",
             "primary_key_datatype": "int",
             "table_name": "inventory_engine_commands",
-            "to_partition": True
         }
     ]
 }

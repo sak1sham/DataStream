@@ -21,7 +21,7 @@ app = FastAPI(title="Migration service")
 app.include_router(router=router)
 scheduler = BackgroundScheduler()
 group_key = {
-    'sql': 'tables',
+    'pgsql': 'tables',
     'mongo': 'collections',
     'api': 'apis',
     's3': 'tables',

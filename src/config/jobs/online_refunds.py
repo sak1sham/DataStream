@@ -1,4 +1,4 @@
-{
+mapping = {
     "destination": {
         "destination_type": "s3",
         "specifications": [
@@ -10,7 +10,7 @@
     "source": {
         "db_name": "cmdb",
         "password": "3y5HMs^2qy%&Kma",
-        "source_type": "sql",
+        "source_type": "pgsql",
         "url": "cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com",
         "username": "saksham_garg"
     },
@@ -22,7 +22,6 @@
             "partition_col": "created_at",
             "partition_col_format": "datetime",
             "table_name": "online_refunds",
-            "to_partition": True
         }
     ]
 }

@@ -28,9 +28,9 @@ pipeline_format is a dictionary with following properties:
 ### Source
 ```
 'source': {
-    'source_type': 'mongo' or 'mysql' or 'api',
+    'source_type': 'mongo' or 'pgsql' or 'api', or 'kafka',
     'url': '' (the url to connect to the data source)
-    'db_name': '' (name of dabatase for mongoDB and SQL sources),
+    'db_name': '' (name of dabatase for mongoDB and pgsql sources),
     'username': '' (Optional),
     'password': '' (Optional)
 },
@@ -67,7 +67,6 @@ If source is PGSQL, we need to provide a field ```tables```, which is a list of 
     'primary_key_datatype': 'str' or 'int' or 'datetime' (Required, if logging or syncing mode),
     'exclude_tables': [] (Optional, List[str] or str, list of table names to exclude from entire database),
     'cron': '* * * * * 7-19 */1 0' or 'self-managed' (Refer Notes 1),
-    'to_partition': True or False (Default),
     'partition_col': False or 'column-name' (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 3),
     'mode': 'syncing' or 'logging' or 'dumping',
@@ -88,7 +87,6 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
     'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
     'archive': "Mongodb_query" or False,
     'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
-    'to_partition': True or False (Default),
     'partition_col': False or '' name of the field (str or list of str),
     'partition_col_format': '' (Optional, Refer Notes 3),
     'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True),
@@ -103,7 +101,7 @@ If source is MongoDB, we need to provide a field ```collections```, which is a l
 (Bool): default = False. If user sets 'fastapi_server' to True, a uvicorn server is started.
 
 ## timezone
-(Str): default = 'Asia/Kolkata'. Used for processing dates in given timezone, using last_run_cron_job, etc. For mongo as the source, this service saves dates in UTC timezone, and for sql as the source, this service saves dates without changing their timezone.
+(Str): default = 'Asia/Kolkata'. Used for processing dates in given timezone, using last_run_cron_job, etc. For mongo as the source, this service saves dates in UTC timezone, and for pgsql as the source, this service saves dates without changing their timezone.
 
 ## notify
 (Bool): default = False. If provided, slack_notif option is enabled, where we can provide details of the slack channels, and slack_token
@@ -152,4 +150,4 @@ The updation and creation bookmark can be the same in case updation is never per
 ## Notes:
 1. If fastapi server is started, then data can migrated on scheduled basis, as well as immediate basis (i.e., migrating data just once).
 2. If fastapi server is not started, then data can only be migrated on immediate basis (i.e., migrating data just once). To run scheduled jobs in such cases, an external scheduler is required.
-3. In case of sql, we can migrate all tables of database by passing 'table_name' as '*'. We can also add a list of tables to exclude them in such cases.
+3. In case of pgsql, we can migrate all tables of database by passing 'table_name' as '*'. We can also add a list of tables to exclude them in such cases.

@@ -1,6 +1,6 @@
 mapping = {
     'source': {
-        'source_type': 'sql',
+        'source_type': 'pgsql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'cmdb',
         'username': 'saksham_garg',
@@ -20,7 +20,6 @@ mapping = {
             'cron': 'self-managed',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'to_partition': True,
             'partition_col': 'scanned_at',
             'partition_col_format': 'datetime',
             'mode': 'logging',

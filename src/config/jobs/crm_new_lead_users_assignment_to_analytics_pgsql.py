@@ -1,6 +1,6 @@
 mapping = {
     'source': {
-        'source_type': 'sql',
+        'source_type': 'pgsql',
         'url': 'crmdb.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'crmdb',
         'username': 'saksham_garg',
@@ -30,12 +30,12 @@ mapping = {
             'primary_key': 'assignment_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',
-            'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'strict': True,
             'buffer_updation_lag':{
                 'hours': 2,
             },

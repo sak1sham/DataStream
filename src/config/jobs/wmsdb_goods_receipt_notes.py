@@ -1,4 +1,4 @@
-{
+mapping = {
     "destination": {
         "destination_type": "s3",
         "specifications": [
@@ -10,7 +10,7 @@
     "source": {
         "db_name": "wmsdb",
         "password": "3y5HMs^2qy%&Kma",
-        "source_type": "sql",
+        "source_type": "pgsql",
         "url": "cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com",
         "username": "saksham_garg"
     },
@@ -32,7 +32,6 @@
             "primary_key": "transaction_group_id",
             "primary_key_datatype": "int",
             "table_name": "goods_receipt_notes",
-            "to_partition": True
         }
     ]
 }
