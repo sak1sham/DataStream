@@ -17,7 +17,7 @@ mapping = {
     'tables': [ 
         {
             'table_name': 'user_cashback_transactions',
-            'cron': 'self-managed',
+            'cron': '0 22 * * *',
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'uuid',
