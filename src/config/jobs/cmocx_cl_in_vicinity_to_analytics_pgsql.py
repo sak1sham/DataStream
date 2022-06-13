@@ -27,7 +27,7 @@ mapping = {
         {
             'table_name': 'cmocx_cl_in_vicinity',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
