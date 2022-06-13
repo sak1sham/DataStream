@@ -74,24 +74,12 @@ class PGSQLMigrate:
         '''
         self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
         self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
-
-        self.saver_list: List[DMS_exporter] = []
-        list_destinations = self.db['destination']['specifications']
-        self.db['destination'].pop('specifications')
-        self.saver_list: List[DMS_exporter] = []
-        for destination in list_destinations:
-            self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
-            for key in destination.keys():
-                self.db['destination'][key] = destination[key]
-            self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id']))
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
         
-        self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
-        self.db['destination']['specifications'] = list_destinations
-
 
     def save_job_working_data(self, table_name: str = None, status: bool = True) -> None:
         self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
-        total_records = self.saver_list[0].count_n_records(table_name = table_name)
+        total_records = self.saver.count_n_records(table_name = table_name)
         total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
         total_megabytes = 0
         if(self.n_insertions + self.n_updations > 0):
@@ -318,8 +306,7 @@ class PGSQLMigrate:
             processed_data['json_cols'] = self.json_cols
             processed_data['strict'] = True if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']) else False
             processed_data['partition_col'] = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and 'partition_col_format' in self.curr_mapping.keys() and self.curr_mapping['partition_col_format'] == 'datetime' else None
-            for saver_i in self.saver_list:
-                saver_i.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
+            self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
 
     def get_list_tables(self) -> List[str]:
@@ -841,7 +828,7 @@ class PGSQLMigrate:
 
 
     def preprocess_table(self, table_name: str = None) -> None:
-        n_columns_destination = self.saver_list[0].get_n_cols(table_name=table_name)
+        n_columns_destination = self.saver.get_n_cols(table_name=table_name)
         try:
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
@@ -866,8 +853,7 @@ class PGSQLMigrate:
             self.inform(f"n_columns (source) = {n_columns_pgsql} and n_columns (destination) = {n_columns_destination}")
             if(n_columns_destination > 0 and n_columns_pgsql != n_columns_destination):
                 self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
-                for saver_i in self.saver_list:
-                    saver_i.drop_table(table_name=table_name)
+                self.saver.drop_table(table_name=table_name)
                 delete_metadata_from_mongodb(self.curr_mapping['unique_id'])
                 self.inform("Data is deleted, now starting migration again.")
             else:
@@ -897,8 +883,7 @@ class PGSQLMigrate:
                 data_df = convert_to_dtype_strict(df = data_df, schema = {primary_key: primary_key_dtype})
             else:
                 data_df = convert_to_dtype(df = data_df, schema = {primary_key: primary_key_dtype})
-            for saver_i in self.saver_list:
-                saver_i.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
+            self.saver.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
 
 
     def process(self) -> Tuple[int]:
@@ -984,15 +969,13 @@ class PGSQLMigrate:
                 
         self.inform(message="Overall migration complete.")
         if(self.curr_mapping['mode'] == 'dumping' and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
-            for saver_i in self.saver_list:
-                saver_i.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
+            self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform(message="Expired data removed.")
 
         self.postprocess()
         self.inform(message="Post processing completed.")
 
-        for saver_i in self.saver_list:
-            saver_i.close()
+        self.saver.close()
         self.inform(message="Hope to see you again :')")
 
         return (self.n_insertions, self.n_updations)
