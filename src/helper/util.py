@@ -263,6 +263,8 @@ def convert_to_dtype_strict(df: dftype, schema: Dict[str, Any]) -> dftype:
                     df[col] = df[col].fillna(np.nan).apply(lambda x: convert_jsonb_to_string(x))
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
                     df[col] = df[col].apply(lambda x: convert_to_datetime(x, tz_))
+                elif(dtype == 'boolean' or dtype == 'bool'):
+                    df[col] = df[col].astype(bool, copy=False, errors='ignore')
                 elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype.startswith('serial') or dtype.startswith('int')):
                     df[col] = pd.to_numeric(df[col], errors='coerce')
                     df[col] = df[col].fillna(np.nan)
