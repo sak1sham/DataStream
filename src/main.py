@@ -54,12 +54,12 @@ def create_new_job(db, list_specs, uid, is_fastapi):
     specs_name_type = f"{group_key[db['source']['source_type']][:-1]}_name"
     basic_unique_id = f"{uid}_DMS_{list_specs[specs_name_type]}"
     list_specs['unique_id'] = basic_unique_id
-    list_destinations = db['destination']['specifications']
-    db['destination'].pop('specifications')
+    list_destinations = db['destination']
+    db['destination'] = {}
     for key, destination in list_destinations.items():
         if(len(list_destinations) > 1):
             list_specs['unique_id'] = f"{basic_unique_id}_{key}"
-        db['destination'] = {'destination_type': db['destination']['destination_type']}
+        db['destination'] = {}
         for key in destination.keys():
             db['destination'][key] = destination[key]
         if(list_specs['cron'] == 'self-managed'):
