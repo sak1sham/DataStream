@@ -60,8 +60,8 @@ def create_new_job(db, list_specs, uid, is_fastapi):
         if(len(list_destinations) > 1):
             list_specs['unique_id'] = f"{basic_unique_id}_{key}"
         db['destination'] = {}
-        for key in destination.keys():
-            db['destination'][key] = destination[key]
+        for key_ in destination.keys():
+            db['destination'][key_] = destination[key_]
         if(list_specs['cron'] == 'self-managed'):
             migration_service_of_job(db, list_specs, tz__)
         elif(is_fastapi):
