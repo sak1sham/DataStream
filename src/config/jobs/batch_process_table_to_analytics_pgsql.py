@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'batch_process_table',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',

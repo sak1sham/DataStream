@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'csv_batch_uploads',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'batch_id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',

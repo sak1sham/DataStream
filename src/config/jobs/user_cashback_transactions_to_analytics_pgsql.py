@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'user_cashback_transactions',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'partition_col': 'created_at',
             "partition_col_format": "datetime",
             'primary_key': 'id',

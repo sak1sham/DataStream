@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'tbl_user',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'user_id',
             'primary_key_datatype': 'int',
             'partition_col': 'user_created',

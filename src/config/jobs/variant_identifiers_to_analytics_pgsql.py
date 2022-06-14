@@ -35,7 +35,7 @@ mapping = {
                 "days": 1
             },
             "improper_bookmarks": False,
-            "mode": "syncing",
+            "mode": "mirroring",
             "primary_key": "variant_identifier",
             "primary_key_datatype": "str",
             "table_name": "variant_identifiers"

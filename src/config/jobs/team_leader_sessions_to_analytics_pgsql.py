@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'team_leader_sessions',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'session_id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',

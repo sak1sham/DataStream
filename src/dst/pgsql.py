@@ -3,7 +3,9 @@ import pandas as pd
 from typing import List, Dict, Any
 import datetime
 from retrying import retry
+import pytz
 
+from config.settings import settings
 from helper.logger import logger
 from helper.util import utc_to_local
 from helper.exceptions import *
@@ -40,6 +42,7 @@ class PgSQLSaver:
         self.table_list = []
         self.table_exists = None
 
+
     def create_schema_if_not_exists(self, schema: str = None) -> bool:
         conn = psycopg2.connect(
             host=self.db_destination['url'],
@@ -67,14 +70,14 @@ class PgSQLSaver:
             conn.commit()
         return exists
 
+
     def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], partition_col: str = None) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         self.create_schema_if_not_exists(schema=schema)
         if(self.table_exists is None):
             # Not checked before
-            self.table_exists = self.check_table_exists(
-                table=self.name_, schema=self.schema)
+            self.table_exists = self.check_table_exists(table=self.name_, schema=self.schema)
             if(self.table_exists):
                 self.inform("Table exists")
             else:
@@ -86,8 +89,7 @@ class PgSQLSaver:
             return
         else:
             self.table_exists = True
-            table_name = f"{schema}.{table}" if schema and len(
-                schema) > 0 else table
+            table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
             cols_def = ""
             for col in df.columns.to_list():
                 cols_def = f"{cols_def} \n{col} "
@@ -95,8 +97,7 @@ class PgSQLSaver:
                     if(col in json_cols):
                         cols_def = f"{cols_def} JSON"
                     elif(col in varchar_length_source.keys() and varchar_length_source[col]):
-                        cols_def = cols_def + \
-                            f"VARCHAR({varchar_length_source[col]})"
+                        cols_def = cols_def + f" VARCHAR({varchar_length_source[col]})"
                     else:
                         cols_def = f"{cols_def} TEXT"
                 elif(dtypes[col] == 'timestamp' or dtypes[col] == "datetime"):
@@ -150,6 +151,7 @@ class PgSQLSaver:
                             conn.commit()
             conn.close()
 
+
     @retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000)
     def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], strict_mode: bool = False, partition_col: str = None) -> None:
         if(df.empty):
@@ -167,7 +169,7 @@ class PgSQLSaver:
             col_names = col_names[:-2]
             for key, val in dtypes.items():
                 if(val == 'timestamp' or val == 'datetime'):
-                    df2[key] = df2[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isna(x) else '')
+                    df2[key] = df2[key].apply(lambda x: x.astimezone(pytz.timezone(settings['timezone'])).strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isna(x) else '')
 
             cols_def = ""
             for _, row in df2.iterrows():
@@ -224,14 +226,18 @@ class PgSQLSaver:
             self.err(str(e))
             raise Exception("Unable to insert records in table.") from e
 
+
     def inform(self, message: str = "") -> None:
         logger.inform(s=f"{self.unique_id}: {message}")
+
 
     def warn(self, message: str = "") -> None:
         logger.warn(s=f"{self.unique_id}: {message}")
 
+
     def err(self, message: str = "") -> None:
         logger.err(s=f"{self.unique_id}: {message}")
+
 
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
@@ -302,6 +308,7 @@ class PgSQLSaver:
             )
             self.inform(message=f"{str(processed_data['df_update'].shape[0])} updations done.")
 
+
     def delete_table(self, table_name: str = None) -> None:
         table_name = table_name.replace('.', '_').replace('-', '_')
         query = f"DROP TABLE  IF EXISTS {self.schema}.{table_name};"
@@ -334,6 +341,7 @@ class PgSQLSaver:
         conn.close()
         return df.iloc[0][0]
 
+
     def is_exists(self, table_name: str = None) -> bool:
         try:
             table_name = table_name.replace('.', '_').replace('-', '_')
@@ -357,6 +365,7 @@ class PgSQLSaver:
             self.err("Unable to check the presence of the table at destination.")
             raise
 
+
     def count_n_records(self, table_name: str = None) -> int:
         try:
             table_name = table_name.replace('.', '_').replace('-', '_')
@@ -379,6 +388,7 @@ class PgSQLSaver:
         except Exception as e:
             self.err("Unable to fetch the number of records previously at destination.")
             raise
+
 
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
         today_ = datetime.datetime.utcnow()
@@ -408,6 +418,7 @@ class PgSQLSaver:
                 cursor.execute(query)
             conn.close()
 
+ 
     def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
         if(data_df.shape[0]):
             pkey_max = data_df[primary_key].max()
@@ -447,9 +458,9 @@ class PgSQLSaver:
                 cursor.execute(sql_stmt)
                 conn.commit()
 
-            self.inform(
-                f"Deleted some records from destination which no longer exist at source.")
+            self.inform(f"Deleted some records from destination which no longer exist at source.")
             conn.close()
+
 
     def close(self):
         pass

@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'categories',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'category_id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',

@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'cms_list_items',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'cms_list_item_id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',

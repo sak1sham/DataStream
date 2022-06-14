@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'support_ticket_conversations',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'conversation_id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
