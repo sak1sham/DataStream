@@ -30,7 +30,7 @@ class APIMigrate:
     def err(self, error: Any = None) -> None:
         logger.err(s = f"{self.curr_mapping['unique_id']}: {error}")
 
-    def save_data_to_destination(self, processed_data: Dict[str, Any], primary_keys = None):
+    def save_data_to_destination(self, processed_data: Dict[str, Any], primary_keys: List[str] = None):
         if(not processed_data):
             return
         else:
@@ -124,15 +124,13 @@ class APIMigrate:
             
             self.save_data_to_destination(processed_data=processing_data, primary_keys=self.curr_mapping["primary_keys"])
         except APIRequestError as e:
-            msg = 'Error while fetching data for table: *{0}* for app *{1}* from source on *{2}*.'.format(
-                self.curr_mapping['api_name'], self.curr_mapping['project_name'], str(start_date))
+            msg = f"Error while fetching data for table: *{self.curr_mapping['api_name']}* for app *{self.curr_mapping['project_name']}* from source on *{str(start_date)}*."
             send_message(msg=msg, channel=self.channel,
                          slack_token=slack_token)
-            msg += '``` Exception: {0}```'.format(str(e))
+            msg += f"``` Exception: {str(e)}```"
             self.err(msg)
         except Exception as e:
-            msg = "Something went wrong! Could not process table *{0}* for project *{1}*.``` Exception: {2}```".format(
-                self.curr_mapping['api_name'], self.curr_mapping['project_name'], str(e))
+            msg = f"Something went wrong! Could not process table *{self.curr_mapping['api_name']}* for project *{self.curr_mapping['project_name']}*.``` Exception: {str(e)}```"
             send_message(msg=msg, channel=self.channel,
                          slack_token=slack_token)
             self.err(msg)
@@ -160,8 +158,8 @@ class APIMigrate:
         start_date = get_date_from_days(start_day, self.tz_info)
         end_date = get_date_from_days(end_day, self.tz_info)
         while start_date <= end_date:
-            msg = "Migration started for *{1}* from database *{2}* to *{3}* for date: *{0}*".format(str(
-                start_date), self.curr_mapping['project_name'] + "_" + self.curr_mapping["api_name"], self.db['source']['db_name'], self.db['destination']['destination_type'])
+            table = self.curr_mapping['project_name'] + '_' + self.curr_mapping["api_name"]
+            msg = f"Migration started for *{table}* from database *{self.db['source']['db_name']}* to *{self.db['destination']['destination_type']}* for date: *{str(start_date)}*"
             send_message(msg, self.channel, slack_token)
             self.process_facebook_events(start_date)
             start_date += timedelta(1)
