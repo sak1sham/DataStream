@@ -7,6 +7,7 @@ from typing import NewType, Any, Dict
 from kafka import KafkaConsumer
 import redis
 import time
+from retry import retry
 from config.migration_mapping import get_kafka_mapping_functions
 from helper.util import *
 from helper.logger import logger
@@ -168,6 +169,14 @@ class KafkaMigrate:
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
 
 
+    @retry(wait_random_min=1000, wait_random_max=2000)
+    def redis_push(self, message):
+        self.redis_db.rpush(self.redis_key, message.value)
+
+    @retry(wait_random_min=1000, wait_random_max=2000)
+    def redis_pop(self):
+        self.redis_db.lpop(self.redis_key, count=self.batch_size)
+
     def value_deserializer(self, x):
         return json.loads(x.decode('utf-8'))
 
@@ -188,25 +197,15 @@ class KafkaMigrate:
         total_redis_insertion_time = 0
         for message in consumer:
             start_time = time.time()
-            try:
-                self.redis_db.rpush(self.redis_key, message.value)
-            except Exception as e:
-                msg = "Redis overflow"
-                slack_token = settings['slack_notif']['slack_token']
-                send_message(msg = msg, channel = self.channel, slack_token = slack_token)
+            self.redis_push(self.redis_key, message.value)    
             total_redis_insertion_time += time.time() - start_time
             self.inform(f"Reached {self.redis_db.llen(self.redis_key)}/{self.batch_size}")
             if(self.redis_db.llen(self.redis_key) >= self.batch_size):
                 self.inform(f"Time taken in (consuming + redis insertions) of {self.batch_size} records: {time.time() - batch_start_time} seconds")
                 self.inform(f"Time taken in (redis insertions) of {self.batch_size} records: {total_redis_insertion_time} seconds")
                 start_time = time.time()
-                try:
-                    list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
-                except Exception as e:
-                    msg = "Redis overflow"
-                    slack_token = settings['slack_notif']['slack_token']
-                    send_message(msg = msg, channel = self.channel, slack_token = slack_token)
-                # list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
+                list_records = self.redis_pop(self.redis_key, count=self.batch_size)
+
                 segregated_recs = {}
                 for val in list_records:
                     val = json.loads(val)
