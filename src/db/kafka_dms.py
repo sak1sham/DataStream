@@ -167,11 +167,11 @@ class KafkaMigrate:
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
 
 
-    @retry(wait_random_min=10000, wait_random_max=20000, tries=5)
+    @retry(wait_random_min=10000, wait_random_max=20000, stop_max_attempt_number=10)
     def redis_push(self, message):
         self.redis_db.rpush(self.redis_key, message.value)
 
-    @retry(wait_random_min=10000, wait_random_max=20000, tries=5)
+    @retry(wait_random_min=10000, wait_random_max=20000, stop_max_attempt_number=10)
     def redis_pop(self):
         self.redis_db.lpop(self.redis_key, count=self.batch_size)
 
