@@ -206,7 +206,7 @@ class KafkaMigrate:
             try:
                 for message in consumer:
                     start_time = time.time()
-                    self.redis_push(self, message.value)    
+                    self.redis_push(self, message)    
                     total_redis_insertion_time += time.time() - start_time
                     self.inform(f"Reached {self.redis_db.llen(self.redis_key)}/{self.batch_size}")
                     if(self.redis_db.llen(self.redis_key) >= self.batch_size):
@@ -237,5 +237,6 @@ class KafkaMigrate:
             except Exception as e:
                 msg = f"Caught some exception: {e}"
                 slack_token = settings['slack_notif']['slack_token']
-                send_message(msg = msg, channel = self.channel, slack_token = slack_token)
+                slack_channel = settings['slack_notif']['channel']
+                send_message(msg = msg, channel = slack_channel, slack_token = slack_token)
                 logger.err(traceback.format_exc())
