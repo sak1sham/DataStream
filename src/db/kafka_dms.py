@@ -1,4 +1,3 @@
-from logging import exception
 import traceback
 import pandas as pd
 import json
