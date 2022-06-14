@@ -34,7 +34,7 @@ class APIMigrate:
         if(not processed_data):
             return
         else:
-            self.saver.save(processed_data = processed_data)
+            self.saver.save(processed_data = processed_data, primary_keys=primary_keys)
 
     def presetup(self) -> None:
         if('fields' not in self.curr_mapping.keys()):
@@ -103,16 +103,22 @@ class APIMigrate:
             return
         try:
             processing_data = {
-                'name': self.curr_mapping['api_name'],
-                'dtypes': self.curr_mapping['fields']
+                'name': self.curr_mapping['api_name']
             }
             if "insights" in self.curr_mapping["api_name"]:
                 if self.db['destination']['destination_type'] == "redshift":
-                    self.client.cleaned_processed_data(self.curr_mapping, self.saver_list, start_date)
+                    self.client.cleaned_processed_data(self.curr_mapping, self.saver, start_date)
+                    processing_data["filename"] = self.curr_mapping["api_name"]
+                elif self.db['destination']['destination_type'] == "pgsql": 
+                    processing_data["dtypes"] = self.curr_mapping["fields"]
                 processed_df = self.client.get_ad_insights_from_api(
                     start_date, self.curr_mapping)
                 processing_data["df_insert"] = processed_df
             elif "campaigns" in self.curr_mapping["api_name"]:
+                if self.db['destination']['destination_type'] == "redshift":
+                    processing_data["filename"] = self.curr_mapping["api_name"]
+                elif self.db['destination']['destination_type'] == "pgsql": 
+                    processing_data["dtypes"] = self.curr_mapping["fields"]
                 processed_df = self.client.get_ad_campaigns_from_api(start_date, self.curr_mapping)
                 processing_data["df_update"] = processed_df
             

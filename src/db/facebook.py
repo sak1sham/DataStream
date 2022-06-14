@@ -79,8 +79,10 @@ class FacebookManager:
                 logger.err(curr_mapping['unique_id'], curr_mapping['unique_id'] + ": Error in retrieving data through API - {0} for date {1} having campaign_id: {2}. Exception: {3}".format(
                     curr_mapping["api_name"], insights_date, each_campaign["id"], str(e)))
         final_insights_df = pd.concat(final_insights_df, ignore_index=True)
-        final_insights_df = final_insights_df.reindex(list(curr_mapping["fields"].keys()), axis="columns", fill_value=None)
-        final_insights_df = typecast_df_to_schema(final_insights_df, curr_mapping['fields'])
+        final_insights_df = final_insights_df.reindex(
+            list(curr_mapping["fields"].keys()), axis="columns", fill_value=None)
+        final_insights_df = typecast_df_to_schema(
+            final_insights_df, curr_mapping['fields'])
         return final_insights_df
 
     def get_ad_campaigns_from_api(self, insights_date: datetime, curr_mapping: Dict[str, Any]):
@@ -88,40 +90,40 @@ class FacebookManager:
         try:
             all_campaigns = self.fb_account.get_campaigns(fields=fields)
             final_campaigns_df = pd.DataFrame(all_campaigns)
-            final_campaigns_df = final_campaigns_df.reindex(list(curr_mapping["fields"].keys()), axis="columns", fill_value=None)
-            final_campaigns_df = typecast_df_to_schema(final_campaigns_df, curr_mapping['fields'])
+            final_campaigns_df = final_campaigns_df.reindex(
+                list(curr_mapping["fields"].keys()), axis="columns", fill_value=None)
+            final_campaigns_df = typecast_df_to_schema(
+                final_campaigns_df, curr_mapping['fields'])
         except Exception as e:
             logger.err(curr_mapping['unique_id'], traceback.format_exc())
             logger.err(curr_mapping['unique_id'], curr_mapping['unique_id'] +
                        ": Error in retrieving data through API - {0} for date {1}. Exception: {2}".format(curr_mapping["api_name"], insights_date, str(e)))
         return final_campaigns_df
 
-    def cleaned_processed_data(self, curr_mapping: Dict[str, Any], dst_saver: List[DMS_exporter], start_date: datetime):
+    def cleaned_processed_data(self, curr_mapping: Dict[str, Any], dst_saver: DMS_exporter, start_date: datetime):
 
         year = start_date.strftime('%Y')
         month = start_date.strftime('%m')
         day = start_date.strftime('%d')
-        
-        for saver_i in dst_saver:
-            if saver_i.type == 'redshift':
-                try:
-                    cur = saver_i.saver.conn.cursor()
-                    cur.execute("select 1 from pg_tables where schemaname = %s and tablename = %s",
-                                (saver_i.saver.schema, curr_mapping['api_name']))
-                    result = cur.fetchone()
-                    if result and curr_mapping["api_name"]:
-                        delete_query = "delete from {0}.{1} where {2}='{3}-{4}-{5}'".format(
-                            saver_i.saver.schema,
+
+        if dst_saver.type=='redshift':
+            try:
+                cur = dst_saver.saver.conn.cursor()
+                cur.execute("select 1 from pg_tables where schemaname = %s and tablename = %s", (dst_saver.saver.schema, curr_mapping['api_name']))
+                result = cur.fetchone()
+                if result:
+                    delete_query = "delete from {0}.{1} where {2}='{3}-{4}-{5}'".format(
+                            dst_saver.saver.schema,
                             curr_mapping['api_name'],
                             curr_mapping["date_column"],
                             year,
                             month,
                             day
                         )
-                        cur.execute(delete_query)
-                    saver_i.saver.conn.commit()
-                    cur.close()
-                except Exception as e:
-                    logger.err(curr_mapping['unique_id'], traceback.format_exc())
-                    logger.err(curr_mapping['unique_id'], curr_mapping['unique_id'] +
-                            ": Error in deleting existing table - {0} for date {1} in redshift. Exception: {2}".format(curr_mapping["api_name"], start_date, str(e)))
+                    cur.execute(delete_query)
+                    dst_saver.saver.conn.commit()
+                cur.close()
+            except Exception as e:
+                logger.err(traceback.format_exc())
+                logger.err(curr_mapping['unique_id'], curr_mapping['unique_id'] +
+                               ": Error in deleting existing table - {0} for date {1} in redshift. Exception: {2}".format(curr_mapping["api_name"], start_date, str(e)))

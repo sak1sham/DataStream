@@ -39,6 +39,9 @@ class PgSQLSaver:
         self.table_list = []
         self.table_exists = None
 
+    def check_schema_exists(self, schema: str = None) -> bool:
+
+
 
     def check_table_exists(self, table: str = None, schema: str = None) -> bool:
         conn = psycopg2.connect(

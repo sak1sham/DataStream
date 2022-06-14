@@ -8,17 +8,33 @@ mapping = {
         "app_id": "237892067883924"
     },
     "destination": {
-        'destination_type': 'redshift',
-        'specifications': [
-            {
-                'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
-                'database': 'cmwh',
-                'user': 'cmadmin',
-                'password': 'kgDzH6Zy5xZ6HHx',
-                'schema': 'facebook_ads_cx_new',
-                's3_bucket_name': 'database-migration-service-prod'
-            }
-        ]
+        
+        'redshift': {
+            'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+            'database': 'cmwh',
+            'user': 'cmadmin',
+            'password': 'kgDzH6Zy5xZ6HHx',
+            'schema': 'facebook_ads_cx_new',
+            's3_bucket_name': 'database-migration-service-prod',
+            'destination_type': 'redshift'
+        },
+        'ec_1': {
+            "db_name": "dms",
+            "password": "3y5HMs^2qy%&Kma",
+            "url": "3.108.43.163",
+            "username": "saksham_garg",
+            "schema": "facebook_ads_cx_new",
+            'destination_type': 'pgsql'
+        },
+        'ec_2':  {
+            "db_name": "dms",
+            "password": "3y5HMs^2qy%&Kma",
+            "url": "13.233.225.181",
+            "username": "saksham_garg",
+            "schema": "facebook_ads_cx_new",
+            'destination_type': 'pgsql'
+        }
+
     },
     "apis": [
         {
@@ -27,6 +43,7 @@ mapping = {
             'start_day': '-1',
             'end_day': '-1',
             'slack_channel': 'C03GZGXUPFS',
+            'strict': True,
             'fields': {
                 "__hevo__ingested_at": "int",
                 "__hevo__loaded_at": "int",
@@ -153,7 +170,7 @@ mapping = {
                 "video_play_actions_video_view_1d_view": "int",
                 "video_play_actions_video_view_7d_click": "int",
                 "video_play_actions_video_view": "int",
-                "video_play_curve_actions_video_view": "list",
+                "video_play_curve_actions_video_view": "str",
                 "video_thruplay_watched_actions_video_view_1d_view": "int",
                 "video_thruplay_watched_actions_video_view_7d_click": "int",
                 "video_thruplay_watched_actions_video_view": "int",
@@ -302,6 +319,7 @@ mapping = {
             'start_day': '-1',
             'end_day': '-1',
             'slack_channel': 'C03GZGXUPFS',
+            'strict': True,
             'fields': {
                 'account_id': 'int',
                 'budget_rebalance_flag': 'bool',
