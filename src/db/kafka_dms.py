@@ -6,7 +6,7 @@ from typing import NewType, Any, Dict
 from kafka import KafkaConsumer
 import redis
 import time
-from retry import retry
+from retrying import retry
 from config.migration_mapping import get_kafka_mapping_functions
 from helper.util import *
 from helper.logger import logger
