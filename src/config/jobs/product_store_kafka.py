@@ -6,7 +6,7 @@ mapping = {
         'source_type': 'kafka',
         'kafka_username': 'kafka-client-user',
         'kafka_password': 'JjZXllrTsb6KgOVM',
-        'consumer_group_id': 'dms_kafka_consumer_group_kafka',
+        'consumer_group_id': 'product_store_dms',
         'kafka_server': 'b-2.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-3.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-1.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-4.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-5.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-6.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096',
         'db_name': 'audit_logs'
     },
@@ -18,21 +18,17 @@ mapping = {
     },
     'topics': [
         {
-            'topic_name': 'audit_logs',
+            'topic_name': 'pstore-iudevent-queue',
             'fields': {
-                'user_type': 'str',
-                'user_id_bigint': 'int',
-                'user_id_text': 'str',
-                'action': 'str',
-                'entity': 'str',
-                'changes': 'str',
-                'lat': 'float',
-                'lng': 'float',
-                'fingerprint': 'str',
-                'old_value': 'str',
-                'date': 'datetime',
+                'sku_id': 'str',
+                'catalogue_name': 'int',
+                'warehouse_name': 'str',
+                'product_status_from': 'str',
+                'product_status_to': 'str',
+                'timestamp': 'datetime',
             },
             'cron': 'self-managed',
+            'to_partition': True,
             'partition_col': 'date',
             'partition_col_format': ['datetime'],
             'col_rename': {
@@ -41,7 +37,7 @@ mapping = {
         },
     ],
     'testing': {
-        'test_type': 'pgsql',
+        'test_type': 'sql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'cmdb',
         'username': 'saksham_garg',
@@ -65,25 +61,25 @@ def get_table_name(record: Dict = {}) -> str:
 
 
 def process_dict(record: Dict = {}) -> Dict:
-    record['user_type'] = None
-    record['user_id_text'] = None
-    record['user_id_bigint'] = None
-    record['entity'] = None
-    record['changes'] = None
-    record['action'] = None
+    record['sku_id'] = None
+    record['warehouse_name'] = None
+    record['catalogue_name'] = None
+    record['product_status_to'] = None
+    record['timestamp'] = None
+    record['product_status_from'] = None
     if('payload' in record.keys()):
         if(isinstance(record['payload'], dict)):
-            if('user_type' in record['payload'].keys()):
-                record['user_type'] = record['payload']['user_type']
-            if('user_id_text' in record['payload'].keys()):
-                record['user_id_text'] = record['payload']['user_id_text']
-            if('user_id_bigint' in record['payload'].keys()):
-                record['user_id_bigint'] = record['payload']['user_id_bigint']
-            if('entity' in record['payload'].keys()):
-                record['entity'] = record['payload']['entity']
-            if('changes' in record['payload'].keys()):
-                record['changes'] = record['payload']['changes']
-            if('action' in record['payload'].keys()):
-                record['action'] = record['payload']['action']
+            if('sku_id' in record['payload'].keys()):
+                record['sku_id'] = record['payload']['sku_id']
+            if('warehouse_name' in record['payload'].keys()):
+                record['warehouse_name'] = record['payload']['warehouse_name']
+            if('catalogue_name' in record['payload'].keys()):
+                record['catalogue_name'] = record['payload']['catalogue_name']
+            if('product_status_to' in record['payload'].keys()):
+                record['product_status_to'] = record['payload']['product_status_to']
+            if('timestamp' in record['payload'].keys()):
+                record['timestamp'] = record['payload']['timestamp']
+            if('product_status_from' in record['payload'].keys()):
+                record['product_status_from'] = record['payload']['product_status_from']
         record['payload'] = json.dumps(record['payload'])
     return record
