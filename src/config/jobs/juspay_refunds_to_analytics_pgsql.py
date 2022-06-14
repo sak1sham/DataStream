@@ -35,7 +35,7 @@ mapping = {
                 "days": 1
             },
             "improper_bookmarks": False,
-            "mode": "syncing",
+            "mode": "mirroring",
             "partition_col": "refund_date_created",
             "partition_col_format": "datetime",
             "primary_key": "event_id",

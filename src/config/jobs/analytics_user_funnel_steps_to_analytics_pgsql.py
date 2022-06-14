@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'analytics.user_funnel_steps',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'user_funnel_step_id',
             'primary_key_datatype': 'int',
             'partition_col': 'funnel_date',

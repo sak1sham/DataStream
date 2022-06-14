@@ -35,7 +35,7 @@ mapping = {
                 "days": 1
             },
             "improper_bookmarks": False,
-            "mode": "syncing",
+            "mode": "mirroring",
             "partition_col": "created_at",
             "partition_col_format": "datetime",
             "primary_key": "cart_id",

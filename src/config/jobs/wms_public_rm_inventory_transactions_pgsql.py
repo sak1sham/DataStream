@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'rm_inventory_transactions', 
             'cron': 'self-managed', 
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'inventory_transaction_id',
             'primary_key_datatype': 'uuid', 
             'partition_col': 'created_at',

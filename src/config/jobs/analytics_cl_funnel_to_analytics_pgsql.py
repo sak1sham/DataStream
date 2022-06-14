@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'analytics.cl_funnel',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'cl_id',
             'primary_key_datatype': 'str',
             'bookmark': 'updated_at',

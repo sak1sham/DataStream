@@ -25,7 +25,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'leads',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'lead_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',

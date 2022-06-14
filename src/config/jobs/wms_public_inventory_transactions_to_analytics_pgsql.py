@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'inventory_transactions',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'transaction_id',
             'primary_key_datatype': 'uuid',
             'bookmark': 'updated_at_for_pipeline',

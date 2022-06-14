@@ -28,7 +28,7 @@ mapping = {
             'cron': 'self-managed',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
