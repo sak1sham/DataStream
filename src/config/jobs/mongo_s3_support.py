@@ -5,14 +5,12 @@ mapping = {
         'db_name': 'support-service',
         'certificate_file': 'rds-combined-ca-bundle.pem'
     },
-    'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod',
-            }
-        ]
-    }, 
+    "destination": {
+        "s3": {
+            "destination_type": "s3",
+            "s3_bucket_name": "database-migration-service-prod"
+        }
+    },
     'collections': [
         {
             'collection_name': 'support_form_items',

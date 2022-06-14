@@ -7,22 +7,18 @@ mapping = {
         'password': '3y5HMs^2qy%&Kma' 
     }, 
     'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod' 
-            }
-        ]
-    }, 
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod' 
+        }
+    },
     'tables': [ 
         {
             'table_name': 'product_master', 
             'cron': 'self-managed', 
-            'mode': 'syncing',
-            'primary_key': 'id', 
-            'primary_key_datatype': 'int', 
-            'bookmark': 'updated_at_for_pipeline', 
-            'improper_bookmarks': False, 
+            'mode': 'dumping',
+            'partition_col': 'migration_snapshot_date',
+            'partition_col_format': 'datetime',
             'batch_size': 10000,
             'buffer_updation_lag':{
                 'hours': 2,

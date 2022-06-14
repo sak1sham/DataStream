@@ -7,24 +7,18 @@ mapping = {
         'password': '3y5HMs^2qy%&Kma'
     },
     'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod' 
-            }
-        ]
-    }, 
-    'tables': [            
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod' 
+        }
+    },
+    'tables': [
         {
-            'table_name': 'cms_list_items',
+            'table_name': 'team_leaders',
             'cron': 'self-managed',
-            'mode': 'syncing',
-            'primary_key': 'cms_list_item_id',
-            'primary_key_datatype': 'int',
-            'partition_col': 'created_at',
+            'mode': 'dumping',
+            'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
-            'bookmark': 'updated_at',
-            'improper_bookmarks': False,
             'batch_size': 10000,
             'buffer_updation_lag':{
                 'hours': 2,

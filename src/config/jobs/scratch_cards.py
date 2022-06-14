@@ -1,11 +1,9 @@
 mapping = {
     "destination": {
-        "destination_type": "s3",
-        "specifications": [
-            {
-                "s3_bucket_name": "database-migration-service-prod"
-            }
-        ]
+        "s3": {
+            "destination_type": "s3",
+            "s3_bucket_name": "database-migration-service-prod"
+        }
     },
     "source": {
         "db_name": "cmdb",
@@ -31,7 +29,7 @@ mapping = {
             "partition_col_format": "datetime",
             "primary_key": "id",
             "primary_key_datatype": "int",
-            "table_name": "cart",
+            "table_name": "scratch_cards",
         }
     ]
 }

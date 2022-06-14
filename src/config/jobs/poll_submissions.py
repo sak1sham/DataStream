@@ -7,31 +7,21 @@ mapping = {
         'password': '3y5HMs^2qy%&Kma' 
     }, 
     'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod' 
-            }
-        ]
-    }, 
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod' 
+        }
+    },
     'tables': [ 
         {
             'table_name': 'poll_submissions', 
             'cron': 'self-managed', 
-            'mode': 'syncing',
+            'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int', 
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
-            'bookmark': 'updated_at_for_pipeline', 
-            'improper_bookmarks': False, 
             'batch_size': 10000, 
-            'buffer_updation_lag': {
-                'hours': 2,
-            } ,
-            'grace_updation_lag': {
-                'days': 1
-            },
         },
     ]
 }
