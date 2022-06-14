@@ -167,11 +167,11 @@ class KafkaMigrate:
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
 
 
-    @retry(wait_random_min=1000, wait_random_max=2000)
+    @retry(wait_random_min=10000, wait_random_max=20000)
     def redis_push(self, message):
         self.redis_db.rpush(self.redis_key, message.value)
 
-    @retry(wait_random_min=1000, wait_random_max=2000)
+    @retry(wait_random_min=10000, wait_random_max=20000)
     def redis_pop(self):
         self.redis_db.lpop(self.redis_key, count=self.batch_size)
 
@@ -195,7 +195,7 @@ class KafkaMigrate:
         total_redis_insertion_time = 0
         for message in consumer:
             start_time = time.time()
-            self.redis_push(self.redis_key, message.value)    
+            self.redis_push(self, message.value)    
             total_redis_insertion_time += time.time() - start_time
             self.inform(f"Reached {self.redis_db.llen(self.redis_key)}/{self.batch_size}")
             if(self.redis_db.llen(self.redis_key) >= self.batch_size):
