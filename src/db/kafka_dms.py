@@ -239,4 +239,3 @@ class KafkaMigrate:
                 slack_token = settings['slack_notif']['slack_token']
                 send_message(msg = msg, channel = self.channel, slack_token = slack_token)
                 logger.err(traceback.format_exc())
-                raise
