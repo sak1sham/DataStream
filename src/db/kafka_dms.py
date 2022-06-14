@@ -6,11 +6,13 @@ from typing import NewType, Any, Dict
 from kafka import KafkaConsumer
 import redis
 import time
+from retrying import retry
 from config.migration_mapping import get_kafka_mapping_functions
 from helper.util import *
 from helper.logger import logger
 from helper.exceptions import *
 from dst.main import DMS_exporter
+from notifications.slack_notify import send_message
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
@@ -166,6 +168,22 @@ class KafkaMigrate:
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys)
 
 
+    @retry(wait_random_min=10000, wait_random_max=20000, stop_max_attempt_number=10)
+    def redis_push(self, message):
+        try:
+            self.redis_db.rpush(self.redis_key, message.value)
+        except Exception as e:
+            logger.err(traceback.format_exc())
+            raise
+
+    @retry(wait_random_min=10000, wait_random_max=20000, stop_max_attempt_number=10)
+    def redis_pop(self):
+        try:
+            self.redis_db.lpop(self.redis_key, count=self.batch_size)
+        except Exception as e:
+            logger.err(traceback.format_exc())
+            raise
+
     def value_deserializer(self, x):
         return json.loads(x.decode('utf-8'))
 
@@ -184,33 +202,41 @@ class KafkaMigrate:
         self.inform(message="Preprocessing done.")
         batch_start_time = time.time()
         total_redis_insertion_time = 0
-        for message in consumer:
-            start_time = time.time()
-            self.redis_db.rpush(self.redis_key, message.value)
-            total_redis_insertion_time += time.time() - start_time
-            self.inform(f"Reached {self.redis_db.llen(self.redis_key)}/{self.batch_size}")
-            if(self.redis_db.llen(self.redis_key) >= self.batch_size):
-                self.inform(f"Time taken in (consuming + redis insertions) of {self.batch_size} records: {time.time() - batch_start_time} seconds")
-                self.inform(f"Time taken in (redis insertions) of {self.batch_size} records: {total_redis_insertion_time} seconds")
-                start_time = time.time()
-                list_records = self.redis_db.lpop(self.redis_key, count=self.batch_size)
-                segregated_recs = {}
-                for val in list_records:
-                    val = json.loads(val)
-                    val_table_name = self.get_table_name(val)
-                    if(val_table_name not in segregated_recs.keys()):
-                        segregated_recs[val_table_name] = [self.process_dict(val)]
-                    else:
-                        segregated_recs[val_table_name].append(self.process_dict(val))
-                
-                for table_name, recs in segregated_recs.items():
-                    converted_df = pd.DataFrame(recs)
-                    processed_data = self.process_table(df=converted_df)
-                    processed_data['name'] = table_name
-                    self.save_data(processed_data=processed_data)
-                    self.inform(message="Data saved")
+        while (1):
+            try:
+                for message in consumer:
+                    start_time = time.time()
+                    self.redis_push(message)    
+                    total_redis_insertion_time += time.time() - start_time
+                    self.inform(f"Reached {self.redis_db.llen(self.redis_key)}/{self.batch_size}")
+                    if(self.redis_db.llen(self.redis_key) >= self.batch_size):
+                        self.inform(f"Time taken in (consuming + redis insertions) of {self.batch_size} records: {time.time() - batch_start_time} seconds")
+                        self.inform(f"Time taken in (redis insertions) of {self.batch_size} records: {total_redis_insertion_time} seconds")
+                        start_time = time.time()
+                        list_records = self.redis_pop()
 
-                self.inform(f"Time taken to migrate a batch to s3: {time.time() - start_time} seconds")
-                batch_start_time = time.time()
-                total_redis_insertion_time = 0
-                
+                        segregated_recs = {}
+                        for val in list_records:
+                            val = json.loads(val)
+                            val_table_name = self.get_table_name(val)
+                            if(val_table_name not in segregated_recs.keys()):
+                                segregated_recs[val_table_name] = [self.process_dict(val)]
+                            else:
+                                segregated_recs[val_table_name].append(self.process_dict(val))
+                        
+                        for table_name, recs in segregated_recs.items():
+                            converted_df = pd.DataFrame(recs)
+                            processed_data = self.process_table(df=converted_df)
+                            processed_data['name'] = table_name
+                            self.save_data(processed_data=processed_data)
+                            self.inform(message="Data saved")
+
+                        self.inform(f"Time taken to migrate a batch to s3: {time.time() - start_time} seconds")
+                        batch_start_time = time.time()
+                        total_redis_insertion_time = 0
+            except Exception as e:
+                msg = f"Caught some exception: {e}"
+                slack_token = settings['slack_notif']['slack_token']
+                slack_channel = settings['slack_notif']['channel']
+                send_message(msg = msg, channel = slack_channel, slack_token = slack_token)
+                logger.err(traceback.format_exc())
