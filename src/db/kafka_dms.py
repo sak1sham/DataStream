@@ -202,7 +202,7 @@ class KafkaMigrate:
                 self.inform(f"Time taken in (consuming + redis insertions) of {self.batch_size} records: {time.time() - batch_start_time} seconds")
                 self.inform(f"Time taken in (redis insertions) of {self.batch_size} records: {total_redis_insertion_time} seconds")
                 start_time = time.time()
-                list_records = self.redis_pop(self.redis_key, count=self.batch_size)
+                list_records = self.redis_pop(self)
 
                 segregated_recs = {}
                 for val in list_records:
