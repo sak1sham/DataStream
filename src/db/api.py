@@ -149,8 +149,7 @@ class APIMigrate:
         start_day = self.curr_mapping.get('start_day', -1)
         end_day = self.curr_mapping.get('end_day', -1)
         if not start_day or not end_day:
-            raise MissingData(
-                "please provide start_day and end_day in mapping")
+            raise MissingData("please provide start_day and end_day in mapping")
         start_date = get_date_from_days(start_day, self.tz_info)
         end_date = get_date_from_days(end_day, self.tz_info)
         while start_date <= end_date:

@@ -48,7 +48,7 @@ class PgSQLSaver:
             password=self.db_destination['password']
         )
         with conn.cursor() as curs:
-            curs.execute(f"CREATE SCHEMA IF NOT EXISTS '{schema}');")
+            curs.execute(f"CREATE SCHEMA IF NOT EXISTS '{schema}';")
             conn.commit()
         
 
@@ -158,8 +158,7 @@ class PgSQLSaver:
             df2 = df.copy()
             table = table.replace('.', '_').replace('-', '_')
             self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source=varchar_length_source, logging_flag=logging_flag, json_cols=json_cols, partition_col=partition_col)
-            table_name = f"{schema}.{table}" if schema and len(
-                schema) > 0 else table
+            table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
             col_names = ""
             list_cols = df2.columns.to_list()
             for col in list_cols:
@@ -168,8 +167,7 @@ class PgSQLSaver:
             col_names = col_names[:-2]
             for key, val in dtypes.items():
                 if(val == 'timestamp'):
-                    df2[key] = df2[key].apply(lambda x: x.strftime(
-                        '%Y-%m-%d %H:%M:%S.%f') if not pd.isna(x) else '')
+                    df2[key] = df2[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isna(x) else '')
 
             cols_def = ""
             for _, row in df2.iterrows():
@@ -178,8 +176,7 @@ class PgSQLSaver:
                     if(pd.isna(row[col]) or (not strict_mode and col in json_cols and len(row[col]) == 0)):
                         row_def += "NULL"
                     elif(col not in dtypes.keys() or dtypes[col] == 'string' or dtypes[col] == "str"):
-                        row_def += "\'{0}\'".format(
-                            row[col].replace("'", "''"))
+                        row_def += "\'{0}\'".format(row[col].replace("'", "''"))
                     elif(dtypes[col] == 'timestamp' or dtypes[col] == "datetime"):
                         # if(len(row[col]) > 0):
                         if row[col] is not None:
@@ -394,14 +391,12 @@ class PgSQLSaver:
             days = expiry['days']
         if('hours' in expiry.keys()):
             hours = expiry['hours']
-        delete_before_date = today_ - \
-            datetime.timedelta(days=days, hours=hours)
+        delete_before_date = today_ - datetime.timedelta(days=days, hours=hours)
         self.inform(message=f"Trying to expire data which was modified on or before {delete_before_date.strftime('%Y/%m/%d')}")
         # Expire function is called only when Mode = Dumping
         # i.e. the saved data will have a migration_snapshot_date column
         # We just have to query using that column to delete old data
-        delete_before_date_str = delete_before_date.strftime(
-            '%Y-%m-%d %H:%M:%S')
+        delete_before_date_str = delete_before_date.strftime('%Y-%m-%d %H:%M:%S')
         for table_name in self.table_list:
             query = f"DELETE FROM {self.schema}.{table_name} WHERE migration_snapshot_date <= {delete_before_date_str};"
             conn = psycopg2.connect(
