@@ -35,8 +35,7 @@ class PgSQLSaver:
         else:
             self.inform("Successfully tested connection with destination db.")
 
-        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (
-            f"{self.source_type}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{self.source_type}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
         self.name_ = ""
         self.table_list = []
         self.table_exists = None
@@ -49,11 +48,7 @@ class PgSQLSaver:
             password=self.db_destination['password']
         )
         with conn.cursor() as curs:
-            curs.execute(
-                f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}');")
-            recs = curs.fetchall()
-            if not recs[0][0]:
-                curs.execute(f"CREATE SCHEMA {schema};")
+            curs.execute(f"CREATE SCHEMA IF NOT EXISTS '{schema}');")
             conn.commit()
         
 
@@ -66,8 +61,7 @@ class PgSQLSaver:
         )
         exists = False
         with conn.cursor() as curs:
-            curs.execute(
-                f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '{table}');")
+            curs.execute(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = '{schema}' AND table_name = '{table}');")
             recs = curs.fetchall()
             exists = recs[0][0]
             conn.commit()
@@ -163,8 +157,7 @@ class PgSQLSaver:
         try:
             df2 = df.copy()
             table = table.replace('.', '_').replace('-', '_')
-            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys,
-                                    varchar_length_source=varchar_length_source, logging_flag=logging_flag, json_cols=json_cols, partition_col=partition_col)
+            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source=varchar_length_source, logging_flag=logging_flag, json_cols=json_cols, partition_col=partition_col)
             table_name = f"{schema}.{table}" if schema and len(
                 schema) > 0 else table
             col_names = ""
@@ -253,14 +246,11 @@ class PgSQLSaver:
         if('logging_flag' in processed_data.keys() and processed_data['logging_flag']):
             logging_flag = True
 
-        varchar_length_source = processed_data['varchar_lengths'] if 'varchar_lengths' in processed_data and processed_data['varchar_lengths'] else {
-        }
+        varchar_length_source = processed_data['varchar_lengths'] if 'varchar_lengths' in processed_data and processed_data['varchar_lengths'] else {}
         if(not varchar_length_source):
-            varchar_length_source = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {
-            }
+            varchar_length_source = processed_data['lob_fields_length'] if 'lob_fields_length' in processed_data else {}
 
-        json_cols = processed_data['json_cols'] if 'json_cols' in processed_data.keys(
-        ) and processed_data['json_cols'] else []
+        json_cols = processed_data['json_cols'] if 'json_cols' in processed_data.keys() and processed_data['json_cols'] else []
 
         strict_mode = False
         if('strict' in processed_data.keys() and processed_data['strict']):
@@ -281,10 +271,8 @@ class PgSQLSaver:
 
         if('df_insert' in processed_data and processed_data['df_insert'].shape[0] > 0):
             if('col_rename' in processed_data and processed_data['col_rename']):
-                processed_data['df_insert'].rename(
-                    columns=processed_data['col_rename'], inplace=True)
-            self.inform(
-                message=f"Attempting to insert {str(processed_data['df_insert'].memory_usage(index=True).sum())} bytes.")
+                processed_data['df_insert'].rename(columns=processed_data['col_rename'], inplace=True)
+            self.inform(message=f"Attempting to insert {str(processed_data['df_insert'].memory_usage(index=True).sum())} bytes.")
             self.pgsql_upsert_records(
                 df=processed_data['df_insert'],
                 table=self.name_,
@@ -297,15 +285,12 @@ class PgSQLSaver:
                 strict_mode=strict_mode,
                 partition_col=partition_col
             )
-            self.inform(
-                message=f"Inserted {str(processed_data['df_insert'].shape[0])} records.")
+            self.inform(message=f"Inserted {str(processed_data['df_insert'].shape[0])} records.")
 
         if('df_update' in processed_data and processed_data['df_update'].shape[0] > 0):
-            self.inform(
-                message=f"Attempting to update {str(processed_data['df_update'].memory_usage(index=True).sum())} bytes.")
+            self.inform(message=f"Attempting to update {str(processed_data['df_update'].memory_usage(index=True).sum())} bytes.")
             if('col_rename' in processed_data and processed_data['col_rename']):
-                processed_data['df_update'].rename(
-                    columns=processed_data['col_rename'], inplace=True)
+                processed_data['df_update'].rename(columns=processed_data['col_rename'], inplace=True)
             # is_dump = False, and primary_keys will be present.
             self.pgsql_upsert_records(
                 df=processed_data['df_update'],
@@ -319,8 +304,7 @@ class PgSQLSaver:
                 strict_mode=strict_mode,
                 partition_col=partition_col
             )
-            self.inform(
-                message=f"{str(processed_data['df_update'].shape[0])} updations done.")
+            self.inform(message=f"{str(processed_data['df_update'].shape[0])} updations done.")
 
     def delete_table(self, table_name: str = None) -> None:
         table_name = table_name.replace('.', '_').replace('-', '_')
@@ -397,8 +381,7 @@ class PgSQLSaver:
             else:
                 return 0
         except Exception as e:
-            self.err(
-                "Unable to fetch the number of records previously at destination.")
+            self.err("Unable to fetch the number of records previously at destination.")
             raise
 
     def expire(self, expiry: Dict[str, int], tz: Any = None) -> None:
@@ -413,8 +396,7 @@ class PgSQLSaver:
             hours = expiry['hours']
         delete_before_date = today_ - \
             datetime.timedelta(days=days, hours=hours)
-        self.inform(
-            message=f"Trying to expire data which was modified on or before {delete_before_date.strftime('%Y/%m/%d')}")
+        self.inform(message=f"Trying to expire data which was modified on or before {delete_before_date.strftime('%Y/%m/%d')}")
         # Expire function is called only when Mode = Dumping
         # i.e. the saved data will have a migration_snapshot_date column
         # We just have to query using that column to delete old data
