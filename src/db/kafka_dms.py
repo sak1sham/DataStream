@@ -13,7 +13,6 @@ from helper.util import *
 from helper.logger import logger
 from helper.exceptions import *
 from dst.main import DMS_exporter
-from notifications.slack_notify import send_message
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
