@@ -174,9 +174,7 @@ class KafkaMigrate:
             self.redis_db.rpush(self.redis_key, message.value)
         except Exception as e:
             logger.err(traceback.format_exc())
-            msg = f"Redis overflow: {e}"
-            slack_token = settings['slack_notif']['slack_token']
-            send_message(msg = msg, channel = self.channel, slack_token = slack_token)
+            raise
 
     @retry(wait_random_min=10000, wait_random_max=20000, stop_max_attempt_number=10)
     def redis_pop(self):
@@ -184,9 +182,7 @@ class KafkaMigrate:
             self.redis_db.lpop(self.redis_key, count=self.batch_size)
         except Exception as e:
             logger.err(traceback.format_exc())
-            msg = f"Redis overflow: {e}"
-            slack_token = settings['slack_notif']['slack_token']
-            send_message(msg = msg, channel = self.channel, slack_token = slack_token)
+            raise
 
     def value_deserializer(self, x):
         return json.loads(x.decode('utf-8'))
@@ -239,7 +235,8 @@ class KafkaMigrate:
                         batch_start_time = time.time()
                         total_redis_insertion_time = 0
             except Exception as e:
-                logger.err(traceback.format_exc())
                 msg = f"Caught some exception: {e}"
                 slack_token = settings['slack_notif']['slack_token']
                 send_message(msg = msg, channel = self.channel, slack_token = slack_token)
+                logger.err(traceback.format_exc())
+                raise
