@@ -48,7 +48,7 @@ class PgSQLSaver:
             password=self.db_destination['password']
         )
         with conn.cursor() as curs:
-            curs.execute(f"CREATE SCHEMA IF NOT EXISTS '{schema}';")
+            curs.execute(f"CREATE SCHEMA IF NOT EXISTS {schema};")
             conn.commit()
         
 
@@ -166,7 +166,7 @@ class PgSQLSaver:
 
             col_names = col_names[:-2]
             for key, val in dtypes.items():
-                if(val == 'timestamp'):
+                if(val == 'timestamp' or val == 'datetime'):
                     df2[key] = df2[key].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f') if not pd.isna(x) else '')
 
             cols_def = ""
@@ -178,8 +178,7 @@ class PgSQLSaver:
                     elif(col not in dtypes.keys() or dtypes[col] == 'string' or dtypes[col] == "str"):
                         row_def += "\'{0}\'".format(row[col].replace("'", "''"))
                     elif(dtypes[col] == 'timestamp' or dtypes[col] == "datetime"):
-                        # if(len(row[col]) > 0):
-                        if row[col] is not None:
+                        if(len(row[col]) > 0):
                             row_def += f"CAST(\'{row[col]}\' AS TIMESTAMP)"
                         else:
                             row_def += "NULL"
