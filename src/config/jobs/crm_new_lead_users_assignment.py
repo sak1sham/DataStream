@@ -1,19 +1,17 @@
 mapping = {
     'source': {
-        'source_type': 'sql',
+        'source_type': 'pgsql',
         'url': 'crmdb.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'crmdb',
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
     'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod' 
-            }
-        ]
-    }, 
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod' 
+        }
+    },
     'tables': [
         {
             'table_name': 'lead_users_assignment',
@@ -21,7 +19,6 @@ mapping = {
             'primary_key': 'assignment_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',
-            'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at',

@@ -10,7 +10,10 @@ from helper.exceptions import *
 
 class PgSQLSaver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, unique_id: str = "") -> None:
-        # s3_location is required as a staging area to push into PgSQL
+        self.source_type = db_source['source_type']
+        if(self.source_type == 'pgsql'):
+            self.source_type = 'sql'
+        
         self.unique_id = unique_id
         if('username' not in db_destination.keys() or not db_destination['username']):
             db_destination['username'] = ''
@@ -30,8 +33,8 @@ class PgSQLSaver:
             raise
         else:
             self.inform("Successfully tested connection with destination db.")
-            
-        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{db_source['source_type']}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
+        
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{self.source_type}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
         self.name_ = ""
         self.table_list = []
         self.table_exists = None
@@ -68,6 +71,7 @@ class PgSQLSaver:
             # Already checked the existence of table, and it exists 
             return
         else:
+            self.table_exists = True
             table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
             cols_def = ""
             for col in df.columns.to_list():
@@ -118,15 +122,16 @@ class PgSQLSaver:
                 curs.execute(sql_query)
                 conn.commit()
 
-            start_year = 2015
-            end_year = 2030
-            for year in range(start_year, end_year+1):
-                for month in range(1, 13):
-                    sql_query = f"CREATE TABLE {table_name}_{year}_{month} PARTITION OF {table_name} FOR VALUES FROM ('{year}-{month}-01') to ('{year + int(month==12)}-{((month%12)+1)}-01')"
-                    self.inform(sql_query)
-                    with conn.cursor() as curs:
-                        curs.execute(sql_query)
-                        conn.commit()
+            if(partition_col):
+                start_year = 2015
+                end_year = 2030
+                for year in range(start_year, end_year+1):
+                    for month in range(1, 13):
+                        sql_query = f"CREATE TABLE {table_name}_{year}_{month} PARTITION OF {table_name} FOR VALUES FROM ('{year}-{month}-01') to ('{year + int(month==12)}-{((month%12)+1)}-01')"
+                        self.inform(sql_query)
+                        with conn.cursor() as curs:
+                            curs.execute(sql_query)
+                            conn.commit()
             conn.close()
 
 
@@ -289,7 +294,8 @@ class PgSQLSaver:
 
 
     def delete_table(self, table_name: str = None) -> None:
-        query = f"DROP TABLE {self.schema}.{table_name};"
+        table_name = table_name.replace('.', '_').replace('-', '_')
+        query = f"DROP TABLE  IF EXISTS {self.schema}.{table_name};"
         self.inform(query)
         conn = psycopg2.connect(
             host = self.db_destination['url'],
@@ -305,6 +311,7 @@ class PgSQLSaver:
 
 
     def get_n_cols(self, table_name: str = None) -> int:
+        table_name = table_name.replace('.', '_').replace('-', '_')
         query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
         self.inform(query)
         conn = psycopg2.connect(
@@ -322,6 +329,7 @@ class PgSQLSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
+            table_name = table_name.replace('.', '_').replace('-', '_')
             sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
             conn = psycopg2.connect(
@@ -345,6 +353,7 @@ class PgSQLSaver:
 
     def count_n_records(self, table_name: str = None) -> int:
         try:
+            table_name = table_name.replace('.', '_').replace('-', '_')
             if(self.is_exists(table_name=table_name)):
                 sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
                 self.inform(sql_query)

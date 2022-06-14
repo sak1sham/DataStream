@@ -1,27 +1,26 @@
 mapping = {
     'source': {
-        'source_type': 'sql',
+        'source_type': 'pgsql',
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
         'db_name': 'cmdb',
         'username': 'saksham_garg',
         'password': '3y5HMs^2qy%&Kma'
     },
     "destination": {
-        "destination_type": "pgsql",
-        "specifications": [
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "3.108.43.163",
-                "username": "saksham_garg"
-            },
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "13.233.225.181",
-                "username": "saksham_garg"
-            }
-        ]
+        'ec2_1': {
+            "db_name": "dms",
+            "password": "3y5HMs^2qy%&Kma",
+            "url": "3.108.43.163",
+            "username": "saksham_garg",
+            "destination_type": "pgsql",
+        },
+        'ec2_2': {
+            "db_name": "dms",
+            "password": "3y5HMs^2qy%&Kma",
+            "url": "13.233.225.181",
+            "username": "saksham_garg",
+            "destination_type": "pgsql",
+        }
     },
     'tables': [            
         {
@@ -30,6 +29,8 @@ mapping = {
             'mode': 'syncing',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 100000,

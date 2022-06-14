@@ -2,7 +2,6 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 import datetime
-import pytz
 
 settings = {
     'fastapi_server': False,

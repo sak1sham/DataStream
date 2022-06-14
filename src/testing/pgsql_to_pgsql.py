@@ -246,7 +246,7 @@ if __name__ == "__main__":
         if('username' not in mapping['source'].keys()):
             mapping['source']['username'] = ''
             mapping['source']['password'] = ''
-        if(mapping['source']['source_type'] == 'sql'):
+        if(mapping['source']['source_type'] == 'pgsql'):
             if('tables' not in mapping.keys()):
                 mapping['tables'] = []
             for table in mapping['tables']:

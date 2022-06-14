@@ -181,10 +181,10 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
 
 
 def convert_jsonb_to_string(x: Any) -> str:
-    if(not x or pd.isna(x)):
-        return np.nan
     if(isinstance(x, list) or isinstance(x, dict)):
         return json.dumps(x)
+    if(not x or pd.isna(x)):
+        return np.nan
     else:
         try:
             x = str(x)
@@ -222,7 +222,7 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
         for col in df.columns.tolist():
             if(col in schema.keys()):
                 dtype = schema[col].lower()
-                if(dtype == 'jsonb' or dtype == 'json'):
+                if(dtype == 'jsonb' or dtype == 'json' or dtype.startswith('arr')):
                     df[col] = df[col].fillna('').apply(lambda x: convert_jsonb_to_string(x))
                     df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
@@ -259,10 +259,12 @@ def convert_to_dtype_strict(df: dftype, schema: Dict[str, Any]) -> dftype:
         for col in df.columns.tolist():
             if(col in schema.keys()):
                 dtype = schema[col].lower()
-                if(dtype == 'jsonb' or dtype == 'json'):
+                if(dtype == 'jsonb' or dtype == 'json' or dtype.startswith('arr')):
                     df[col] = df[col].fillna(np.nan).apply(lambda x: convert_jsonb_to_string(x))
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
                     df[col] = df[col].apply(lambda x: convert_to_datetime(x, tz_))
+                elif(dtype == 'boolean' or dtype == 'bool'):
+                    df[col] = df[col].astype(bool, copy=False, errors='ignore')
                 elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype.startswith('serial') or dtype.startswith('int')):
                     df[col] = pd.to_numeric(df[col], errors='coerce')
                     df[col] = df[col].fillna(np.nan)
