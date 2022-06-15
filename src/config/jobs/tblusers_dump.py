@@ -15,7 +15,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'tbl_user',
-            'cron': '* * * * * 22 0 0',
+            'cron': 'self-managed',
             'mode': 'dumping',
             'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
