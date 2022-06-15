@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'rto_reconciliation',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'rto_recon_id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',

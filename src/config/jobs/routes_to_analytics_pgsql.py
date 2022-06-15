@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'routes',
             'cron': 'self-managed',
-            'mode': 'syncing', 
+            'mode': 'mirroring', 
             'partition_col': 'started_at',
             "partition_col_format": "datetime",
             'primary_key': 'id',

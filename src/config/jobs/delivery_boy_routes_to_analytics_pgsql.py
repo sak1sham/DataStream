@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'delivery_boy_routes',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',

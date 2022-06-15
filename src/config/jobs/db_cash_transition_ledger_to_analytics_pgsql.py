@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'db_cash_transition_ledger',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'partition_col': 'created_at',

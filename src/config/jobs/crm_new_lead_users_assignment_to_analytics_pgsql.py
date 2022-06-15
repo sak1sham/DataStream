@@ -25,7 +25,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'lead_users_assignment',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'assignment_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',

@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'price_drop_items', 
             'cron': 'self-managed', 
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'id',
             'strict': True,
             'primary_key_datatype': 'int',

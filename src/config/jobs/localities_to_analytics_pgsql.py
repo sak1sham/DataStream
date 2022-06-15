@@ -25,7 +25,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'localities',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',

@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'analytics.sku_details',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'sku_id',
             'primary_key_datatype': 'str',
             'bookmark': 'updated_at_for_pipeline',

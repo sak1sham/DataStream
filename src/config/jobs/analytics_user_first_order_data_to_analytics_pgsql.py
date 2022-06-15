@@ -26,7 +26,7 @@ mapping = {
         {
             'table_name': 'analytics.user_first_order_data',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'user_id',
             'primary_key_datatype': 'int',
             'partition_col': 'first_order_created_date',

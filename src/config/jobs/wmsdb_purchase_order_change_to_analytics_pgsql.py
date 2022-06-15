@@ -35,7 +35,7 @@ mapping = {
                 "days": 1
             },
             "improper_bookmarks": False,
-            "mode": "syncing",
+            "mode": "mirroring",
             "primary_key": "po_change_id",
             "primary_key_datatype": "int",
             "table_name": "purchase_order_change"

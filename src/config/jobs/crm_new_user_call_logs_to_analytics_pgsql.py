@@ -25,7 +25,7 @@ mapping = {
     'tables': [
         {
             'table_name': 'user_call_logs',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'call_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',
