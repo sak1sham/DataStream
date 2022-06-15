@@ -6,7 +6,9 @@ from typing import NewType, Any, Dict
 from kafka import KafkaConsumer
 import redis
 import time
+import uuid
 from retrying import retry
+
 from config.migration_mapping import get_kafka_mapping_functions
 from helper.util import *
 from helper.logger import logger
@@ -27,7 +29,7 @@ class KafkaMigrate:
         self.primary_key = 0
         self.get_table_name, self.process_dict = get_kafka_mapping_functions(self.db['id'])
         self.table_name = self.curr_mapping['topic_name']
-        self.batch_size = 10000
+        self.batch_size = 10
         redis_url = db['redis']['url']
         redis_password = db['redis']['password']
         self.redis_db = redis.StrictRedis.from_url(url = redis_url, password=redis_password, decode_responses=True)
@@ -106,7 +108,7 @@ class KafkaMigrate:
                     raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, float, str or datetime")
         else:
             self.warn(message="Continuing without partitioning data.")
-        self.curr_mapping['fields']['dms_pkey'] = 'int'
+        self.curr_mapping['fields']['dms_pkey'] = 'str'
 
         self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
 
@@ -139,9 +141,8 @@ class KafkaMigrate:
 
 
     def process_table(self, df: dftype) -> dftype:
-        end = self.primary_key + len(df)
-        df.insert(0, 'dms_pkey', range(self.primary_key, end))
-        self.primary_key = end
+
+        df['dms_pkey'] = [uuid.uuid4() for _ in range(len(df.index))]
         df = self.add_partitions(df)
         df = convert_to_dtype(df, self.curr_mapping['fields'])
         if('col_rename' in self.curr_mapping.keys() and self.curr_mapping['col_rename']):
@@ -179,7 +180,8 @@ class KafkaMigrate:
     @retry(wait_random_min=10000, wait_random_max=20000, stop_max_attempt_number=10)
     def redis_pop(self):
         try:
-            self.redis_db.lpop(self.redis_key, count=self.batch_size)
+            data = self.redis_db.lpop(self.redis_key, count=self.batch_size)
+            return data
         except Exception as e:
             logger.err(traceback.format_exc())
             raise
