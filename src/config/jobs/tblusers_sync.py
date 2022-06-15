@@ -7,21 +7,19 @@ mapping = {
         'password': '3y5HMs^2qy%&Kma'
     },
     'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod' 
-            }
-        ]
-    }, 
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod' 
+        }
+    },
     'tables': [
         {
-            'table_name': 'user_cashbacks',
-            'cron': 'self-managed',
+            'table_name': 'tbl_user',
+            'cron': '0 22 * * *',
             'mode': 'syncing',
-            'primary_key': 'id',
-            'primary_key_datatype': 'uuid',
-            'partition_col': 'created_at',
+            'primary_key': 'user_id',
+            'primary_key_datatype': 'int',
+            'partition_col': 'user_created',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,

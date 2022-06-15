@@ -1,11 +1,9 @@
 mapping = {
     "destination": {
-        "destination_type": "s3",
-        "specifications": [
-            {
-                "s3_bucket_name": "database-migration-service-prod"
-            }
-        ]
+        "s3": {
+            "destination_type": "s3",
+            "s3_bucket_name": "database-migration-service-prod"
+        }
     },
     "source": {
         "db_name": "cmdb",

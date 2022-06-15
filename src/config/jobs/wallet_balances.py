@@ -7,13 +7,11 @@ mapping = {
         'password': '3y5HMs^2qy%&Kma' 
     }, 
     'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod' 
-            }
-        ]
-    }, 
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod' 
+        }
+    },
     'tables': [ 
         {
             'table_name': 'wallet_balances', 

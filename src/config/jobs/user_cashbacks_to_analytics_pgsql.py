@@ -7,27 +7,26 @@ mapping = {
         'password': '3y5HMs^2qy%&Kma'
     },
     "destination": {
-        "destination_type": "pgsql",
-        "specifications": [
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "3.108.43.163",
-                "username": "saksham_garg"
-            },
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "13.233.225.181",
-                "username": "saksham_garg"
-            }
-        ]
+        'ec2_1': {
+            "db_name": "dms",
+            "password": "3y5HMs^2qy%&Kma",
+            "url": "3.108.43.163",
+            "username": "saksham_garg",
+            "destination_type": "pgsql",
+        },
+        'ec2_2': {
+            "db_name": "dms",
+            "password": "3y5HMs^2qy%&Kma",
+            "url": "13.233.225.181",
+            "username": "saksham_garg",
+            "destination_type": "pgsql",
+        }
     },
     'tables': [
         {
             'table_name': 'user_cashbacks',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'id',
             'primary_key_datatype': 'uuid',
             'bookmark': 'updated_at',
