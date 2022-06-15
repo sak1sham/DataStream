@@ -15,6 +15,7 @@ mapping = {
     'tables': [            
         {
             'table_name': 'cms_list_items',
+            'cron': 'self-managed',
             'mode': 'dumping',
             'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
