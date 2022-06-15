@@ -29,7 +29,7 @@ class KafkaMigrate:
         self.primary_key = 0
         self.get_table_name, self.process_dict = get_kafka_mapping_functions(self.db['id'])
         self.table_name = self.curr_mapping['topic_name']
-        self.batch_size = 10
+        self.batch_size = 10000
         redis_url = db['redis']['url']
         redis_password = db['redis']['password']
         self.redis_db = redis.StrictRedis.from_url(url = redis_url, password=redis_password, decode_responses=True)
