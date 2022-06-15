@@ -141,7 +141,6 @@ class KafkaMigrate:
 
 
     def process_table(self, df: dftype) -> dftype:
-
         df['dms_pkey'] = [uuid.uuid4() for _ in range(len(df.index))]
         df = self.add_partitions(df)
         df = convert_to_dtype(df, self.curr_mapping['fields'])
