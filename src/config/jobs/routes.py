@@ -1,14 +1,16 @@
 mapping = { 
     'source': { 
-        'source_type': 'sql', 
+        'source_type': 'pgsql', 
         'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com', 
         'db_name': 'cmdb', 
         'username': 'saksham_garg', 
         'password': '3y5HMs^2qy%&Kma' 
     }, 
     'destination': { 
-        'destination_type': 's3', 
-        's3_bucket_name': 'database-migration-service-prod'
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod' 
+        }
     }, 
     'tables': [ 
         {
@@ -16,8 +18,7 @@ mapping = {
             'cron': 'self-managed', 
             'mode': 'syncing',
             'primary_key': 'id',
-            'primary_key_datatype': 'int',
-            'to_partition': True, 
+            'primary_key_datatype': 'int', 
             'partition_col': 'started_at',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at_for_pipeline', 

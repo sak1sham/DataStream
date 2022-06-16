@@ -1,6 +1,5 @@
 from pymongo import MongoClient
 import awswrangler as wr
-import math
 import random
 import datetime
 from typing import NewType
@@ -89,7 +88,7 @@ class MongoTester():
                                     assert convert_to_str(record[key]) == athena_record[athena_key]
                         else:
                             assert convert_to_str(record[key]) == athena_record[athena_key]
-                    except:
+                    except Exception as e:
                         logger.err(key)
                         logger.err(str(record['_id']))
                         logger.err('Source: ' + str(record[key]))
@@ -97,7 +96,7 @@ class MongoTester():
                         raise
             return True
         except Exception as e:
-            logger.err(e)
+            logger.err(str(e))
 
     def test_mongo(self):
         client = MongoClient(self.url, tlsCAFile=certificate)
@@ -122,10 +121,12 @@ class MongoTester():
         last_run_cron_job_id = ObjectId.from_datetime(prev_time)
         query = {
             "_id": {
-                "$lte": last_run_cron_job_id, 
+                "$lte": last_run_cron_job_id,
             }
         }
-        curs = collection.find(query).limit(self.test_N).skip(math.floor(random.random()*N))
+        skipped_docs = random.randint(0, N)
+        logger.inform(f"Skipping {skipped_docs} documents before fetching {self.test_N} continuous docs")
+        curs = collection.find(query).limit(self.test_N).skip(skipped_docs)
         curs = list(curs)
         
         str_id = ""

@@ -14,7 +14,7 @@ destination = 'impression-data-bucket-v3'
 s3_athena_database = 'impression'
 s3_athena_database_table = 'impression_service'
 
-logger.inform(job_id = '', s = "Starting v2 to v3 migration for impression service")
+logger.inform(s = "Starting v2 to v3 migration for impression service")
 start = time.time()
 
 dfs = wr.s3.read_parquet(
@@ -25,7 +25,7 @@ dfs = wr.s3.read_parquet(
     partition_filter = lambda x: True if x["insertion_date_month"] == "5" else False,
 )
 
-logger.inform(job_id = '', s = f"Entire data read in {time.time() - start} seconds. Starting to write data.")
+logger.inform(s = f"Entire data read in {time.time() - start} seconds. Starting to write data.")
 
 athena_dtypes = {
     'screen_name': 'string',
@@ -61,7 +61,7 @@ athena_dtypes = {
 @retry(wait_random_min=3000, wait_random_max=5000)
 def save_to_s3(df: pd.DataFrame() = None) -> None:
     try:
-        logger.inform(job_id = '', s = f"Migrating {df.shape[0]} records.")
+        logger.inform(s = f"Migrating {df.shape[0]} records.")
         df.drop(columns = ['insertion_date_hour'], axis = 1, errors = 'ignore', inplace = True)
         df['app_version'] = df['app_version'].astype(str, copy=False, errors='ignore')
         df['insertion_date_year'] = df['insertion_date_year'].astype(str, copy=False, errors='ignore')
@@ -83,8 +83,8 @@ def save_to_s3(df: pd.DataFrame() = None) -> None:
             schema_evolution=True,
         )
     except Exception as e:
-        logger.err(job_id='', s = str(e))
-        logger.info(jobid = '', s = "RETRYING")
+        logger.err(s = str(e))
+        logger.inform(s = "RETRYING")
         raise
 
 for df in dfs:

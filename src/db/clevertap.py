@@ -42,13 +42,13 @@ class EventsAPIManager:
             raise APIRequestError("Get cursor API did not return success status")
 
     def get_records_for_cursor(self, cursor):
-        data = self.make_request("events.json?cursor={}".format(cursor), data="").json()
+        data = self.make_request(f"events.json?cursor={cursor}", data="").json()
         return data
 
     def make_request(self, endpoint: str, data: Dict[str, Any]=None, params: Dict[str, Any]=None):
         res = requests.post(self.CLEVERTAP_API_BASE_URL + endpoint, data=json.dumps(data), params=params, headers=self.CLEVERTAP_API_HEADERS)
         if res.status_code != 200:
-            raise APIRequestError("Request to {2} returned an error {0}:\n{1}".format(res.status_code, res.text, self.CLEVERTAP_API_BASE_URL + endpoint))    
+            raise APIRequestError(f"Request to {self.CLEVERTAP_API_BASE_URL + endpoint} returned an error {res.status_code}:\n{res.text}")    
         return res
 
 
@@ -86,8 +86,8 @@ class ClevertapManager(EventsAPIManager):
             try:
                 tf_record = validate_or_convert(tf_record, curr_mapping['fields'], self.tz_info)
                 tf_records.append(tf_record)
-            except:
-                logger.err(curr_mapping['unique_id'], curr_mapping['unique_id']+ ": Could not process record for event {0}. Record: ```{1}```".format(event_name, str(tf_record)))
+            except Exception as e:
+                logger.err(curr_mapping['unique_id'], f"{curr_mapping['unique_id']}: Could not process record for event {event_name}. Record: ```{str(tf_record)}```")
         return tf_records
 
     def get_processed_data(self, event_name: str, curr_mapping: Dict[str, Any], sync_date: datetime, event_cursor: str = None):
@@ -114,26 +114,18 @@ class ClevertapManager(EventsAPIManager):
         year = str(sync_date)[0:4]
         month = str(sync_date)[4:6]
         day = str(sync_date)[6:8]
-
         if dst_saver.type=='redshift':
             try:
                 cur = dst_saver.saver.conn.cursor()
                 cur.execute("select 1 from pg_tables where schemaname = %s and tablename = %s", (dst_saver.saver.schema, curr_mapping['api_name']))
                 result = cur.fetchone()
                 if result:
-                    delete_query = "delete from {0}.{1} where DATE(timestamp) = '{3}-{4}-{5}' and event_name='{2}'".format(
-                        dst_saver.saver.schema,
-                        curr_mapping['api_name'],
-                        event_name,
-                        year, 
-                        month, 
-                        day
-                    )
+                    delete_query = f"delete from {dst_saver.saver.schema}.{curr_mapping['api_name']} where DATE(timestamp) = '{year}-{month}-{day}' and event_name='{event_name}'"
                     cur.execute(delete_query)
                 dst_saver.saver.conn.commit()
                 cur.close()
             except Exception as e:
-                logger.err(curr_mapping['unique_id'], traceback.format_exc())
-                logger.err(curr_mapping['unique_id'], curr_mapping['unique_id']+ ": Error in deleting existing event - {0} for date {1} in redshift. Exception: {2}".format(event_name, sync_date, str(e)))
+                logger.err(traceback.format_exc())
+                logger.err(f"{curr_mapping['unique_id']}: Error in deleting existing event - {event_name} for date {sync_date} in redshift. Exception: {str(e)}")
 
 

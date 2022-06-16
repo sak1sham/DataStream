@@ -5,12 +5,16 @@ mapping = {
     },
     "destination": {
         'destination_type': 'redshift',
-        'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
-        'database': 'cmwh',
-        'user': 'cmadmin',
-        'password': 'kgDzH6Zy5xZ6HHx',
-        'schema': 'cm_clevertap',
-        's3_bucket_name': 'database-migration-service-prod',
+        'specifications': [
+            {
+                'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+                'database': 'cmwh',
+                'user': 'cmadmin',
+                'password': 'kgDzH6Zy5xZ6HHx',
+                'schema': 'cm_clevertap',
+                's3_bucket_name': 'database-migration-service-prod',
+            }
+        ]
     },
     "apis": [
         {

@@ -33,3 +33,6 @@ class EmptyDataframe(Exception):
 
 class Sigterm(Exception):
     pass
+
+class IncorrectSettings(Exception):
+    pass

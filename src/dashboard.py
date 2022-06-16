@@ -12,7 +12,7 @@ from config.settings import settings
 encryption_store = settings['encryption_store']
 
 group_key = {
-    'sql': 'tables',
+    'pgsql': 'tables',
     'mongo': 'collections',
     'api': 'apis',
     's3': 'tables',

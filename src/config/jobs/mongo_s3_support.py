@@ -5,9 +5,11 @@ mapping = {
         'db_name': 'support-service',
         'certificate_file': 'rds-combined-ca-bundle.pem'
     },
-    'destination': {
-        'destination_type': 's3',
-        's3_bucket_name': 'database-migration-service-prod',
+    "destination": {
+        "s3": {
+            "destination_type": "s3",
+            "s3_bucket_name": "database-migration-service-prod"
+        }
     },
     'collections': [
         {
@@ -18,7 +20,6 @@ mapping = {
             },
             'bookmark': 'updated_ts',
             'cron': 'self-managed',
-            'to_partition': True,
             'mode': 'syncing',
             'improper_bookmarks': False
         },
@@ -26,7 +27,6 @@ mapping = {
             'collection_name': 'support_forms',
             'fields': {},
             'cron': 'self-managed',
-            'to_partition': True,
             'mode': 'syncing',
         },
         {
@@ -37,7 +37,6 @@ mapping = {
             'bookmark': False,
             'archive': False,
             'cron': 'self-managed',
-            'to_partition': True,
             'mode': 'syncing',
             'improper_bookmarks': False
         },
@@ -47,7 +46,6 @@ mapping = {
             'bookmark': False,
             'archive': False,
             'cron': 'self-managed',
-            'to_partition': True,
             'mode': 'syncing',
             'improper_bookmarks': False
         },
@@ -66,7 +64,6 @@ mapping = {
             'bookmark': 'updated_ts',
             'archive': False,
             'cron': 'self-managed',
-            'to_partition': True,
             'mode': 'syncing',
             'improper_bookmarks': False,
             'buffer_updation_lag':{
@@ -103,7 +100,6 @@ mapping = {
             'bookmark': 'updated_ts',
             'archive': False,
             'cron': 'self-managed',
-            'to_partition': True,
             'mode': 'syncing',
             'improper_bookmarks': False,
             'buffer_updation_lag': {
@@ -126,7 +122,6 @@ mapping = {
             'bookmark': 'updated_ts',
             'archive': False,
             'cron': 'self-managed',
-            'to_partition': True,
             'mode': 'syncing',
             'improper_bookmarks': False
         },
@@ -135,7 +130,6 @@ mapping = {
             'fields': {},
             'archive': False,
             'cron': 'self-managed',
-            'to_partition': True,
             'mode': 'syncing',
         }
     ]

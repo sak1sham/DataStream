@@ -21,8 +21,8 @@ def get_data_from_encr_db():
         db_encr = client_encr[encryption_store['db_name']]
         collection_encr = db_encr[encryption_store['collection_name']]
         return collection_encr
-    except:
-        raise ConnectionError("Unable to connect to Encryption DB.")
+    except Exception as e:
+        raise ConnectionError("Unable to connect to Encryption DB.") from e
 
 
 def get_last_run_cron_job(job_id: str) -> datetype:
@@ -35,11 +35,11 @@ def get_last_run_cron_job(job_id: str) -> datetype:
     prev = db.find_one({'last_run_cron_job_for_id': job_id})
     if(prev):
         timing = prev['timing']
-        logger.inform(job_id=job_id, s=(job_id + ": Glad to see this database again!"))
+        logger.inform(s = f"{job_id}: Glad to see this database again!")
         return pytz.utc.localize(timing)
     else:
-        timing = datetime.datetime(1999, 1, 1, 0, 0, 0, 0, tzinfo=pytz.utc)
-        logger.inform(job_id=job_id, s=(job_id + ": Never seen it before. Taking previously run cron job time as on January 1, 1999."))
+        timing = pytz.utc.localize(datetime.datetime(1999, 1, 1, 0, 0, 0, 0))
+        logger.inform(s = f"{job_id}: Never seen it before. Taking previously run cron job time as on January 1, 1999.")
         return timing
 
 
@@ -176,8 +176,8 @@ def get_data_from_dashboard_db():
         db_dashboard = client_dashboard[dashboard['db_name']]
         collection_dashboard = db_dashboard[dashboard['collection_name']]
         return collection_dashboard
-    except:
-        raise ConnectionError("Unable to connect to Dashboard DB.")
+    except Exception as e:
+        raise ConnectionError("Unable to connect to Dashboard DB.") from e
 
 
 def get_job_records(job_id: str = None) -> int:

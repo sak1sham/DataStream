@@ -1,4 +1,4 @@
-from helper.util import validate_or_convert, convert_to_datetime, utc_to_local, typecast_df_to_schema, get_athena_dtypes
+from helper.util import validate_or_convert, convert_to_datetime, typecast_df_to_schema, get_athena_dtypes
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, save_recovery_data, set_last_run_cron_job, get_last_migrated_record, set_last_migrated_record, save_recovery_data, get_recovery_data, delete_recovery_data, get_job_records, save_job_data, get_job_mb
 from helper.exceptions import *
 from helper.logger import logger
@@ -48,16 +48,16 @@ class MongoMigrate:
         self.n_updations = 0
         self.start_time = datetime.datetime.utcnow()
         self.curr_megabytes_processed = 0
+        
 
-
-    def inform(self, message: str = None, save: bool = False) -> None:
-        logger.inform(job_id= self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message), save=save)
+    def inform(self, message: str = None) -> None:
+        logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def warn(self, message: str = None) -> None:
-        logger.warn(job_id=self.curr_mapping['unique_id'], s=(self.curr_mapping['unique_id'] + ": " + message))
+        logger.warn(s = f"{self.curr_mapping['unique_id']}: {message}")
 
     def err(self, error: Any = None) -> None:
-        logger.err(job_id=self.curr_mapping['unique_id'], s=error)
+        logger.err(s=error)
 
 
     def get_connectivity(self) -> None:
@@ -67,14 +67,13 @@ class MongoMigrate:
         try:
             certificate = certifi.where()
             if('certificate_file' in self.db['source'].keys() and self.db['source']['certificate_file']):
-                certificate = "config/" + self.db['source']['certificate_file']
+                certificate = f"config/{self.db['source']['certificate_file']}"
             client = MongoClient(self.db['source']['url'], tlsCAFile=certificate)
             database_ = client[self.db['source']['db_name']]
             self.db_collection = database_[self.curr_mapping['collection_name']]
         except Exception as e:
-            self.err(error = e)
             self.db_collection = None
-            raise ConnectionError("Unable to connect to source.")
+            raise ConnectionError("Unable to connect to source.") from e
 
 
     def fetch_data(self, start: int = -1, end: int = -1, query: Dict[str, Any] = None) -> List[Dict[str, Any]]:
@@ -110,59 +109,50 @@ class MongoMigrate:
         self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
 
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
+        if(self.db['destination']['destination_type'] == 's3'):
             if('partition_col' not in self.curr_mapping.keys() or not self.curr_mapping['partition_col']):
-                self.warn(message="Partition_col not specified. Making partition using _id.")
-                self.curr_mapping['partition_col'] = ['_id']
-                self.curr_mapping['partition_col_format'] = ['datetime']
-            if(isinstance(self.curr_mapping['partition_col'], str)):
-                self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+                self.warn(message="Partition_col not specified, still making partition using _id.")
+                self.curr_mapping['partition_col'] = '_id'
+                self.curr_mapping['partition_col_format'] = 'datetime'
             
             if('partition_col_format' not in self.curr_mapping.keys()):
-                self.curr_mapping['partition_col_format'] = ['str']
-            if(isinstance(self.curr_mapping['partition_col_format'], str)):
-                self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
-            while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
-                self.curr_mapping['partition_col_format'].append('str')
+                self.curr_mapping['partition_col_format'] = 'str'
             
-            for i in range(len(self.curr_mapping['partition_col'])):
-                col = self.curr_mapping['partition_col'][i]
-                col_form = self.curr_mapping['partition_col_format'][i]
-                parq_col = "parquet_format_" + col
-                if(col == 'migration_snapshot_date'):
-                    self.curr_mapping['partition_col_format'][i] = 'datetime'
-                    self.curr_mapping['fields'][col] = 'datetime'
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    self.curr_mapping['fields'][parq_col + "_year"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_month"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_day"] = 'int'
-                elif(col == '_id' and col_form == 'datetime'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    self.curr_mapping['fields'][parq_col + "_year"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_month"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_day"] = 'int'
-                elif(col_form == 'str'):
-                    self.partition_for_parquet.extend([parq_col])
-                    self.curr_mapping['fields'][parq_col] = 'str'
-                elif(col_form == 'int'):
-                    self.partition_for_parquet.extend([parq_col])
-                    self.curr_mapping['fields'][parq_col] = 'int'
-                elif(col_form == 'float'):
-                    self.partition_for_parquet.extend([parq_col])
-                    self.curr_mapping['fields'][parq_col] = 'float'
-                elif(col_form == 'datetime'):
-                    self.partition_for_parquet.extend([parq_col + "_year", parq_col + "_month", parq_col + "_day"])
-                    self.curr_mapping['fields'][parq_col + "_year"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_month"] = 'int'
-                    self.curr_mapping['fields'][parq_col + "_day"] = 'int'
-                else:
-                    raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+            parq_col = f"parquet_format_{self.curr_mapping['partition_col']}"
+            if(self.curr_mapping['partition_col'] == 'migration_snapshot_date'):
+                self.curr_mapping['partition_col_format'] = 'datetime'
+                self.curr_mapping['fields'][self.curr_mapping['partition_col']] = 'datetime'
+                self.partition_for_parquet = [f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"]
+                self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
+            elif(self.curr_mapping['partition_col'] == '_id' and self.curr_mapping['partition_col_format'] == 'datetime'):
+                self.partition_for_parquet = [f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"]
+                self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
+            elif(self.curr_mapping['partition_col_format'] == 'str'):
+                self.partition_for_parquet = [parq_col]
+                self.curr_mapping['fields'][parq_col] = 'str'
+            elif(self.curr_mapping['partition_col_format'] == 'int'):
+                self.partition_for_parquet =  [parq_col]
+                self.curr_mapping['fields'][parq_col] = 'int'
+            elif(self.curr_mapping['partition_col_format'] == 'float'):
+                self.partition_for_parquet =  [parq_col]
+                self.curr_mapping['fields'][parq_col] = 'float'
+            elif(self.curr_mapping['partition_col_format'] == 'datetime'):
+                self.partition_for_parquet =  [f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"]
+                self.curr_mapping['fields'][f"{parq_col}_year"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_month"] = 'int'
+                self.curr_mapping['fields'][f"{parq_col}_day"] = 'int'
+            else:
+                raise UnrecognizedFormat(f"{str(self.curr_mapping['partition_col_format'])}. Partition_col_format can be int, float, str or datetime")
         
-        if(self.curr_mapping['mode'] == 'dumping' or self.curr_mapping['mode'] == 'mirroring'):
+        if(self.curr_mapping['mode'] == 'dumping'):
             self.curr_mapping['fields']['migration_snapshot_date'] = 'datetime'
 
-        mirroring = (self.curr_mapping['mode'] == 'mirroring')
-        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet, mirroring=mirroring, table_name=self.curr_mapping['collection_name'])        
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'], partition = self.partition_for_parquet)
+
 
 
     def save_job_working_data(self, status: bool = True) -> None:
@@ -195,8 +185,8 @@ class MongoMigrate:
         '''
             After all migration has been performed, we save the datetime of this job. This helps in finding all records updated after this datetime, and before next job is running.
         '''
-        self.inform(message = "Inserted " + str(self.n_insertions) + " records")
-        self.inform(message = "Updated " + str(self.n_updations) + " records")
+        self.inform(message = f"Inserted {str(self.n_insertions)} records")
+        self.inform(message = f"Updated {str(self.n_updations)} records")
         set_last_run_cron_job(job_id = self.curr_mapping['unique_id'], timing = self.curr_run_cron_job)
         delete_recovery_data(job_id=self.curr_mapping['unique_id'])
 
@@ -205,33 +195,31 @@ class MongoMigrate:
         '''
             If partitions are specified in mapping, add partition fields to the documents.
         '''
-        for i in range(len(self.curr_mapping['partition_col'])):
-            col = self.curr_mapping['partition_col'][i]
-            col_form = self.curr_mapping['partition_col_format'][i]
-            parq_col = "parquet_format_" + col
-            if(col == '_id'):
-                document[parq_col + "_year"] = insertion_time.year
-                document[parq_col + "_month"] = insertion_time.month
-                document[parq_col + "_day"] = insertion_time.day
-            elif(col_form == 'str'):
-                document[parq_col] = str(document[col])
-            elif(col_form == 'int'):
-                document[parq_col] = int(document[col])
-            elif(col_form == 'float'):
-                document[parq_col] = float(document[col])
-            elif(col_form == 'datetime'):
-                document[col] = convert_to_datetime(document[col], pytz.utc)
-                document[parq_col + "_year"] = str(float(document[col].year))
-                document[parq_col + "_month"] = str(float(document[col].month))
-                document[parq_col + "_day"] = str(float(document[col].day))
+        if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and self.db['destination']['destination_type'] == 's3'):
+            parq_col = f"parquet_format_{self.curr_mapping['partition_col']}"
+            if(self.curr_mapping['partition_col'] == '_id'):
+                document[f"{parq_col}_year"] = insertion_time.year
+                document[f"{parq_col}_month"] = insertion_time.month
+                document[f"{parq_col}_day"] = insertion_time.day
+            elif(self.curr_mapping['partition_col_format'] == 'str'):
+                document[parq_col] = str(document[self.curr_mapping['partition_col']])
+            elif(self.curr_mapping['partition_col_format'] == 'int'):
+                document[parq_col] = int(document[self.curr_mapping['partition_col']])
+            elif(self.curr_mapping['partition_col_format'] == 'float'):
+                document[parq_col] = float(document[self.curr_mapping['partition_col']])
+            elif(self.curr_mapping['partition_col_format'] == 'datetime'):
+                document[self.curr_mapping['partition_col']] = convert_to_datetime(document[self.curr_mapping['partition_col']], pytz.utc)
+                document[f"{parq_col}_year"] = str(float(document[self.curr_mapping['partition_col']].year))
+                document[f"{parq_col}_month"] = str(float(document[self.curr_mapping['partition_col']].month))
+                document[f"{parq_col}_day"] = str(float(document[self.curr_mapping['partition_col']].day))
             else:
-                raise UnrecognizedFormat(str(col_form) + ". Partition_col_format can be int, float, str or datetime")
+                raise UnrecognizedFormat(f"{str(self.curr_mapping['partition_col_format'])}. Partition_col_format can be int, float, str or datetime")
         return document
 
 
     def dumping_data(self, start: int = 0, end: int = 0) -> Dict[str, Any]:
         '''
-            When we are dumping/mirroring data, snapshots of the datastore are captured at regular intervals inside destination
+            When we are dumping data, snapshots of the datastore are captured at regular intervals inside destination
             We insert the snapshots, and no updation is performed
             All the records are inserted, there is no need for bookmarks
             By default, we add a column 'migration_snapshot_date' to capture the starting time of migration
@@ -245,8 +233,7 @@ class MongoMigrate:
         for document in all_documents:
             insertion_time = document['_id'].generation_time
             document['migration_snapshot_date'] = self.curr_run_cron_job
-            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-                document = self.add_partitions(document=document, insertion_time=insertion_time)        
+            document = self.add_partitions(document=document, insertion_time=insertion_time)        
             document = validate_or_convert(document, self.curr_mapping['fields'], pytz.utc)
             docu_insert.append(document)
         ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.curr_mapping['fields'])
@@ -280,7 +267,7 @@ class MongoMigrate:
         collection_encr = get_data_from_encr_db()
         all_documents = []
 
-        self.inform(message = 'Inserting some records created after ' + str(migration_prev_id.generation_time) + '.')
+        self.inform(message = f'Inserting some records created after {str(migration_prev_id.generation_time)}.')
         query = {
             "_id": {
                 "$gt": migration_prev_id, 
@@ -295,9 +282,8 @@ class MongoMigrate:
         
         for document in all_documents:
             insertion_time = document['_id'].generation_time
-            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
-                document = self.add_partitions(document=document, insertion_time=insertion_time)
+            ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
+            document = self.add_partitions(document=document, insertion_time=insertion_time)
             if(mode == 'syncing' and ('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark'])):
                 ## if updation bookmark (for example - 'updated_at', or 'modified_at') is not present, we need to store hashes as metadata to check for updates later
                 document['_id'] = str(document['_id'])
@@ -313,7 +299,7 @@ class MongoMigrate:
         ## All fields in the document have been individually converted to destined data-types.
         ## Next and final processing step is to convert the documents into a dataframe, and type-cast the dataframe as a whole to destined data-types (as a double-check)
         ret_df_insert = typecast_df_to_schema(pd.DataFrame(docu_insert), self.curr_mapping['fields'])
-        ## Processing is complete. While saving, we need to pass the datatypes of columns to Athena (to create SQL table).
+        ## Processing is complete. While saving, we need to pass the datatypes of columns to Athena (to create table).
         dtypes = get_athena_dtypes(self.curr_mapping['fields'])
         return {'name': self.curr_mapping['collection_name'], 'df_insert': ret_df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
@@ -334,7 +320,7 @@ class MongoMigrate:
         docu_update = []
         collection_encr = get_data_from_encr_db()
         migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job - datetime.timedelta(minutes=1))
-        self.inform(message = 'Updating all records updated between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
+        self.inform(message = f'Updating all records updated between {str(self.last_run_cron_job)} and {str(self.curr_run_cron_job)}')
         all_documents = []
         ## Bookmark is that field in the document (dictionary) which identifies the timestamp when the record was updated
         ## If bookmark field is not proper (can either be string, or integer timestamp, or datetime), we set improper_bookmarks as True, and can't query inside mongodb collection using that field directly
@@ -376,9 +362,8 @@ class MongoMigrate:
 
         for document in all_documents:
             insertion_time = document['_id'].generation_time
-            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
-                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
-                document = self.add_partitions(document=document, insertion_time=insertion_time)
+            ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
+            document = self.add_partitions(document=document, insertion_time=insertion_time)
 
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and improper_bookmarks):
                 if(self.curr_mapping['bookmark'] not in document.keys()):
@@ -430,7 +415,7 @@ class MongoMigrate:
         docu_update = []
         collection_encr = get_data_from_encr_db()
         migration_prev_id = ObjectId.from_datetime(self.last_run_cron_job + datetime.timedelta(minutes=1))
-        self.inform(message = 'Updating all records updated between ' + str(self.last_run_cron_job) + " and " + str(self.curr_run_cron_job))
+        self.inform(message = f'Updating all records updated between {str(self.last_run_cron_job)} and {str(self.curr_run_cron_job)}')
         all_documents = []
         ## Bookmark is that field in the document (dictionary) which identifies the timestamp when the record was updated
         ## If bookmark field is not proper (can either be string, or integer timestamp, or datetime), we set improper_bookmarks as True, and can't query inside mongodb collection using that field directly
@@ -486,9 +471,8 @@ class MongoMigrate:
 
         for document in all_documents:
             insertion_time = document['_id'].generation_time
-            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
-                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
-                document = self.add_partitions(document=document, insertion_time=insertion_time)
+            ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
+            document = self.add_partitions(document=document, insertion_time=insertion_time)
 
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and improper_bookmarks):
                 if(self.curr_mapping['bookmark'] not in document.keys()):
@@ -541,7 +525,7 @@ class MongoMigrate:
         collection_encr = get_data_from_encr_db()
         check_time1 = ObjectId.from_datetime(self.curr_run_cron_job - datetime.timedelta(days=buffer_days, hours=buffer_hours, minutes=buffer_minutes))
         check_time2 = ObjectId.from_datetime(self.curr_run_cron_job)
-        self.inform(message = 'Updating all records updated between {0} and {1}'.format(check_time1.generation_time, check_time2.generation_time))
+        self.inform(message = f'Updating all records updated between {check_time1.generation_time} and {check_time2.generation_time}')
         all_documents = []
         if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and not improper_bookmarks):
             ## Return all documents which are greater than and equal to ('$gte') the time when last job was performed
@@ -578,9 +562,8 @@ class MongoMigrate:
 
         for document in all_documents:
             insertion_time = document['_id'].generation_time
-            if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):        
-                ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
-                document = self.add_partitions(document=document, insertion_time=insertion_time)
+            ## If data needs to be stored in partitioned manner at destination, we need to add some partition fields to each document
+            document = self.add_partitions(document=document, insertion_time=insertion_time)
 
             if('bookmark' in self.curr_mapping.keys() and self.curr_mapping['bookmark'] and improper_bookmarks):
                 if(self.curr_mapping['bookmark'] not in document.keys()):
@@ -620,7 +603,7 @@ class MongoMigrate:
         '''
             DUMPING: Everytime the job runs, entire data present in the collection is migrated to destination,
             Multiple copies of the same data are created.
-            This function handles the dumping/mirroring process.
+            This function handles the dumping process.
             While dumping, we add another column 'migration_snapshot_date' that indicates the datetime when migration was performed.
         '''
         start = 0
@@ -636,10 +619,10 @@ class MongoMigrate:
                 self.save_data(processed_collection=processed_collection)
                 processed_collection = {}
             time.sleep(self.time_delay)
-        self.inform(message = "Migration Complete.", save=True)
+        self.inform(message = "Migration Complete.")
         if('expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
             self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
-            self.inform(message = "Expired data removed.", save=True)
+            self.inform(message = "Expired data removed.")
 
 
     def logging_process(self) -> None:
@@ -667,9 +650,11 @@ class MongoMigrate:
                     break
                 if(killer.kill_now):
                     self.save_job_working_data(status=False)
-                    msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                    msg = f"<!channel>Migration stopped for *{self.curr_mapping['collection_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
                     msg += "Reason: Caught sigterm :warning:\n"
-                    msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                    ins_str = "{:,}".format(self.n_insertions)
+                    upd_str = "{:,}".format(self.n_updations)
+                    msg += f"Insertions: {ins_str}\nUpdations: {upd_str}"
                     slack_token = settings['slack_notif']['slack_token']
                     channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                     if('notify' in settings.keys() and settings['notify']):
@@ -677,7 +662,7 @@ class MongoMigrate:
                         self.inform('Notification sent.')
                     raise Sigterm("Ending gracefully.")
             time.sleep(self.time_delay)
-        self.inform(message = "Logging operation complete.", save=True)
+        self.inform(message = "Logging operation complete.")
 
 
     def syncing_process(self) -> None:
@@ -710,7 +695,7 @@ class MongoMigrate:
                         processed_collection['df_update'] = processed_collection_u['df_update']
                     else:
                         processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
-                    self.inform(message="Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
+                    self.inform(message = f"Found {str(processed_collection['df_update'].shape[0])} updations upto now.")
                 else:
                     if(processed_collection):
                         self.save_data(processed_collection=processed_collection)
@@ -752,9 +737,11 @@ class MongoMigrate:
                     break
                 if(killer.kill_now):
                     self.save_job_working_data(status=False)
-                    msg = "Migration stopped for *{0}* from database *{1}* ({2}) to *{3}*\n".format(self.curr_mapping['collection_name'], self.db['source']['db_name'], self.db['source']['source_type'], self.db['destination']['destination_type'])
+                    msg = f"<!channel>Migration stopped for *{self.curr_mapping['collection_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
                     msg += "Reason: Caught sigterm :warning:\n"
-                    msg += "Insertions: {0}\nUpdations: {1}".format("{:,}".format(self.n_insertions), "{:,}".format(self.n_updations))
+                    ins_str = "{:,}".format(self.n_insertions)
+                    upd_str = "{:,}".format(self.n_updations)
+                    msg += f"Insertions: {ins_str}\nUpdations: {upd_str}"
                     slack_token = settings['slack_notif']['slack_token']
                     channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                     if('notify' in settings.keys() and settings['notify']):
@@ -762,7 +749,7 @@ class MongoMigrate:
                         self.inform('Notification sent.')
                     raise Sigterm("Ending gracefully.")
             time.sleep(self.time_delay)
-        self.inform(message = "Insertions completed, starting to update records", save = True)
+        self.inform(message = "Insertions completed, starting to update records")
 
         ## NOW, DO ALL REQUIRED UPDATIONS
         self.inform(message="Starting to migrate updations in records.")
@@ -787,7 +774,7 @@ class MongoMigrate:
                     processed_collection['df_update'] = processed_collection_u['df_update']
                 else:
                     processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
-                self.inform(message="Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
+                self.inform(message = f"Found {str(processed_collection['df_update'].shape[0])} updations upto now.")
             else:
                 if(processed_collection):
                     self.save_data(processed_collection=processed_collection)
@@ -812,7 +799,7 @@ class MongoMigrate:
             buffer_hours = self.curr_mapping['buffer_updation_lag']['hours'] if 'hours' in self.curr_mapping['buffer_updation_lag'].keys() and self.curr_mapping['buffer_updation_lag']['hours'] else 0
             buffer_minutes = self.curr_mapping['buffer_updation_lag']['minutes'] if 'minutes' in self.curr_mapping['buffer_updation_lag'].keys() and self.curr_mapping['buffer_updation_lag']['minutes'] else 0
 
-            self.inform("Starting updation-check for newly inserted records which were updated in the {0} days, {1} hours and {2} minutes before the job started.".format(buffer_days, buffer_hours, buffer_minutes))
+            self.inform(f"Starting updation-check for newly inserted records which were updated in the {buffer_days} days, {buffer_hours} hours and {buffer_minutes} minutes before the job started.")
             start = 0
             updated_in_destination = True
             processed_collection = {}
@@ -834,7 +821,7 @@ class MongoMigrate:
                         processed_collection['df_update'] = processed_collection_u['df_update']
                     else:
                         processed_collection['df_update'] = typecast_df_to_schema(processed_collection['df_update'].append([processed_collection_u['df_update']]), self.curr_mapping['fields'])
-                    self.inform(message="Found " + str(processed_collection['df_update'].shape[0]) + " updations upto now.")
+                    self.inform(message = f"Found {str(processed_collection['df_update'].shape[0])} updations upto now.")
                 else:
                     if(processed_collection):
                         self.save_data(processed_collection=processed_collection)
@@ -853,7 +840,7 @@ class MongoMigrate:
                 start += self.batch_size
             self.inform(message="Buffer_updation completed.")
 
-        self.inform(message="Syncing operation complete (Both - Insertion and Updation).", save=True)
+        self.inform(message="Syncing operation complete (Both - Insertion and Updation).")
 
 
     def save_data(self, processed_collection: Dict[str, Any] = None) -> None:
@@ -887,6 +874,8 @@ class MongoMigrate:
                 self.curr_megabytes_processed += processed_collection['df_insert'].memory_usage(index=True).sum()
             if(processed_collection['df_update'].shape[0]):
                 self.curr_megabytes_processed += processed_collection['df_update'].memory_usage(index=True).sum()
+            
+            processed_collection['partition_col'] = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and 'partition_col_format' in self.curr_mapping.keys() and self.curr_mapping['partition_col_format'] == 'datetime' else None
             self.saver.save(processed_data = processed_collection, primary_keys = primary_keys)
 
 
@@ -894,13 +883,13 @@ class MongoMigrate:
         '''
             This function handles the entire flow of preprocessing, processing, saving and postprocessing data.
         '''
-        if(self.curr_mapping['mode'] == 'mirroring' and self.db['destination']['destination_type'] == 's3'):
-            raise IncorrectMapping("Mirroring mode not supported for destination S3")
+        if(self.curr_mapping['mode'] == 'mirroring'):
+            raise IncorrectMapping("Mirroring mode not supported for source mongodb")
         
         self.get_connectivity()
-        self.inform(message="Connected to database and collection.", save=True)
+        self.inform(message="Connected to database and collection.")
         self.preprocess()
-        self.inform(message="Collection pre-processed.", save=True)
+        self.inform(message="Collection pre-processed.")
 
         '''
             Mode = 'syncing', 'logging', 'dumping' or 'mirroring'
@@ -916,8 +905,6 @@ class MongoMigrate:
                 self.logging_process()
             elif(self.curr_mapping['mode'] == 'syncing'):
                 self.syncing_process()
-            elif(self.curr_mapping['mode'] == 'mirroring'):
-                self.dumping_process()
             else:
                 raise IncorrectMapping("Please specify a mode of operation.")
         except KeyboardInterrupt:
@@ -931,7 +918,7 @@ class MongoMigrate:
         else:
             self.save_job_working_data()
         self.postprocess()
-        self.inform(message="Post processing completed.", save=True)
+        self.inform(message="Post processing completed.")
 
         self.saver.close()
         self.inform(message="Hope to see you again :')")
