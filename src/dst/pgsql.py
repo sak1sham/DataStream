@@ -201,7 +201,7 @@ class PgSQLSaver:
             cols_def = cols_def[:-2]
 
             conflict_behaviour = "ON CONFLICT DO NOTHING"
-            if(not logging_flag):
+            if(not logging_flag and len(primary_keys)>0):
                 up_query = ""
                 for col in list_cols:
                     if(col != primary_keys[0]):
