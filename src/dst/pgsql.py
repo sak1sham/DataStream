@@ -73,7 +73,7 @@ class PgSQLSaver:
         return exists
 
 
-    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], partition_col: str = None) -> None:
+    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], partition_col: str = None, indexes: List[str] = []) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         self.create_schema_if_not_exists(schema=schema)
@@ -151,17 +151,22 @@ class PgSQLSaver:
                         with conn.cursor() as curs:
                             curs.execute(sql_query)
                             conn.commit()
+
+            for create_index in indexes:
+                with conn.cursor() as curs:
+                    curs.execute(create_index)
+                    conn.commit()
             conn.close()
 
 
     @retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000)
-    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], strict_mode: bool = False, partition_col: str = None) -> None:
+    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], strict_mode: bool = False, partition_col: str = None, indexes: List[str] = []) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
             df2 = df.copy()
             table = table.replace('.', '_').replace('-', '_')
-            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source=varchar_length_source, logging_flag=logging_flag, json_cols=json_cols, partition_col=partition_col)
+            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source, logging_flag=logging_flag, json_cols = json_cols, partition_col=partition_col, indexes = indexes)
             table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
             col_names = ""
             list_cols = df2.columns.to_list()
@@ -260,6 +265,10 @@ class PgSQLSaver:
         if('strict' in processed_data.keys() and processed_data['strict']):
             strict_mode = True
 
+        indexes = []
+        if('indexes' in processed_data.keys() and processed_data['indexes']):
+            indexes = processed_data['indexes']
+
         if('col_rename' in processed_data and processed_data['col_rename']):
             for key, val in processed_data['col_rename'].items():
                 if(key in varchar_length_source.keys()):
@@ -285,9 +294,10 @@ class PgSQLSaver:
                 primary_keys=primary_keys,
                 varchar_length_source=varchar_length_source,
                 logging_flag=logging_flag,
-                json_cols=json_cols,
-                strict_mode=strict_mode,
-                partition_col=partition_col
+                json_cols = json_cols,
+                strict_mode = strict_mode,
+                partition_col=partition_col,
+                indexes = indexes
             )
             self.inform(message=f"Inserted {str(processed_data['df_insert'].shape[0])} records.")
 
@@ -304,9 +314,10 @@ class PgSQLSaver:
                 primary_keys=primary_keys,
                 varchar_length_source=varchar_length_source,
                 logging_flag=logging_flag,
-                json_cols=json_cols,
-                strict_mode=strict_mode,
-                partition_col=partition_col
+                json_cols = json_cols,
+                strict_mode = strict_mode,
+                partition_col=partition_col,
+                indexes = indexes
             )
             self.inform(message=f"{str(processed_data['df_update'].shape[0])} updations done.")
 
