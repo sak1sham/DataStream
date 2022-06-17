@@ -326,15 +326,16 @@ class PGSQLMigrate:
                 user = self.db['source']['username'],
                 password = self.db['source']['password']
             )
-            try:            
+            try:  
+                table_names = []          
                 with conn.cursor() as curs:
                     curs.execute(sql_stmt)
                     rows = curs.fetchall()
                     table_names = [str(f"{t[0]}.{t[1]}") for t in rows]
-                    return table_names
+                conn.close()
+                return table_names
             except Exception as e:
                 raise ProcessingError("Caught some exception while getting list of all tables.") from e
-            conn.close()
         except ProcessingError:
             raise
         except Exception as e:
@@ -841,6 +842,7 @@ class PGSQLMigrate:
                 password = self.db['source']['password']
             )
             col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
+            conn.close()
             n_columns_pgsql = len(col_dtypes) + 1
             ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
             ## In case of dumping, migration_snapshot_date is present
@@ -888,7 +890,8 @@ class PGSQLMigrate:
             else:
                 data_df = convert_to_dtype(df = data_df, schema = {primary_key: primary_key_dtype})
             self.saver.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
-
+        conn.close()
+        
 
     def get_indexes(self, table: str = None) -> None:
         schema_name = 'public'
