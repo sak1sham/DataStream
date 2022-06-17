@@ -367,13 +367,16 @@ class PgSQLSaver:
                 password=self.db_destination['password']
             )
             rows = []
+            answer = False
             with conn.cursor() as cursor:
                 cursor.execute(sql_query)
                 rows = cursor.fetchall()
                 if(not rows or len(rows) == 0):
-                    return False
+                    answer = False
                 else:
-                    return True
+                    answer = True
+            conn.close()
+            return answer
         except Exception as e:
             self.err("Unable to check the presence of the table at destination.")
             raise
@@ -395,6 +398,7 @@ class PgSQLSaver:
                 with conn.cursor() as cursor:
                     cursor.execute(sql_query)
                     df = pd.DataFrame(cursor.fetchall(), columns=['count'])
+                conn.close()
                 return df.iloc[0][0]
             else:
                 return 0
