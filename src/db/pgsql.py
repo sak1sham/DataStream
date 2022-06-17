@@ -6,6 +6,7 @@ from dst.main import DMS_exporter
 from helper.sigterm import GracefulKiller, NormalKiller
 from notifications.slack_notify import send_message
 from config.settings import settings
+import itertools
 
 import pandas as pd
 import psycopg2
@@ -50,7 +51,8 @@ class PGSQLMigrate:
             else:
                 self.stop_time = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date() + datetime.timedelta(days=1), settings['cut_off_time']).astimezone(tz=self.tz_info)
             self.inform(f"Cut-off time specified. Will be stopping after {str(self.stop_time)}")
-        
+        self.indexes = []
+
 
     def inform(self, message: str = None) -> None:
         logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
@@ -303,6 +305,7 @@ class PGSQLMigrate:
             processed_data['json_cols'] = self.json_cols
             processed_data['strict'] = True if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']) else False
             processed_data['partition_col'] = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and 'partition_col_format' in self.curr_mapping.keys() and self.curr_mapping['partition_col_format'] == 'datetime' else None
+            processed_data['indexes'] = self.indexes
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
 
@@ -331,6 +334,7 @@ class PGSQLMigrate:
                     return table_names
             except Exception as e:
                 raise ProcessingError("Caught some exception while getting list of all tables.") from e
+            conn.close()
         except ProcessingError:
             raise
         except Exception as e:
@@ -535,6 +539,7 @@ class PGSQLMigrate:
                 raise
             except Exception as e:
                 raise ProcessingError("Caught some exception while processing records.") from e
+            conn.close()
         except Sigterm as e:
             raise    
         except ProcessingError:
@@ -566,11 +571,13 @@ class PGSQLMigrate:
             else:
                 sql_stmt = f"SELECT max({self.curr_mapping['primary_key']}) as curr_max_pkey FROM {table_name}"
             try:
+                curr_max_pkey = ''
                 with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
                     curr_max_pkey = curs.fetchone()[0]
-                    return curr_max_pkey
+                conn.close()
+                return curr_max_pkey
             except Exception as e:
                 raise ProcessingError("Caught some exception while finding maximum value of primary_key till now.") from e
         except ProcessingError:
@@ -883,6 +890,38 @@ class PGSQLMigrate:
             self.saver.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
 
 
+    def get_indexes(self, table: str = None) -> None:
+        schema_name = 'public'
+        table_name = table
+        x = table.split('.')
+        if(len(x) > 1):
+            schema_name = x[0]
+            table_name = x[1]
+
+        sql_stmt = f'''
+            SELECT indexdef
+            FROM pg_indexes
+            WHERE
+            schemaname = '{schema_name}'
+            AND
+            tablename = '{table_name}';
+        '''
+        conn = psycopg2.connect(
+            host = self.db['source']['url'],
+            database = self.db['source']['db_name'],
+            user = self.db['source']['username'],
+            password = self.db['source']['password']
+        )
+
+        self.indexes = []
+        with conn.cursor('getting-indexes', scrollable = True) as curs:
+            curs.execute(sql_stmt)
+            self.inform("Executed the pgsql statement to get indexes")
+            recs = curs.fetchall()
+            self.indexes = list(itertools.chain.from_iterable(recs))
+        conn.close()
+
+
     def process(self) -> Tuple[int]:
         if(self.curr_mapping['mode'] != 'dumping' and ('primary_key' not in self.curr_mapping.keys() or not self.curr_mapping['primary_key'])):
             raise IncorrectMapping('Need to specify a primary_key (strictly increasing and unique - int|string|datetime) inside the table for syncing, mirroring or logging mode.')
@@ -939,6 +978,7 @@ class PGSQLMigrate:
                     self.warn(message="Can not migrate table with table_name: {table_name}")
                     continue
                 if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
+                    self.get_indexes(table_name)
                     self.preprocess_table(table_name)
                 self.set_basic_job_params(table_name)
                 if(self.curr_mapping['mode'] == 'dumping'):
