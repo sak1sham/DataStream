@@ -894,7 +894,7 @@ class PGSQLMigrate:
         schema_name = 'public'
         table_name = table
         x = table.split('.')
-        if(len(x) > 0):
+        if(len(x) > 1):
             schema_name = x[0]
             table_name = x[1]
 
@@ -915,7 +915,6 @@ class PGSQLMigrate:
 
         self.indexes = []
         with conn.cursor('getting-indexes', scrollable = True) as curs:
-            curs.itersize = 2
             curs.execute(sql_stmt)
             self.inform("Executed the pgsql statement to get indexes")
             recs = curs.fetchall()
@@ -979,6 +978,7 @@ class PGSQLMigrate:
                     self.warn(message="Can not migrate table with table_name: {table_name}")
                     continue
                 if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
+                    self.get_indexes(table_name)
                     self.preprocess_table(table_name)
                 self.set_basic_job_params(table_name)
                 if(self.curr_mapping['mode'] == 'dumping'):
