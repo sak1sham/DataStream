@@ -862,8 +862,11 @@ class PGSQLMigrate:
                 self.saver.drop_table(table_name=table_name)
                 delete_metadata_from_mongodb(self.curr_mapping['unique_id'])
                 self.inform("Data is deleted, now starting migration again.")
+            elif(n_columns_destination == 0):
+                delete_metadata_from_mongodb(self.curr_mapping['unique_id'])
+                self.inform('No discrepancy, lets start the migration')
             else:
-                self.inform('No discrepancy, let\'s start the migration')
+                self.inform('No discrepancy, lets start the migration')
         except ProcessingError as e:
             raise Exception("Unable to verify datatypes of table from source and destination.") from e
 

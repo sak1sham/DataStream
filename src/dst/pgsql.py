@@ -141,6 +141,7 @@ class PgSQLSaver:
                 curs.execute(sql_query)
                 conn.commit()
 
+            self.inform("Creating required partitions")
             if(partition_col):
                 start_year = 2015
                 end_year = 2030
@@ -152,8 +153,16 @@ class PgSQLSaver:
                             curs.execute(sql_query)
                             conn.commit()
 
+            self.inform("Creating required indexes")
             for create_index in indexes:
                 with conn.cursor() as curs:
+                    create_index = create_index.lower()
+                    if(' exists ' not in create_index):
+                        word_before = 'index'
+                        loc = create_index.find(word_before) + len(word_before)
+                        create_index = create_index[:loc] + " if not exists" + create_index[loc:]
+                    create_index = create_index.upper()
+                    self.inform(create_index)
                     curs.execute(create_index)
                     conn.commit()
             conn.close()
