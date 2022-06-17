@@ -53,6 +53,7 @@ class PgSQLSaver:
         with conn.cursor() as curs:
             curs.execute(f"CREATE SCHEMA IF NOT EXISTS {schema};")
             conn.commit()
+        conn.close()
         
 
     def check_table_exists(self, table: str = None, schema: str = None) -> bool:
@@ -68,6 +69,7 @@ class PgSQLSaver:
             recs = curs.fetchall()
             exists = recs[0][0]
             conn.commit()
+        conn.close()
         return exists
 
 
@@ -199,7 +201,7 @@ class PgSQLSaver:
             cols_def = cols_def[:-2]
 
             conflict_behaviour = "ON CONFLICT DO NOTHING"
-            if(not logging_flag):
+            if(not logging_flag and len(primary_keys)>0):
                 up_query = ""
                 for col in list_cols:
                     if(col != primary_keys[0]):
@@ -420,6 +422,7 @@ class PgSQLSaver:
 
  
     def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
+        table_name = table_name.replace('.', '_').replace('-', '_')
         if(data_df.shape[0]):
             pkey_max = data_df[primary_key].max()
             if(primary_key_dtype == 'int'):
