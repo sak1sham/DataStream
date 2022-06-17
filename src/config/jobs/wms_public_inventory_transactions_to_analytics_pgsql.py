@@ -11,7 +11,7 @@ mapping = {
             "db_name": "wmsdb",
             "schema": "public",
             "password": "3y5HMs^2qy%&Kma",
-            "url": "3.108.43.163",
+            "url": "15.206.171.84",
             "username": "saksham_garg",
             "destination_type": "pgsql",
         },

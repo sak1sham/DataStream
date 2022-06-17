@@ -38,6 +38,7 @@ class PgSQLSaver:
             self.inform("Successfully tested connection with destination db.")
 
         self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{self.source_type}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
+        self.user_defined_schema = True if 'schema' in db_destination.keys() and db_destination['schema'] else False
         self.name_ = ""
         self.table_list = []
         self.table_exists = None
@@ -260,6 +261,13 @@ class PgSQLSaver:
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
 
+        if(self.user_defined_schema):
+            x = self.name_.split('.')
+            if(len(x) > 1):
+                self.name_ = x[1]
+            else:
+                self.name_ = x[0]
+
         logging_flag = False
         if('logging_flag' in processed_data.keys() and processed_data['logging_flag']):
             logging_flag = True
@@ -332,6 +340,12 @@ class PgSQLSaver:
 
 
     def delete_table(self, table_name: str = None) -> None:
+        if(self.user_defined_schema):
+            x = table_name.split('.')
+            if(len(x) > 1):
+                table_name = x[1]
+            else:
+                table_name = x[0]
         table_name = table_name.replace('.', '_').replace('-', '_')
         query = f"DROP TABLE  IF EXISTS {self.schema}.{table_name};"
         self.inform(query)
@@ -348,6 +362,12 @@ class PgSQLSaver:
         self.inform(f"Deleted {table_name} from PgSQL schema {self.schema}")
 
     def get_n_cols(self, table_name: str = None) -> int:
+        if(self.user_defined_schema):
+            x = table_name.split('.')
+            if(len(x) > 1):
+                table_name = x[1]
+            else:
+                table_name = x[0]
         table_name = table_name.replace('.', '_').replace('-', '_')
         query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
         self.inform(query)
@@ -366,6 +386,12 @@ class PgSQLSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
+            if(self.user_defined_schema):
+                x = table_name.split('.')
+                if(len(x) > 1):
+                    table_name = x[1]
+                else:
+                    table_name = x[0]
             table_name = table_name.replace('.', '_').replace('-', '_')
             sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
@@ -393,6 +419,12 @@ class PgSQLSaver:
 
     def count_n_records(self, table_name: str = None) -> int:
         try:
+            if(self.user_defined_schema):
+                x = table_name.split('.')
+                if(len(x) > 1):
+                    table_name = x[1]
+                else:
+                    table_name = x[0]
             table_name = table_name.replace('.', '_').replace('-', '_')
             if(self.is_exists(table_name=table_name)):
                 sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
@@ -446,6 +478,12 @@ class PgSQLSaver:
 
  
     def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
+        if(self.user_defined_schema):
+            x = table_name.split('.')
+            if(len(x) > 1):
+                table_name = x[1]
+            else:
+                table_name = x[0]
         table_name = table_name.replace('.', '_').replace('-', '_')
         if(data_df.shape[0]):
             pkey_max = data_df[primary_key].max()
