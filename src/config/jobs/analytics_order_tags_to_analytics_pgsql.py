@@ -8,18 +8,20 @@ mapping = {
     },
     "destination": {
         'ec2_1': {
-            "db_name": "dms",
+            "db_name": "cmdb",
             "password": "3y5HMs^2qy%&Kma",
-            "url": "3.108.43.163",
+            "url": "15.206.171.84",
             "username": "saksham_garg",
             "destination_type": "pgsql",
+            "schema": "analytics"
         },
         'ec2_2': {
-            "db_name": "dms",
+            "db_name": "cmdb",
             "password": "3y5HMs^2qy%&Kma",
             "url": "13.233.225.181",
             "username": "saksham_garg",
             "destination_type": "pgsql",
+            "schema": "analytics"
         }
     },
     'tables': [

@@ -222,7 +222,6 @@ class RedshiftSaver:
                 self.conn.commit()
 
             self.inform(f"Deleted some records from destination which no longer exist at source.")
-            self.conn.close()
 
     def close(self):
         self.conn.close()

@@ -38,6 +38,7 @@ class PgSQLSaver:
             self.inform("Successfully tested connection with destination db.")
 
         self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{self.source_type}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
+        self.user_defined_schema = True if 'schema' in db_destination.keys() and db_destination['schema'] else False
         self.name_ = ""
         self.table_list = []
         self.table_exists = None
@@ -73,7 +74,7 @@ class PgSQLSaver:
         return exists
 
 
-    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], partition_col: str = None) -> None:
+    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], partition_col: str = None, indexes: List[str] = []) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         self.create_schema_if_not_exists(schema=schema)
@@ -141,6 +142,7 @@ class PgSQLSaver:
                 curs.execute(sql_query)
                 conn.commit()
 
+            self.inform("Creating required partitions")
             if(partition_col):
                 start_year = 2015
                 end_year = 2030
@@ -151,17 +153,30 @@ class PgSQLSaver:
                         with conn.cursor() as curs:
                             curs.execute(sql_query)
                             conn.commit()
+
+            self.inform("Creating required indexes")
+            for create_index in indexes:
+                with conn.cursor() as curs:
+                    create_index = create_index.lower()
+                    if(' exists ' not in create_index):
+                        word_before = 'index'
+                        loc = create_index.find(word_before) + len(word_before)
+                        create_index = create_index[:loc] + " if not exists" + create_index[loc:]
+                    create_index = create_index.upper()
+                    self.inform(create_index)
+                    curs.execute(create_index)
+                    conn.commit()
             conn.close()
 
 
     @retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000)
-    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], strict_mode: bool = False, partition_col: str = None) -> None:
+    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], strict_mode: bool = False, partition_col: str = None, indexes: List[str] = []) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
             df2 = df.copy()
             table = table.replace('.', '_').replace('-', '_')
-            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source=varchar_length_source, logging_flag=logging_flag, json_cols=json_cols, partition_col=partition_col)
+            self.pgsql_create_table(df=df2, table=table, schema=schema, dtypes=dtypes, primary_keys=primary_keys, varchar_length_source = varchar_length_source, logging_flag=logging_flag, json_cols = json_cols, partition_col=partition_col, indexes = indexes)
             table_name = f"{schema}.{table}" if schema and len(schema) > 0 else table
             col_names = ""
             list_cols = df2.columns.to_list()
@@ -246,6 +261,13 @@ class PgSQLSaver:
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
 
+        if(self.user_defined_schema):
+            x = self.name_.split('.')
+            if(len(x) > 1):
+                self.name_ = x[1]
+            else:
+                self.name_ = x[0]
+
         logging_flag = False
         if('logging_flag' in processed_data.keys() and processed_data['logging_flag']):
             logging_flag = True
@@ -259,6 +281,10 @@ class PgSQLSaver:
         strict_mode = False
         if('strict' in processed_data.keys() and processed_data['strict']):
             strict_mode = True
+
+        indexes = []
+        if('indexes' in processed_data.keys() and processed_data['indexes']):
+            indexes = processed_data['indexes']
 
         if('col_rename' in processed_data and processed_data['col_rename']):
             for key, val in processed_data['col_rename'].items():
@@ -285,9 +311,10 @@ class PgSQLSaver:
                 primary_keys=primary_keys,
                 varchar_length_source=varchar_length_source,
                 logging_flag=logging_flag,
-                json_cols=json_cols,
-                strict_mode=strict_mode,
-                partition_col=partition_col
+                json_cols = json_cols,
+                strict_mode = strict_mode,
+                partition_col=partition_col,
+                indexes = indexes
             )
             self.inform(message=f"Inserted {str(processed_data['df_insert'].shape[0])} records.")
 
@@ -304,14 +331,21 @@ class PgSQLSaver:
                 primary_keys=primary_keys,
                 varchar_length_source=varchar_length_source,
                 logging_flag=logging_flag,
-                json_cols=json_cols,
-                strict_mode=strict_mode,
-                partition_col=partition_col
+                json_cols = json_cols,
+                strict_mode = strict_mode,
+                partition_col=partition_col,
+                indexes = indexes
             )
             self.inform(message=f"{str(processed_data['df_update'].shape[0])} updations done.")
 
 
     def delete_table(self, table_name: str = None) -> None:
+        if(self.user_defined_schema):
+            x = table_name.split('.')
+            if(len(x) > 1):
+                table_name = x[1]
+            else:
+                table_name = x[0]
         table_name = table_name.replace('.', '_').replace('-', '_')
         query = f"DROP TABLE  IF EXISTS {self.schema}.{table_name};"
         self.inform(query)
@@ -328,6 +362,12 @@ class PgSQLSaver:
         self.inform(f"Deleted {table_name} from PgSQL schema {self.schema}")
 
     def get_n_cols(self, table_name: str = None) -> int:
+        if(self.user_defined_schema):
+            x = table_name.split('.')
+            if(len(x) > 1):
+                table_name = x[1]
+            else:
+                table_name = x[0]
         table_name = table_name.replace('.', '_').replace('-', '_')
         query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
         self.inform(query)
@@ -346,6 +386,12 @@ class PgSQLSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
+            if(self.user_defined_schema):
+                x = table_name.split('.')
+                if(len(x) > 1):
+                    table_name = x[1]
+                else:
+                    table_name = x[0]
             table_name = table_name.replace('.', '_').replace('-', '_')
             sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
@@ -356,13 +402,16 @@ class PgSQLSaver:
                 password=self.db_destination['password']
             )
             rows = []
+            answer = False
             with conn.cursor() as cursor:
                 cursor.execute(sql_query)
                 rows = cursor.fetchall()
                 if(not rows or len(rows) == 0):
-                    return False
+                    answer = False
                 else:
-                    return True
+                    answer = True
+            conn.close()
+            return answer
         except Exception as e:
             self.err("Unable to check the presence of the table at destination.")
             raise
@@ -370,6 +419,12 @@ class PgSQLSaver:
 
     def count_n_records(self, table_name: str = None) -> int:
         try:
+            if(self.user_defined_schema):
+                x = table_name.split('.')
+                if(len(x) > 1):
+                    table_name = x[1]
+                else:
+                    table_name = x[0]
             table_name = table_name.replace('.', '_').replace('-', '_')
             if(self.is_exists(table_name=table_name)):
                 sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
@@ -384,6 +439,7 @@ class PgSQLSaver:
                 with conn.cursor() as cursor:
                     cursor.execute(sql_query)
                     df = pd.DataFrame(cursor.fetchall(), columns=['count'])
+                conn.close()
                 return df.iloc[0][0]
             else:
                 return 0
@@ -422,6 +478,12 @@ class PgSQLSaver:
 
  
     def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
+        if(self.user_defined_schema):
+            x = table_name.split('.')
+            if(len(x) > 1):
+                table_name = x[1]
+            else:
+                table_name = x[0]
         table_name = table_name.replace('.', '_').replace('-', '_')
         if(data_df.shape[0]):
             pkey_max = data_df[primary_key].max()
