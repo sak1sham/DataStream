@@ -18,6 +18,7 @@ mapping = {
         's3': {
             'destination_type': 's3', 
             's3_bucket_name': 'dms-kafka',
+            's3_suffix': '_2'
         }
     },
     'topics': [
