@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     "destination": {
         "s3": {
@@ -7,10 +11,10 @@ mapping = {
     },
     "source": {
         "db_name": "wmsdb",
-        "password": "3y5HMs^2qy%&Kma",
+        "password": os.getenv('DB_PASSWORD'),
         "source_type": "pgsql",
-        "url": "cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com",
-        "username": "saksham_garg"
+        "url": os.getenv('CMDB_URL'),
+        "username": os.getenv('DB_USERNAME')
     },
     "tables": [
         {

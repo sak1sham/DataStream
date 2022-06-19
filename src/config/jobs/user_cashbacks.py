@@ -1,10 +1,14 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
         'source_type': 'pgsql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'url': os.getenv('CMDB_URL'),
         'db_name': 'cmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     'destination': { 
         's3': {
@@ -12,13 +16,13 @@ mapping = {
             's3_bucket_name': 'database-migration-service-prod' 
         }
     },
-    'tables': [            
+    'tables': [
         {
-            'table_name': 'cms_items',
+            'table_name': 'user_cashbacks',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'cms_item_id',
-            'primary_key_datatype': 'int',
+            'primary_key': 'id',
+            'primary_key_datatype': 'uuid',
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at',

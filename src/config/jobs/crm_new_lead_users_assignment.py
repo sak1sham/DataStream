@@ -1,10 +1,14 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
         'source_type': 'pgsql',
-        'url': 'crmdb.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'url': os.getenv('CRMDB_URL'),
         'db_name': 'crmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     'destination': { 
         's3': {

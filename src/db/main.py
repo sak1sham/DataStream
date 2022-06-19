@@ -55,8 +55,7 @@ class DMS_importer:
                 except:
                     logger.err(s = "Unable to connect to slack and send the notification.")
         except Sigterm as e:
-            logger.err(s=traceback.format_exc())
-            logger.inform(s = f"{self.curr_mapping['unique_id']}: Migration stopped.\n")
+            raise
         except Exception as e:
             logger.err(s=traceback.format_exc())
             logger.inform(s = f"{self.curr_mapping['unique_id']}: Migration stopped.\n")

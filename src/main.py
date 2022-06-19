@@ -4,13 +4,14 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 import sys
 from typing import Tuple, Dict, Any
+import traceback
 
 from config.migration_mapping import get_mapping
 from config.settings import settings
 from db.main import DMS_importer
 from helper.logger import logger
 from helper.util import evaluate_cron
-from helper.exceptions import InvalidArguments, SourceNotFound
+from helper.exceptions import InvalidArguments, SourceNotFound, Sigterm
 from routes.routes import router
 
 import os
@@ -56,19 +57,23 @@ def create_new_job(db, list_specs, uid, is_fastapi):
     list_specs['unique_id'] = basic_unique_id
     list_destinations = db['destination']
     db_copy = db.copy()
-    for key, destination in list_destinations.items():
-        list_specs['unique_id'] = f"{basic_unique_id}_{key}"
-        db_copy['destination'] = {}
-        for key_ in destination.keys():
-            db_copy['destination'][key_] = destination[key_]
-        if(list_specs['cron'] == 'self-managed'):
-            migration_service_of_job(db_copy, list_specs, tz__)
-        elif(is_fastapi):
-            year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(list_specs['cron'])
-            scheduler.add_job(migration_service_of_job, 'cron', args=[db_copy, list_specs, tz__], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone(tz__), misfire_grace_time=None)
-        else:
-            logger.warn(s = f"Jobs can be scheduled only if fastapi_server is enabled. Skipping {str(uid)}.")
-
+    try:
+        for key, destination in list_destinations.items():
+            list_specs['unique_id'] = f"{basic_unique_id}_{key}"
+            db_copy['destination'] = {}
+            for key_ in destination.keys():
+                db_copy['destination'][key_] = destination[key_]
+            if(list_specs['cron'] == 'self-managed'):
+                migration_service_of_job(db_copy, list_specs, tz__)
+            elif(is_fastapi):
+                year, month, day, week, day_of_week, hour, minute, second = evaluate_cron(list_specs['cron'])
+                scheduler.add_job(migration_service_of_job, 'cron', args=[db_copy, list_specs, tz__], id=list_specs['unique_id'], year=year, month=month, day=day, week=week, day_of_week=day_of_week, hour=hour, minute=minute, second=second, timezone=pytz.timezone(tz__), misfire_grace_time=None)
+            else:
+                logger.warn(s = f"Jobs can be scheduled only if fastapi_server is enabled. Skipping {str(uid)}.")
+    except Sigterm as e:
+        logger.err(s=traceback.format_exc())
+        logger.inform(s = f"{basic_unique_id}: Migration stopped.\n")
+        
 
 def use_mapping(db, key, is_fastapi):
     if(key not in db.keys()):

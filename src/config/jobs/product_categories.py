@@ -1,10 +1,14 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
         'source_type': 'pgsql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'url': os.getenv('CMDB_URL'),
         'db_name': 'cmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     'destination': { 
         's3': {
@@ -14,13 +18,11 @@ mapping = {
     },
     'tables': [
         {
-            'table_name': 'tbl_user',
-            'cron': '* * * * * 22 0 0',
+            'table_name': 'product_categories',
+            'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'user_id',
+            'primary_key': 'id',
             'primary_key_datatype': 'int',
-            'partition_col': 'user_created',
-            'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
