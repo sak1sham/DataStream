@@ -6,7 +6,7 @@ mapping = {
     "source": {
         "source_type": "api",
         "db_name": "facebook_ads",
-        "access_token": os.getenv("FACEBOOK_ADS_ACCESS_TOKEN_CX"),
+        "access_token": os.getenv("FACEBOOK_ADS_TOKEN_CX"),
         "app_secret": os.getenv("FACEBOOK_ADS_APP_SECRET_CX"),
         "ad_account_id": os.getenv("FACEBOOK_ADS_AD_ACCOUNT_ID_CX"),
         "app_id": os.getenv("FACEBOOK_ADS_APP_ID_CX")
@@ -22,22 +22,22 @@ mapping = {
             's3_bucket_name': 'database-migration-service-prod',
             'destination_type': 'redshift'
         },
-        'ec_1': {
-            "db_name": "dms",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "15.206.171.84",
-            "username": os.getenv('DB_USERNAME'),
-            "schema": "facebook_ads_cx_new",
-            'destination_type': 'pgsql'
-        },
-        'ec_2':  {
-            "db_name": "dms",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "13.233.225.181",
-            "username": os.getenv('DB_USERNAME'),
-            "schema": "facebook_ads_cx_new",
-            'destination_type': 'pgsql'
-        }
+        # 'ec_1': {
+        #     "db_name": "dms",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "15.206.171.84",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "schema": "facebook_ads_cx_new",
+        #     'destination_type': 'pgsql'
+        # },
+        # 'ec_2':  {
+        #     "db_name": "dms",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "13.233.225.181",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "schema": "facebook_ads_cx_new",
+        #     'destination_type': 'pgsql'
+        # }
 
     },
     "apis": [
@@ -317,62 +317,63 @@ mapping = {
             'cron': 'self-managed',
         },
 
-        {
-            'api_name': 'ads_campaigns',
-            'project_name': 'facebook_ads_cx_new',
-            'start_day': '-1',
-            'end_day': '-1',
-            'slack_channel': 'C03GZGXUPFS',
-            'strict': True,
-            'fields': {
-                'account_id': 'int',
-                'budget_rebalance_flag': 'bool',
-                'budget_remaining': 'int',
-                'buying_type': 'str',
-                'can_create_brand_lift_study': 'bool',
-                'can_use_spend_cap': 'bool',
-                'configured_status': 'str',
-                'created_time': 'datetime',
-                'effective_status': 'str',
-                'id': 'int',
-                'is_skadnetwork_attribution': 'bool',
-                'name': 'str',
-                'objective': 'str',
-                'smart_promotion_type': 'str',
-                'source_campaign_id': 'int',
-                'special_ad_category': 'str',
-                'spend_cap': 'int',
-                'start_time': 'datetime',
-                'status': 'str',
-                'topline_id': 'int',
-                'updated_time': 'datetime'
-            },
-            'primary_keys': ["id"],
-            'lob_fields': {},
-            'api_to_field_mapping': {
-                'account_id': 'account_id',
-                'budget_rebalance_flag': 'budget_rebalance_flag',
-                'budget_remaining': 'budget_remaining',
-                'buying_type': 'buying_type',
-                'can_create_brand_lift_study': 'can_create_brand_lift_study',
-                'can_use_spend_cap': 'can_use_spend_cap',
-                'configured_status': 'configured_status',
-                'created_time': 'created_time',
-                'effective_status': 'effective_status',
-                'id': 'id',
-                'is_skadnetwork_attribution': 'is_skadnetwork_attribution',
-                'name': 'name',
-                'objective': 'objective',
-                'smart_promotion_type': 'smart_promotion_type',
-                'source_campaign_id': 'source_campaign_id',
-                'special_ad_category': 'special_ad_category',
-                'spend_cap': 'spend_cap',
-                'start_time': 'start_time',
-                'status': 'status',
-                'topline_id': 'topline_id',
-                'updated_time': 'updated_time'
-            },
-            'cron': 'self-managed'
-        }
+        # {
+        #     'api_name': 'ads_campaigns',
+        #     'project_name': 'facebook_ads_cx_new',
+        #     'start_day': '-1',
+        #     'end_day': '-1',
+        #     'slack_channel': 'C03GZGXUPFS',
+        #     'strict': True,
+        #     'fields': {
+        #         'account_id': 'int',
+        #         'budget_rebalance_flag': 'bool',
+        #         'budget_remaining': 'int',
+        #         'buying_type': 'str',
+        #         'can_create_brand_lift_study': 'bool',
+        #         'can_use_spend_cap': 'bool',
+        #         'configured_status': 'str',
+        #         'created_time': 'datetime',
+        #         'effective_status': 'str',
+        #         'id': 'int',
+        #         'is_skadnetwork_attribution': 'bool',
+        #         'name': 'str',
+        #         'objective': 'str',
+        #         'smart_promotion_type': 'str',
+        #         'source_campaign_id': 'int',
+        #         'special_ad_category': 'str',
+        #         'spend_cap': 'int',
+        #         'start_time': 'datetime',
+        #         'status': 'str',
+        #         'topline_id': 'int',
+        #         'updated_time': 'datetime'
+        #     },
+        #     'primary_keys': ["id"],
+        #     'lob_fields': {},
+        #     'api_to_field_mapping': {
+        #         'account_id': 'account_id',
+        #         'budget_rebalance_flag': 'budget_rebalance_flag',
+        #         'budget_remaining': 'budget_remaining',
+        #         'buying_type': 'buying_type',
+        #         'can_create_brand_lift_study': 'can_create_brand_lift_study',
+        #         'can_use_spend_cap': 'can_use_spend_cap',
+        #         'configured_status': 'configured_status',
+        #         'created_time': 'created_time',
+        #         'effective_status': 'effective_status',
+        #         'id': 'id',
+        #         'is_skadnetwork_attribution': 'is_skadnetwork_attribution',
+        #         'name': 'name',
+        #         'objective': 'objective',
+        #         'smart_promotion_type': 'smart_promotion_type',
+        #         'source_campaign_id': 'source_campaign_id',
+        #         'special_ad_category': 'special_ad_category',
+        #         'spend_cap': 'spend_cap',
+        #         'start_time': 'start_time',
+        #         'status': 'status',
+        #         'topline_id': 'topline_id',
+        #         'updated_time': 'updated_time'
+        #     },
+        #     'cron': 'self-managed'
+        # }
+    
     ]
 }
