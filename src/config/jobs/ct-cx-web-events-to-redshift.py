@@ -8,18 +8,33 @@ mapping = {
         "db_name": "clevertap"
     },
     "destination": {
-        'destination_type': 'redshift',
-        'specifications': [
-            {
-                'host': os.getenv('REDSHIFT_URL'),
-                'database': 'cmwh',
-                'user': os.getenv('REDSHIFT_USER'),
-                'password': os.getenv('REDSHIFT_PASSWORD'),
-                'schema': 'cm_clevertap',
-                's3_bucket_name': 'database-migration-service-prod',
-            }
-        ]
+        'redshift': {
+            'host': os.getenv('REDSHIFT_URL'),
+            'database': 'cmwh',
+            'user': os.getenv('REDSHIFT_USER'),
+            'password': os.getenv('REDSHIFT_PASSWORD'),
+            'schema': 'cm_clevertap',
+            's3_bucket_name': 'database-migration-service-prod',
+            'destination_type': 'redshift'
+        },
+        'ec_1': {
+            "db_name": "dms",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "15.206.171.84",
+            "username": os.getenv('DB_USERNAME'),
+            "schema": "cm_clevertap",
+            'destination_type': 'pgsql'
+        },
+        'ec_2':  {
+            "db_name": "dms",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "13.233.225.181",
+            "username": os.getenv('DB_USERNAME'),
+            "schema": "cm_clevertap",
+            'destination_type': 'pgsql'
+        }
     },
+
     "apis": [
         {
             'api_name':'cx_web_events',
