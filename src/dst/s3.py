@@ -72,6 +72,7 @@ class s3Saver:
         if(self.source_type == 'pgsql'):
             self.source_type = 'sql'
         self.s3_location = f"s3://{db_destination['s3_bucket_name']}/{self.source_type}/{db_source['db_name']}/"
+        self.s3_suffix = "" if 's3_suffix' not in db_destination.keys() or not db_destination['s3_suffix'] else db_destination['s3_suffix']
         self.partition_cols = convert_heads_to_lowercase(c_partition)
         self.unique_id = unique_id
         self.name_ = ""
@@ -94,7 +95,7 @@ class s3Saver:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
-        file_name = f"{self.s3_location}{processed_data['name']}/"
+        file_name = f"{self.s3_location}{processed_data['name']}{self.s3_suffix}/"
 
         if(processed_data['df_insert'].shape[0] > 0):
             self.inform(message = f"Attempting to insert {str(processed_data['df_insert'].memory_usage(index=True).sum())} bytes.")
@@ -106,7 +107,7 @@ class s3Saver:
                 compression='snappy',
                 mode = 'append',
                 database = self.database,
-                table = self.name_,
+                table = f"{self.name_}{self.s3_suffix}",
                 dtype = processed_data['dtypes'],
                 description = self.description,
                 dataset = True,
@@ -127,7 +128,7 @@ class s3Saver:
                 dfs_u = [x for _, x in processed_data['df_update'].groupby(self.partition_cols)]
             ## Now all the records which are of same partition are grouped together, and will be updated in the same run
             for df_u in dfs_u:
-                file_name_u = self.s3_location + processed_data['name']
+                file_name_u = f"{self.s3_location}{processed_data['name']}{self.s3_suffix}"
                 if(self.partition_cols):
                     for x in self.partition_cols:
                         file_name_u = f"{file_name_u}/{x}={str(df_u.iloc[0][x])}"
@@ -158,7 +159,7 @@ class s3Saver:
             self.inform(message = f"{n_updations-len(not_found)} updations done.")
             
             if(len(not_found) > 0):
-                file_name = f"{self.s3_location}{processed_data['name']}/"
+                file_name = f"{self.s3_location}{processed_data['name']}{self.s3_suffix}/"
                 records_update_insert = processed_data["df_update"][processed_data["df_update"][primary_keys[0]].isin(not_found)]
                 records_update_insert = convert_heads_to_lowercase(records_update_insert)
                 self.inform(message = f"Attempting to insert {records_update_insert.memory_usage(index=True).sum()} bytes.")
@@ -169,7 +170,7 @@ class s3Saver:
                     compression='snappy',
                     mode = 'append',
                     database = self.database,
-                    table = self.name_,
+                    table = f"{self.name_}{self.s3_suffix}",
                     dtype = processed_data['dtypes'],
                     description = self.description,
                     dataset = True,
