@@ -513,7 +513,7 @@ class PgSQLSaver:
                 else:
                     del_pkeys_list = f"{del_pkeys_list}, {key_str}"
 
-            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} >= {self.max_pkey_del} AND {primary_key} not in ({del_pkeys_list})"
+            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} > {self.max_pkey_del} AND {primary_key} not in ({del_pkeys_list})"
             self.inform(sql_stmt)
 
             conn = psycopg2.connect(
