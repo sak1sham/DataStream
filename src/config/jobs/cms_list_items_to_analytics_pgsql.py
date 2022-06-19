@@ -1,33 +1,38 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
         'source_type': 'pgsql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'url': os.getenv('CMDB_URL'),
         'db_name': 'cmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     "destination": {
-        "destination_type": "pgsql",
-        "specifications": [
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "3.108.43.163",
-                "username": "saksham_garg"
-            },
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "13.233.225.181",
-                "username": "saksham_garg"
-            }
-        ]
+        'ec2_1': {
+            "db_name": "cmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "15.206.171.84",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        },
+        'ec2_2': {
+            "db_name": "cmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "13.233.225.181",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        }
     },
     'tables': [            
         {
             'table_name': 'cms_list_items',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'cms_list_item_id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at',

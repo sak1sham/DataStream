@@ -1,18 +1,20 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     "destination": {
-        "destination_type": "s3",
-        "specifications": [
-            {
-                "s3_bucket_name": "database-migration-service-prod"
-            }
-        ]
+        "s3": {
+            "destination_type": "s3",
+            "s3_bucket_name": "database-migration-service-prod"
+        }
     },
     "source": {
         "db_name": "cmdb",
-        "password": "3y5HMs^2qy%&Kma",
+        "password": os.getenv('DB_PASSWORD'),
         "source_type": "pgsql",
-        "url": "cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com",
-        "username": "saksham_garg"
+        "url": os.getenv('CMDB_URL'),
+        "username": os.getenv('DB_USERNAME')
     },
     "tables": [
         {

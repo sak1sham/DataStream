@@ -1,18 +1,20 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
         'source_type': 'mongo',
-        'url': 'mongodb://manish:ACVVCH7t7rqd8kB8@supportv2.cluster-cbo3ijdmzhje.ap-south-1.docdb.amazonaws.com:27017/?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&retryWrites=false',
+        'url': os.getenv('DOCUMENT_DB_SUPPORT_SERVICE_URL'),
         'db_name': 'support-service',
         'certificate_file': 'rds-combined-ca-bundle.pem'
     },
-    'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod',
-            }
-        ]
-    }, 
+    "destination": {
+        "s3": {
+            "destination_type": "s3",
+            "s3_bucket_name": "database-migration-service-prod"
+        }
+    },
     'collections': [
         {
             'collection_name': 'support_form_items',

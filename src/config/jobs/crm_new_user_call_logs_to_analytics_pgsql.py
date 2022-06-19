@@ -1,32 +1,37 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
         'source_type': 'pgsql',
-        'url': 'crmdb.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'url': os.getenv('CRMDB_URL'),
         'db_name': 'crmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     "destination": {
-        "destination_type": "pgsql",
-        "specifications": [
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "3.108.43.163",
-                "username": "saksham_garg"
-            },
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "13.233.225.181",
-                "username": "saksham_garg"
-            }
-        ]
+        'ec2_1': {
+            "db_name": "crmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "15.206.171.84",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        },
+        'ec2_2': {
+            "db_name": "crmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "13.233.225.181",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        }
     },
     'tables': [
         {
             'table_name': 'user_call_logs',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'call_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',

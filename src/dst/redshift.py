@@ -39,7 +39,7 @@ class RedshiftSaver:
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
             self.table_list.extend(processed_data['name']) 
-        self.name_ = processed_data['name']
+        self.name_ = processed_data['name'].replace('.', '_').replace('-', '_')
         file_name = f"{self.s3_location}{self.name_}/"
         
         if 'filename' in processed_data:
@@ -114,6 +114,7 @@ class RedshiftSaver:
 
 
     def delete_table(self, table_name: str = None) -> None:
+        table_name = table_name.replace('.', '_').replace('-', '_')
         query = f"DROP TABLE {self.schema}.{table_name};"
         self.inform(query)
         with self.conn.cursor() as cursor:
@@ -123,6 +124,7 @@ class RedshiftSaver:
 
 
     def get_n_cols(self, table_name: str = None) -> int:
+        table_name = table_name.replace('.', '_').replace('-', '_')
         query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
         self.inform(query)
         df = wr.redshift.read_sql_query(
@@ -134,6 +136,7 @@ class RedshiftSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
+            table_name = table_name.replace('.', '_').replace('-', '_')
             sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
             df = wr.redshift.read_sql_query(
@@ -148,6 +151,7 @@ class RedshiftSaver:
 
     def count_n_records(self, table_name: str = None) -> int:
         try:
+            table_name = table_name.replace('.', '_').replace('-', '_')
             if(self.is_exists(table_name=table_name)):
                 sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
                 self.inform(sql_query)
@@ -186,6 +190,7 @@ class RedshiftSaver:
     
     
     def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
+        table_name = table_name.replace('.', '_').replace('-', '_')
         if(data_df.shape[0]):
             pkey_max = data_df[primary_key].max()
             if(primary_key_dtype == 'int'):
@@ -217,7 +222,6 @@ class RedshiftSaver:
                 self.conn.commit()
 
             self.inform(f"Deleted some records from destination which no longer exist at source.")
-            self.conn.close()
 
     def close(self):
         self.conn.close()

@@ -1,18 +1,20 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = { 
     'source': { 
         'source_type': 'pgsql', 
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com', 
+        'url': os.getenv('CMDB_URL'), 
         'db_name': 'wmsdb', 
-        'username': 'saksham_garg', 
-        'password': '3y5HMs^2qy%&Kma' 
+        'username': os.getenv('DB_USERNAME'), 
+        'password': os.getenv('DB_PASSWORD') 
     }, 
     'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod' 
-            }
-        ]
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod' 
+        }
     },
     'tables': [ 
         {
@@ -23,7 +25,7 @@ mapping = {
             'cron': 'self-managed',
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
-            'batch_size': 10000,
+            'batch_size': 30,
         }
     ]
 }

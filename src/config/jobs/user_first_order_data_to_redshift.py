@@ -1,26 +1,28 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
         'source_type': 'pgsql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'url': os.getenv('CMDB_URL'),
         'db_name': 'cmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     "destination": {
-        'destination_type': 'redshift',
-        'specifications': [
-            {
-                'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
-                'database': 'cmwh',
-                'user': 'cmadmin',
-                'password': 'kgDzH6Zy5xZ6HHx',
-                's3_bucket_name': 'database-migration-service-prod',
-            }
-        ]
+        'redshift': {
+            'destination_type': 'redshift',
+            'host': os.getenv('REDSHIFT_URL'),
+            'database': 'cmwh',
+            'user': os.getenv('REDSHIFT_USER'),
+            'password': os.getenv('REDSHIFT_PASSWORD'),
+            's3_bucket_name': 'database-migration-service-prod',
+        }
     },
     'tables': [            
         {
-            'table_name': 'user_first_order_data',
+            'table_name': 'analytics.user_first_order_data',
             'cron': 'self-managed',
             'mode': 'syncing',
             'primary_key': 'user_id',

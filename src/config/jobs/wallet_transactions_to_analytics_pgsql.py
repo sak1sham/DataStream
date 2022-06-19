@@ -1,37 +1,44 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
         'source_type': 'pgsql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'url': os.getenv('CMDB_URL'),
         'db_name': 'cmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     "destination": {
-        "destination_type": "pgsql",
-        "specifications": [
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "3.108.43.163",
-                "username": "saksham_garg"
-            },
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "13.233.225.181",
-                "username": "saksham_garg"
-            }
-        ]
+        'ec2_1': {
+            "db_name": "cmdb",
+            "schema": "public",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "15.206.171.84",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+        },
+        'ec2_2': {
+            "db_name": "cmdb",
+            "schema": "public",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "13.233.225.181",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+        }
     },
     'tables': [
         {
             'table_name': 'wallet_transactions',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'id',
             'primary_key_datatype': 'uuid',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
+            'partition_col': 'created_at',
+            'partition_col_format': 'datetime',
             'batch_size': 10000,
             'strict': True,
             'grace_updation_lag': {
