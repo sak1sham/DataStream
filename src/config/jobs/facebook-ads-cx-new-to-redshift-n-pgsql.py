@@ -6,10 +6,10 @@ mapping = {
     "source": {
         "source_type": "api",
         "db_name": "facebook_ads",
-        "access_token": "EAADYXJAze5QBAJ4smJN5o0STedguR7a0lKKsgL4szGJfphhXZAUgDCM9ZBontNbkyNDMLFU7EurJ0ZBF7bFa2XSMSeOZAtIhZBU8bc9XkTlqN3bYIVv3huBMhRz50UwHZCTPsjT27PKms0fWFt3MOiCTKTa0vGyXh0GLPrFoIZBK9puNBKc8ZCbZCIK9ZCgI3hQYQjUQEkOVpdVAZDZD",
-        "app_secret": "7418c7289210389ed02536f09d9b99fb",
-        "ad_account_id": "act_638598453984120",
-        "app_id": "237892067883924"
+        "access_token": os.getenv("FACEBOOK_ADS_ACCESS_TOKEN_CX"),
+        "app_secret": os.getenv("FACEBOOK_ADS_APP_SECRET_CX"),
+        "ad_account_id": os.getenv("FACEBOOK_ADS_AD_ACCOUNT_ID_CX"),
+        "app_id": os.getenv("FACEBOOK_ADS_APP_ID_CX")
     },
     "destination": {
         
