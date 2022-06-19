@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     "source": {
         "source_type": "api",
@@ -10,27 +14,27 @@ mapping = {
     "destination": {
         
         'redshift': {
-            'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+            'host': os.getenv('REDSHIFT_URL'),
             'database': 'cmwh',
-            'user': 'cmadmin',
-            'password': 'kgDzH6Zy5xZ6HHx',
+            'user': os.getenv('REDSHIFT_USER'),
+            'password': os.getenv('REDSHIFT_PASSWORD'),
             'schema': 'facebook_ads_cx_new',
             's3_bucket_name': 'database-migration-service-prod',
             'destination_type': 'redshift'
         },
         'ec_1': {
             "db_name": "dms",
-            "password": "3y5HMs^2qy%&Kma",
+            "password": os.getenv('DB_PASSWORD'),
             "url": "15.206.171.84",
-            "username": "saksham_garg",
+            "username": os.getenv('DB_USERNAME'),
             "schema": "facebook_ads_cx_new",
             'destination_type': 'pgsql'
         },
         'ec_2':  {
             "db_name": "dms",
-            "password": "3y5HMs^2qy%&Kma",
+            "password": os.getenv('DB_PASSWORD'),
             "url": "13.233.225.181",
-            "username": "saksham_garg",
+            "username": os.getenv('DB_USERNAME'),
             "schema": "facebook_ads_cx_new",
             'destination_type': 'pgsql'
         }
