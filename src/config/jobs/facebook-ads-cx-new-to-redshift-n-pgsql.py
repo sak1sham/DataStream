@@ -1,36 +1,40 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     "source": {
         "source_type": "api",
         "db_name": "facebook_ads",
-        "access_token": "EAADYXJAze5QBAJ4smJN5o0STedguR7a0lKKsgL4szGJfphhXZAUgDCM9ZBontNbkyNDMLFU7EurJ0ZBF7bFa2XSMSeOZAtIhZBU8bc9XkTlqN3bYIVv3huBMhRz50UwHZCTPsjT27PKms0fWFt3MOiCTKTa0vGyXh0GLPrFoIZBK9puNBKc8ZCbZCIK9ZCgI3hQYQjUQEkOVpdVAZDZD",
-        "app_secret": "7418c7289210389ed02536f09d9b99fb",
-        "ad_account_id": "act_638598453984120",
-        "app_id": "237892067883924"
+        "access_token": os.getenv("FACEBOOK_ADS_TOKEN_CX"),
+        "app_secret": os.getenv("FACEBOOK_ADS_APP_SECRET_CX"),
+        "ad_account_id": os.getenv("FACEBOOK_ADS_AD_ACCOUNT_ID_CX"),
+        "app_id": os.getenv("FACEBOOK_ADS_APP_ID_CX")
     },
     "destination": {
         
         'redshift': {
-            'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+            'host': os.getenv('REDSHIFT_URL'),
             'database': 'cmwh',
-            'user': 'cmadmin',
-            'password': 'kgDzH6Zy5xZ6HHx',
+            'user': os.getenv('REDSHIFT_USER'),
+            'password': os.getenv('REDSHIFT_PASSWORD'),
             'schema': 'facebook_ads_cx_new',
             's3_bucket_name': 'database-migration-service-prod',
             'destination_type': 'redshift'
         },
         'ec_1': {
             "db_name": "dms",
-            "password": "3y5HMs^2qy%&Kma",
+            "password": os.getenv('DB_PASSWORD'),
             "url": "15.206.171.84",
-            "username": "saksham_garg",
+            "username": os.getenv('DB_USERNAME'),
             "schema": "facebook_ads_cx_new",
             'destination_type': 'pgsql'
         },
         'ec_2':  {
             "db_name": "dms",
-            "password": "3y5HMs^2qy%&Kma",
+            "password": os.getenv('DB_PASSWORD'),
             "url": "13.233.225.181",
-            "username": "saksham_garg",
+            "username": os.getenv('DB_USERNAME'),
             "schema": "facebook_ads_cx_new",
             'destination_type': 'pgsql'
         }
@@ -42,7 +46,7 @@ mapping = {
             'project_name': 'facebook_ads_cx_new',
             'start_day': '-1',
             'end_day': '-1',
-            'slack_channel': 'C03GZGXUPFS',
+            'slack_channel': 'C025PTAUUFP',
             'strict': True,
             'fields': {
                 "__hevo__ingested_at": "int",
@@ -318,7 +322,7 @@ mapping = {
             'project_name': 'facebook_ads_cx_new',
             'start_day': '-1',
             'end_day': '-1',
-            'slack_channel': 'C03GZGXUPFS',
+            'slack_channel': 'C025PTAUUFP',
             'strict': True,
             'fields': {
                 'account_id': 'int',

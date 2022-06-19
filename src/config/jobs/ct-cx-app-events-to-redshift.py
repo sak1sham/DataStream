@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     "source": {
         "source_type": "api",
@@ -7,10 +11,10 @@ mapping = {
         'destination_type': 'redshift',
         'specifications': [
             {
-                'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+                'host': os.getenv('REDSHIFT_URL'),
                 'database': 'cmwh',
-                'user': 'cmadmin',
-                'password': 'kgDzH6Zy5xZ6HHx',
+                'user': os.getenv('REDSHIFT_USER'),
+                'password': os.getenv('REDSHIFT_PASSWORD'),
                 'schema': 'cm_clevertap',
                 's3_bucket_name': 'database-migration-service-prod',
             }

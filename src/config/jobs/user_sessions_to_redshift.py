@@ -1,18 +1,22 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = { 
     'source': { 
         'source_type': 'pgsql', 
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com', 
+        'url': os.getenv('CMDB_URL'), 
         'db_name': 'cmdb', 
-        'username': 'saksham_garg', 
-        'password': '3y5HMs^2qy%&Kma' 
+        'username': os.getenv('DB_USERNAME'), 
+        'password': os.getenv('DB_PASSWORD') 
     }, 
     "destination": {
         'redshift': {
             'destination_type': 'redshift',
-            'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
+            'host': os.getenv('REDSHIFT_URL'),
             'database': 'cmwh',
-            'user': 'cmadmin',
-            'password': 'kgDzH6Zy5xZ6HHx',
+            'user': os.getenv('REDSHIFT_USER'),
+            'password': os.getenv('REDSHIFT_PASSWORD'),
             's3_bucket_name': 'database-migration-service-prod',
         }
     },
