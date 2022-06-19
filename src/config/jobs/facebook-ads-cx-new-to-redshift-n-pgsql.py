@@ -46,7 +46,7 @@ mapping = {
             'project_name': 'facebook_ads_cx_new',
             'start_day': '-1',
             'end_day': '-1',
-            'slack_channel': 'C03GZGXUPFS',
+            'slack_channel': 'C025PTAUUFP',
             'strict': True,
             'fields': {
                 "__hevo__ingested_at": "int",
@@ -322,7 +322,7 @@ mapping = {
             'project_name': 'facebook_ads_cx_new',
             'start_day': '-1',
             'end_day': '-1',
-            'slack_channel': 'C03GZGXUPFS',
+            'slack_channel': 'C025PTAUUFP',
             'strict': True,
             'fields': {
                 'account_id': 'int',
