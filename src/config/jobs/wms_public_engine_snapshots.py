@@ -25,7 +25,7 @@ mapping = {
             'cron': 'self-managed',
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
-            'batch_size': 10000,
+            'batch_size': 30,
         }
     ]
 }
