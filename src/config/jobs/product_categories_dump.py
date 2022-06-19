@@ -13,12 +13,14 @@ mapping = {
     'destination': { 
         's3': {
             'destination_type': 's3', 
-            's3_bucket_name': 'database-migration-service-prod' 
+            's3_bucket_name': 'database-migration-service-prod' ,
+            's3_suffix': '_dump'
         }
     },
     'tables': [
         {
             'table_name': 'product_categories',
+            'cron': 'self-managed',
             'mode': 'dumping',
             'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
