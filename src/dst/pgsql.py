@@ -42,6 +42,7 @@ class PgSQLSaver:
         self.name_ = ""
         self.table_list = []
         self.table_exists = None
+        self.max_pkey_del = None
 
 
     def create_schema_if_not_exists(self, schema: str = None) -> bool:
@@ -489,10 +490,13 @@ class PgSQLSaver:
             pkey_max = data_df[primary_key].max()
             if(primary_key_dtype == 'int'):
                 str_pkey = str(pkey_max)
+                self.max_pkey_del = "-2147483648" if not self.max_pkey_del else self.max_pkey_del
             elif(primary_key_dtype in ['str', 'uuid']):
                 str_pkey = f"'{pkey_max}'"
+                self.max_pkey_del = '' if not self.max_pkey_del else self.max_pkey_del
             else:
                 str_pkey = f"CAST('{str_pkey.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
+                self.max_pkey_del = f"CAST('2000-01-01 00:00:00' as timestamp)" if not self.max_pkey_del else self.max_pkey_del
 
             start = True
             del_pkeys_list = ""
@@ -509,7 +513,7 @@ class PgSQLSaver:
                 else:
                     del_pkeys_list = f"{del_pkeys_list}, {key_str}"
 
-            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} not in ({del_pkeys_list})"
+            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} >= {self.max_pkey_del} AND {primary_key} not in ({del_pkeys_list})"
             self.inform(sql_stmt)
 
             conn = psycopg2.connect(
@@ -522,9 +526,10 @@ class PgSQLSaver:
             with conn.cursor() as cursor:
                 cursor.execute(sql_stmt)
                 conn.commit()
-
+            
             self.inform(f"Deleted some records from destination which no longer exist at source.")
             conn.close()
+            self.max_pkey_del = str_pkey
 
 
     def close(self):
