@@ -4,7 +4,7 @@ load_dotenv()
 import datetime
 
 settings = {
-    'fastapi_server': False,
+    'fastapi_server': True,
     'timezone': 'Asia/Kolkata',
     'notify': True,
     'encryption_store': {
