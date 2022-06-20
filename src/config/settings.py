@@ -19,6 +19,6 @@ settings = {
     },
     'slack_notif': {
         'slack_token': os.getenv('SLACK_TOKEN'),
-        'channel': 'C035WQHD291'
+        'channel': os.getenv('SLACK_CHANNEL')
     },
 }
