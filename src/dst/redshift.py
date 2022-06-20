@@ -25,6 +25,7 @@ class RedshiftSaver:
         self.is_small_data = is_small_data
         self.name_ = ""
         self.table_list = []
+        self.max_pkey_del = None
 
     def inform(self, message: str = "") -> None:
         logger.inform(s = f"{self.unique_id}: {message}")
@@ -195,10 +196,13 @@ class RedshiftSaver:
             pkey_max = data_df[primary_key].max()
             if(primary_key_dtype == 'int'):
                 str_pkey = str(pkey_max)
+                self.max_pkey_del = "-2147483648" if self.max_pkey_del is None else self.max_pkey_del
             elif(primary_key_dtype in ['str', 'uuid']):
                 str_pkey = f"'{pkey_max}'"
+                self.max_pkey_del = "''" if self.max_pkey_del is None else self.max_pkey_del
             else:
                 str_pkey = f"CAST('{str_pkey.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
+                self.max_pkey_del = f"CAST('2000-01-01 00:00:00' as timestamp)" if self.max_pkey_del is None else self.max_pkey_del
             
             start = True
             del_pkeys_list = ""
@@ -215,13 +219,14 @@ class RedshiftSaver:
                 else:
                     del_pkeys_list = f"{del_pkeys_list}, {key_str}"
             
-            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} not in ({del_pkeys_list})"
+            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} > {self.max_pkey_del} AND {primary_key} not in ({del_pkeys_list})"
             self.inform(sql_stmt)
             with self.conn.cursor() as cursor:
                 cursor.execute(sql_stmt)
                 self.conn.commit()
 
             self.inform(f"Deleted some records from destination which no longer exist at source.")
+            self.max_pkey_del = str_pkey
 
     def close(self):
         self.conn.close()
