@@ -490,13 +490,13 @@ class PgSQLSaver:
             pkey_max = data_df[primary_key].max()
             if(primary_key_dtype == 'int'):
                 str_pkey = str(pkey_max)
-                self.max_pkey_del = "-2147483648" if not self.max_pkey_del else self.max_pkey_del
+                self.max_pkey_del = "-2147483648" if self.max_pkey_del is None else self.max_pkey_del
             elif(primary_key_dtype in ['str', 'uuid']):
                 str_pkey = f"'{pkey_max}'"
-                self.max_pkey_del = '' if not self.max_pkey_del else self.max_pkey_del
+                self.max_pkey_del = "''" if self.max_pkey_del is None else self.max_pkey_del
             else:
                 str_pkey = f"CAST('{str_pkey.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
-                self.max_pkey_del = f"CAST('2000-01-01 00:00:00' as timestamp)" if not self.max_pkey_del else self.max_pkey_del
+                self.max_pkey_del = f"CAST('2000-01-01 00:00:00' as timestamp)" if self.max_pkey_del is None else self.max_pkey_del
 
             start = True
             del_pkeys_list = ""
