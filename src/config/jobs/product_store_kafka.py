@@ -11,7 +11,7 @@ mapping = {
         'kafka_username': os.getenv('KAFKA_USERNAME'),
         'kafka_password': os.getenv('KAFKA_PASSWORD'),
         'consumer_group_id': 'product_store_dms',
-        'kafka_server': os.getenv('KAFKA_URL'),
+        'kafka_server': os.getenv('KAFKA_BOOTSTRAP_SERVER'),
         'db_name': 'audit_logs'
     },
     'destination': { 
