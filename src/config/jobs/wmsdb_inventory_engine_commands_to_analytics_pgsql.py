@@ -8,7 +8,7 @@ mapping = {
             "db_name": "wmsdb",
             "schema": "public",
             "password": os.getenv('DB_PASSWORD'),
-            "url": "15.206.171.84",
+            "url": "dms2.citymall.dev",
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
         },
@@ -16,7 +16,7 @@ mapping = {
             "db_name": "wmsdb",
             "schema": "public",
             "password": os.getenv('DB_PASSWORD'),
-            "url": "13.233.225.181",
+            "url": "dms1.citymall.dev",
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
         }
