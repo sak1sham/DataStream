@@ -68,7 +68,7 @@ mapping = {
             'grace_updation_lag': {
                 'days': 1
             },
-            'masking_columns': [("user_phone", 3)]
+            'masking_columns': [("user_phone", "int", 4)]
         },
     ]
 }
