@@ -14,7 +14,7 @@ mapping = {
         'ec2_1': {
             "db_name": "cmdb",
             "password": os.getenv('DB_PASSWORD'),
-            "url": "100.64.16.188",
+            "url": "dms2.citymall.dev",
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
             "schema": "public"
