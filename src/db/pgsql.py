@@ -379,6 +379,18 @@ class PGSQLMigrate:
             col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
 
+    def mask_columns(self, df: dftype, columns: List[tuple] = []) -> dftype:
+        if len(columns) == 0:
+            return df
+        for each_element in columns:
+            masking_column, masking_column_data_type, masking_digits = each_element
+            if masking_column in df.columns:
+                if masking_column_data_type == "str":
+                    df[masking_column] = df[masking_column].apply(lambda x: x[:-masking_digits] + "X"*(masking_digits))
+                elif masking_column_data_type == "int" or masking_column == "float":
+                    multiplier = pow(10, masking_digits)
+                    df[masking_column] = df[masking_column].apply(lambda x: (x//multiplier)*multiplier)
+        return df
     
     def process_sql_query(self, table_name: str = None, sql_stmt: str = None, mode: str = "dumping", sync_mode: int = 1) -> None:
         '''
@@ -428,6 +440,8 @@ class PGSQLMigrate:
                             break
                         else:
                             data_df = pd.DataFrame(rows, columns = columns)
+                            if "masking_columns" in self.curr_mapping and len(self.curr_mapping["masking_columns"])>0 :
+                                data_df = self.mask_columns(data_df, self.curr_mapping["masking_columns"])
                             if(mode == "dumping"):
                                 ## In Dumping mode, resume mode is not supported
                                 ## Processes the data in the batch and save that batch

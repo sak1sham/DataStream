@@ -17,7 +17,7 @@ mapping = {
             's3_bucket_name': 'database-migration-service-prod',
             'destination_type': 'redshift'
         },
-        'ec_1': {
+        'ec2_1': {
             "db_name": "dms",
             "password": os.getenv('DB_PASSWORD'),
             "url": "dms2.citymall.dev",
@@ -25,7 +25,7 @@ mapping = {
             "schema": "cm_clevertap",
             'destination_type': 'pgsql'
         },
-        'ec_2':  {
+        'ec2_2':  {
             "db_name": "dms",
             "password": os.getenv('DB_PASSWORD'),
             "url": "dms1.citymall.dev",

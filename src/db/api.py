@@ -30,7 +30,7 @@ class APIMigrate:
     def err(self, error: Any = None) -> None:
         logger.err(s=f"{self.curr_mapping['unique_id']}: {error}")
 
-    def save_data_to_destination(self, processed_data: Dict[str, Any], primary_keys: List[str] = None):
+    def save_data_to_destination(self, processed_data: Dict[str, Any], primary_keys: List[str] = []):
         if(not processed_data):
             return
         else:

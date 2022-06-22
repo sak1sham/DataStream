@@ -25,14 +25,14 @@ mapping = {
             "schema": "cm_clevertap",
             'destination_type': 'pgsql'
         },
-        'ec_2':  {
-            "db_name": "dms",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "dms1.citymall.dev",
-            "username": os.getenv('DB_USERNAME'),
-            "schema": "cm_clevertap",
-            'destination_type': 'pgsql'
-        }
+        # 'ec_2':  {
+        #     "db_name": "dms",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "dms1.citymall.dev",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "schema": "cm_clevertap",
+        #     'destination_type': 'pgsql'
+        # }
     },
     
     "apis": [
