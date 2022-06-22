@@ -888,6 +888,9 @@ class PGSQLMigrate:
         '''
             primary key dtype can be str, datetime, int, uuid
         '''
+        if(primary_key_dtype in ['uuid', 'str']):
+            self.warn("Can't mirror/delete records when primary key is of datatype (string) or (uuid). Primary key needs to be auto-incremental for mirroring mode.")
+            return
         sql_stmt = f"SELECT {primary_key} FROM {table_name} ORDER BY {primary_key}"
         self.inform(sql_stmt)
         conn = psycopg2.connect(
@@ -899,13 +902,17 @@ class PGSQLMigrate:
         with conn.cursor('cursor-mirroring-primary-keys', scrollable = True) as curs:
             curs.execute(sql_stmt)
             self.inform("Executed the pgsql statement to get primary keys")
-            pkeys = curs.fetchmany(self.batch_size)
-            data_df = pd.DataFrame(pkeys, columns = [primary_key])
-            if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
-                data_df = convert_to_dtype_strict(df = data_df, schema = {primary_key: primary_key_dtype})
-            else:
-                data_df = convert_to_dtype(df = data_df, schema = {primary_key: primary_key_dtype})
-            self.saver.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
+            while(1):
+                pkeys = curs.fetchmany(self.batch_size)
+                if(pkeys):
+                    data_df = pd.DataFrame(pkeys, columns = [primary_key])
+                    if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+                        data_df = convert_to_dtype_strict(df = data_df, schema = {primary_key: primary_key_dtype})
+                    else:
+                        data_df = convert_to_dtype(df = data_df, schema = {primary_key: primary_key_dtype})
+                    self.saver.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
+                else:
+                    break
         conn.close()
         
 
