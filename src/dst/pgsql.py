@@ -43,6 +43,7 @@ class PgSQLSaver:
         self.table_list = []
         self.table_exists = None
         self.max_pkey_del = None
+        self.indexes = {}
 
 
     def create_schema_if_not_exists(self, schema: str = None) -> bool:
@@ -58,7 +59,7 @@ class PgSQLSaver:
         conn.close()
         
 
-    def check_table_exists(self, table: str = None, schema: str = None) -> bool:
+    def check_table_exists(self, table: str = None, schema: str = None, indexes: Dict[str, str] = {}) -> bool:
         conn = psycopg2.connect(
             host=self.db_destination['url'],
             database=self.db_destination['db_name'],
@@ -71,24 +72,31 @@ class PgSQLSaver:
             recs = curs.fetchall()
             exists = recs[0][0]
             conn.commit()
+        if(exists):
+            ## Drop indexes if exist
+            for index_name, index_def in indexes.items():
+                if(index_name != f"{table}_pkey"):
+                    with conn.cursor() as curs:
+                        curs.execute(f"DROP INDEX IF EXISTS {index_name};")
+                        conn.commit()
+            self.inform("Dropped indexes")
         conn.close()
         return exists
 
 
-    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], partition_col: str = None, indexes: List[str] = []) -> None:
+    def pgsql_create_table(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], partition_col: str = None, indexes: Dict[str, str] = {}) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         self.create_schema_if_not_exists(schema=schema)
         if(self.table_exists is None):
             # Not checked before
-            self.table_exists = self.check_table_exists(table=self.name_, schema=self.schema)
+            self.table_exists = self.check_table_exists(table=self.name_, schema=self.schema, indexes=indexes)
             if(self.table_exists):
                 self.inform("Table exists")
             else:
                 self.inform("Table doesn't exist")
 
         if(self.table_exists):
-
             # Already checked the existence of table, and it exists
             return
         else:
@@ -154,24 +162,11 @@ class PgSQLSaver:
                         with conn.cursor() as curs:
                             curs.execute(sql_query)
                             conn.commit()
-
-            self.inform("Creating required indexes")
-            for create_index in indexes:
-                with conn.cursor() as curs:
-                    create_index = create_index.lower()
-                    if(' exists ' not in create_index):
-                        word_before = 'index'
-                        loc = create_index.find(word_before) + len(word_before)
-                        create_index = create_index[:loc] + " if not exists" + create_index[loc:]
-                    create_index = create_index.upper()
-                    self.inform(create_index)
-                    curs.execute(create_index)
-                    conn.commit()
             conn.close()
 
 
     @retry(stop_max_attempt_number=10, wait_random_min=5000, wait_random_max=10000)
-    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], strict_mode: bool = False, partition_col: str = None, indexes: List[str] = []) -> None:
+    def pgsql_upsert_records(self, df: pd.DataFrame = None, table: str = None, schema: str = None, dtypes: Dict[str, str] = {}, primary_keys: List[str] = [], varchar_length_source: Dict[str, int] = {}, logging_flag: bool = False, json_cols: List[str] = [], strict_mode: bool = False, partition_col: str = None, indexes: Dict[str, str] = {}) -> None:
         if(df.empty):
             raise EmptyDataframe("Dataframe can not be empty.")
         try:
@@ -241,6 +236,7 @@ class PgSQLSaver:
                 conn.commit()
             conn.close()
         except Exception as e:
+            print(e)
             self.err(str(e))
             raise Exception("Unable to insert records in table.") from e
 
@@ -283,9 +279,10 @@ class PgSQLSaver:
         if('strict' in processed_data.keys() and processed_data['strict']):
             strict_mode = True
 
-        indexes = []
+        indexes = {}
         if('indexes' in processed_data.keys() and processed_data['indexes']):
             indexes = processed_data['indexes']
+        self.indexes.update(indexes)
 
         if('col_rename' in processed_data and processed_data['col_rename']):
             for key, val in processed_data['col_rename'].items():
@@ -533,4 +530,26 @@ class PgSQLSaver:
 
 
     def close(self):
-        pass
+        try:
+            conn = psycopg2.connect(
+                host=self.db_destination['url'],
+                database=self.db_destination['db_name'],
+                user=self.db_destination['username'],
+                password=self.db_destination['password']
+            )
+            self.inform("Creating required indexes")
+            for _, create_index in self.indexes.items():
+                with conn.cursor() as curs:
+                    create_index = create_index.lower()
+                    if(' exists ' not in create_index):
+                        word_before = 'index'
+                        loc = create_index.find(word_before) + len(word_before)
+                        create_index = create_index[:loc] + " if not exists" + create_index[loc:]
+                    create_index = create_index.upper()
+                    self.inform(create_index)
+                    curs.execute(create_index)
+                    conn.commit()
+            conn.close()
+        except Exception as e:
+            self.inform(str(e))
+            raise
