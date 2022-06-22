@@ -26,6 +26,14 @@ mapping = {
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
             "schema": "analytics"
+        },
+        'ec2_3': {
+            "db_name": "cmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms3.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "analytics"
         }
     },
     'tables': [            
@@ -33,8 +41,8 @@ mapping = {
             'table_name': 'analytics.sku_details',
             'cron': 'self-managed',
             'mode': 'mirroring',
-            'primary_key': 'sku_id',
-            'primary_key_datatype': 'str',
+            'primary_key': 'id',
+            'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,

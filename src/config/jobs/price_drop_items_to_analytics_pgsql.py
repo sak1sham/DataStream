@@ -26,6 +26,14 @@ mapping = {
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
             "schema": "public"
+        },
+        'ec2_3': {
+            "db_name": "cmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms3.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
         }
     },
     'tables': [ 
