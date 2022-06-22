@@ -73,7 +73,7 @@ class PgSQLSaver:
             exists = recs[0][0]
             conn.commit()
         if(exists):
-            ## Drop indexes if exist
+            ## Drop indexes if exist (except primary key index)
             for index_name, index_def in indexes.items():
                 if(index_name != f"{table}_pkey"):
                     with conn.cursor() as curs:
@@ -236,7 +236,6 @@ class PgSQLSaver:
                 conn.commit()
             conn.close()
         except Exception as e:
-            print(e)
             self.err(str(e))
             raise Exception("Unable to insert records in table.") from e
 
@@ -531,6 +530,7 @@ class PgSQLSaver:
 
     def close(self):
         try:
+            ## create indexes before closing this saver
             conn = psycopg2.connect(
                 host=self.db_destination['url'],
                 database=self.db_destination['db_name'],
