@@ -6,7 +6,6 @@ from dst.main import DMS_exporter
 from helper.sigterm import GracefulKiller, NormalKiller
 from notifications.slack_notify import send_message
 from config.settings import settings
-import itertools
 
 import pandas as pd
 import psycopg2
@@ -51,7 +50,7 @@ class PGSQLMigrate:
             else:
                 self.stop_time = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date() + datetime.timedelta(days=1), settings['cut_off_time']).astimezone(tz=self.tz_info)
             self.inform(f"Cut-off time specified. Will be stopping after {str(self.stop_time)}")
-        self.indexes = []
+        self.indexes = {}
 
 
     def inform(self, message: str = None) -> None:
@@ -919,7 +918,7 @@ class PGSQLMigrate:
             table_name = x[1]
 
         sql_stmt = f'''
-            SELECT indexdef
+            SELECT indexname, indexdef
             FROM pg_indexes
             WHERE
             schemaname = '{schema_name}'
@@ -933,12 +932,14 @@ class PGSQLMigrate:
             password = self.db['source']['password']
         )
 
-        self.indexes = []
+        self.indexes = {}
         with conn.cursor('getting-indexes', scrollable = True) as curs:
             curs.execute(sql_stmt)
             self.inform("Executed the pgsql statement to get indexes")
             recs = curs.fetchall()
-            self.indexes = list(itertools.chain.from_iterable(recs))
+            if(recs):
+                df = pd.DataFrame(recs, columns = ['index_name', 'index_def'])
+                self.indexes = dict(zip(df['index_name'], df['index_def']))
         conn.close()
 
 
