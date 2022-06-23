@@ -920,11 +920,16 @@ class PGSQLMigrate:
 
     def get_indexes(self, table: str = None) -> None:
         if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col']):
-            self.indexes =  self.curr_mapping['indexes'] if 'indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict) else {}
+            if('indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict)):
+                self.indexes = self.curr_mapping['indexes']
+            else:
+                self.indexes = {}
+                self.warn("Need to specify indexes in job mapping when partitioning table")
             return
         if('indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict)):
             self.indexes = self.curr_mapping['indexes']
             return
+
         schema_name = 'public'
         table_name = table
         x = table.split('.')
