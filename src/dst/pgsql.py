@@ -542,6 +542,12 @@ class PgSQLSaver:
             self.inform("Creating required indexes")
             for _, create_index in self.indexes.items():
                 with conn.cursor() as curs:
+                    create_index = create_index.lower()
+                    if(' exists ' not in create_index):
+                        word_before = 'index'
+                        loc = create_index.find(word_before) + len(word_before)
+                        create_index = create_index[:loc] + " if not exists" + create_index[loc:]
+                    create_index = create_index.upper()
                     self.inform(create_index)
                     curs.execute(create_index)
                     conn.commit()
