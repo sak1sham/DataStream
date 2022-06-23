@@ -810,7 +810,7 @@ class PGSQLMigrate:
             buffer_hours = 0 if 'hours' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['hours'] else self.curr_mapping['buffer_updation_lag']['hours']
             buffer_minutes = 0 if 'minutes' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['minutes'] else self.curr_mapping['buffer_updation_lag']['minutes']
             self.inform("")
-            self.inform(f"Starting updation-check for newly inserted records which were updated in the {buffer_days} days, {buffer_hours} hours, {buffer_minutes} and minutes before the job started.")
+            self.inform(f"Starting updation-check for newly inserted records which were updated in the {buffer_days} days, {buffer_hours} hours, and {buffer_minutes} minutes before the job started.")
             curr = get_last_migrated_record(self.curr_mapping['unique_id'])
             if(curr and self.n_insertions > 0 and 'record_id' in curr.keys() and curr['record_id']):
                 ## If some records were inserted, we need to check updates for last few records as per precise time 
