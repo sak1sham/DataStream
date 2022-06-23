@@ -304,7 +304,7 @@ class PGSQLMigrate:
             processed_data['json_cols'] = self.json_cols
             processed_data['strict'] = True if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']) else False
             processed_data['partition_col'] = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and 'partition_col_format' in self.curr_mapping.keys() and self.curr_mapping['partition_col_format'] == 'datetime' else None
-            processed_data['indexes'] = self.curr_mapping['indexes'] if 'indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict) else self.indexes
+            processed_data['indexes'] = self.indexes
             self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
 
@@ -919,6 +919,12 @@ class PGSQLMigrate:
 
 
     def get_indexes(self, table: str = None) -> None:
+        if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col']):
+            self.indexes =  self.curr_mapping['indexes'] if 'indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict) else {}
+            return
+        if('indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict)):
+            self.indexes = self.curr_mapping['indexes']
+            return
         schema_name = 'public'
         table_name = table
         x = table.split('.')
