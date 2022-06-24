@@ -378,6 +378,7 @@ class PGSQLMigrate:
             col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
 
+
     def mask_columns(self, df: dftype, columns: List[tuple] = []) -> dftype:
         if len(columns) == 0:
             return df
@@ -390,7 +391,8 @@ class PGSQLMigrate:
                     multiplier = pow(10, masking_digits)
                     df[masking_column] = df[masking_column].apply(lambda x: (x//multiplier)*multiplier)
         return df
-    
+
+
     def process_sql_query(self, table_name: str = None, sql_stmt: str = None, mode: str = "dumping", sync_mode: int = 1) -> None:
         '''
             The pgsql query is prepared by various processing functions. This function helps in processing and saving data in accordance to that PGSQL query
@@ -808,7 +810,7 @@ class PGSQLMigrate:
             buffer_hours = 0 if 'hours' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['hours'] else self.curr_mapping['buffer_updation_lag']['hours']
             buffer_minutes = 0 if 'minutes' not in self.curr_mapping['buffer_updation_lag'].keys() or not self.curr_mapping['buffer_updation_lag']['minutes'] else self.curr_mapping['buffer_updation_lag']['minutes']
             self.inform("")
-            self.inform(f"Starting updation-check for newly inserted records which were updated in the {buffer_days} days, {buffer_hours} hours, {buffer_minutes} and minutes before the job started.")
+            self.inform(f"Starting updation-check for newly inserted records which were updated in the {buffer_days} days, {buffer_hours} hours, and {buffer_minutes} minutes before the job started.")
             curr = get_last_migrated_record(self.curr_mapping['unique_id'])
             if(curr and self.n_insertions > 0 and 'record_id' in curr.keys() and curr['record_id']):
                 ## If some records were inserted, we need to check updates for last few records as per precise time 
@@ -914,40 +916,51 @@ class PGSQLMigrate:
                 else:
                     break
         conn.close()
-        
+
 
     def get_indexes(self, table: str = None) -> None:
-        schema_name = 'public'
-        table_name = table
-        x = table.split('.')
-        if(len(x) > 1):
-            schema_name = x[0]
-            table_name = x[1]
+        if('indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict)):
+            self.indexes = self.curr_mapping['indexes']
+        else:
+            schema_name = 'public'
+            table_name = table
+            x = table.split('.')
+            if(len(x) > 1):
+                schema_name = x[0]
+                table_name = x[1]
 
-        sql_stmt = f'''
-            SELECT indexname, indexdef
-            FROM pg_indexes
-            WHERE
-            schemaname = '{schema_name}'
-            AND
-            tablename = '{table_name}';
-        '''
-        conn = psycopg2.connect(
-            host = self.db['source']['url'],
-            database = self.db['source']['db_name'],
-            user = self.db['source']['username'],
-            password = self.db['source']['password']
-        )
+            sql_stmt = f'''
+                SELECT indexname, indexdef
+                FROM pg_indexes
+                WHERE
+                schemaname = '{schema_name}'
+                AND
+                tablename = '{table_name}';
+            '''
+            conn = psycopg2.connect(
+                host = self.db['source']['url'],
+                database = self.db['source']['db_name'],
+                user = self.db['source']['username'],
+                password = self.db['source']['password']
+            )
 
-        self.indexes = {}
-        with conn.cursor('getting-indexes', scrollable = True) as curs:
-            curs.execute(sql_stmt)
-            self.inform("Executed the pgsql statement to get indexes")
-            recs = curs.fetchall()
-            if(recs):
-                df = pd.DataFrame(recs, columns = ['index_name', 'index_def'])
-                self.indexes = dict(zip(df['index_name'], df['index_def']))
-        conn.close()
+            self.indexes = {}
+            with conn.cursor('getting-indexes', scrollable = True) as curs:
+                curs.execute(sql_stmt)
+                self.inform("Executed the pgsql statement to get indexes")
+                recs = curs.fetchall()
+                if(recs):
+                    df = pd.DataFrame(recs, columns = ['index_name', 'index_def'])
+                    self.indexes = dict(zip(df['index_name'], df['index_def']))
+            conn.close()
+
+        processed_indexes = {}
+        for key, val in self.indexes.items():
+            if ('_pkey' in val.lower() or ('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and ' unique ' not in val.lower())):
+                processed_indexes[key] = val
+            else:
+                self.warn(f"Can\'t have UNIQUE indexes while partitioning tables in PgSQL. Skipping \"{key}\"")
+        self.indexes = processed_indexes
 
 
     def process(self) -> Tuple[int]:

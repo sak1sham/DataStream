@@ -34,8 +34,6 @@ mapping = {
             'strict': True,
             "cron": "self-managed",
             "mode": "logging",
-            "partition_col": "timestamp",
-            "partition_col_format": "datetime",
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "rm_events",
