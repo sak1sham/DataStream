@@ -42,8 +42,6 @@ mapping = {
             },
             "improper_bookmarks": False,
             "mode": "mirroring",
-            "partition_col": "created_at",
-            "partition_col_format": "datetime",
             "primary_key": "command_id",
             "primary_key_datatype": "uuid",
             "table_name": "shipment_rto_commands",

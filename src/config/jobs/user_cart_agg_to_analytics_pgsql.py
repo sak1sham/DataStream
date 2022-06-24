@@ -42,8 +42,6 @@ mapping = {
             },
             "improper_bookmarks": False,
             "mode": "mirroring",
-            "partition_col": "first_cart_created_at",
-            "partition_col_format": "datetime",
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "user_cart_agg",

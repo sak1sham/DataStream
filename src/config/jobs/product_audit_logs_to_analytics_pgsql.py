@@ -41,8 +41,6 @@ mapping = {
             'table_name': 'product_audit_logs',
             'cron': 'self-managed',
             'mode': 'mirroring',
-            'partition_col': 'created_at',
-            'partition_col_format': 'datetime',
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',

@@ -43,8 +43,6 @@ mapping = {
             'mode': 'mirroring',
             'primary_key': 'id',
             'primary_key_datatype': 'str',
-            'partition_col': 'created_at',
-            'partition_col_format': 'datetime',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,

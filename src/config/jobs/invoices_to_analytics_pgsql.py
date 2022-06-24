@@ -42,8 +42,6 @@ mapping = {
             'strict': True,
             "cron": "self-managed",
             "mode": "logging",
-            "partition_col": "created_at",
-            "partition_col_format": "datetime",
             "primary_key": "invoice_number",
             "primary_key_datatype": "str",
             "table_name": "invoices",

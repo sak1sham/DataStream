@@ -33,8 +33,6 @@ mapping = {
             'table_name': 'routes',
             'cron': 'self-managed',
             'mode': 'mirroring', 
-            'partition_col': 'started_at',
-            "partition_col_format": "datetime",
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',

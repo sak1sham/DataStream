@@ -34,8 +34,6 @@ mapping = {
             'strict': True,
             "cron": "self-managed",
             "mode": "dumping",
-            "partition_col": "migration_snapshot_date",
-            "partition_col_format": "datetime",
             "table_name": "shipment_registry_transactions",
         }
     ]

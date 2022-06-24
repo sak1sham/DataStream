@@ -42,8 +42,6 @@ mapping = {
             },
             "improper_bookmarks": False,
             "mode": "mirroring",
-            "partition_col": "created_at",
-            "partition_col_format": "datetime",
             "primary_key": "id",
             "primary_key_datatype": "int",
             "table_name": "qr_codes",

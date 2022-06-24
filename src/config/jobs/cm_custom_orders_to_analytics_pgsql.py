@@ -50,8 +50,6 @@ mapping = {
             },
             "improper_bookmarks": False,
             "mode": "mirroring",
-            "partition_col": "created_at",
-            "partition_col_format": "datetime",
             "primary_key": "order_id",
             "primary_key_datatype": "int",
             "table_name": "cm_custom_orders",

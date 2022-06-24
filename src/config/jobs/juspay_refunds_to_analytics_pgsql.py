@@ -50,8 +50,6 @@ mapping = {
             },
             "improper_bookmarks": False,
             "mode": "mirroring",
-            "partition_col": "refund_date_created",
-            "partition_col_format": "datetime",
             "primary_key": "event_id",
             "primary_key_datatype": "str",
             "table_name": "juspay_refunds",
