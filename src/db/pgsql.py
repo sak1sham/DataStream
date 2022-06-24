@@ -919,48 +919,48 @@ class PGSQLMigrate:
 
 
     def get_indexes(self, table: str = None) -> None:
-        if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col']):
-            if('indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict)):
-                self.indexes = self.curr_mapping['indexes']
-            else:
-                self.indexes = {}
-                self.warn("Need to specify indexes in job mapping when partitioning table")
-            return
         if('indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict)):
             self.indexes = self.curr_mapping['indexes']
-            return
+        else:
+            schema_name = 'public'
+            table_name = table
+            x = table.split('.')
+            if(len(x) > 1):
+                schema_name = x[0]
+                table_name = x[1]
 
-        schema_name = 'public'
-        table_name = table
-        x = table.split('.')
-        if(len(x) > 1):
-            schema_name = x[0]
-            table_name = x[1]
+            sql_stmt = f'''
+                SELECT indexname, indexdef
+                FROM pg_indexes
+                WHERE
+                schemaname = '{schema_name}'
+                AND
+                tablename = '{table_name}';
+            '''
+            conn = psycopg2.connect(
+                host = self.db['source']['url'],
+                database = self.db['source']['db_name'],
+                user = self.db['source']['username'],
+                password = self.db['source']['password']
+            )
 
-        sql_stmt = f'''
-            SELECT indexname, indexdef
-            FROM pg_indexes
-            WHERE
-            schemaname = '{schema_name}'
-            AND
-            tablename = '{table_name}';
-        '''
-        conn = psycopg2.connect(
-            host = self.db['source']['url'],
-            database = self.db['source']['db_name'],
-            user = self.db['source']['username'],
-            password = self.db['source']['password']
-        )
-
-        self.indexes = {}
-        with conn.cursor('getting-indexes', scrollable = True) as curs:
-            curs.execute(sql_stmt)
-            self.inform("Executed the pgsql statement to get indexes")
-            recs = curs.fetchall()
-            if(recs):
-                df = pd.DataFrame(recs, columns = ['index_name', 'index_def'])
-                self.indexes = dict(zip(df['index_name'], df['index_def']))
-        conn.close()
+            self.indexes = {}
+            with conn.cursor('getting-indexes', scrollable = True) as curs:
+                curs.execute(sql_stmt)
+                self.inform("Executed the pgsql statement to get indexes")
+                recs = curs.fetchall()
+                if(recs):
+                    df = pd.DataFrame(recs, columns = ['index_name', 'index_def'])
+                    self.indexes = dict(zip(df['index_name'], df['index_def']))
+            conn.close()
+        if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col']):
+            processed_indexes = {}
+            for key, val in self.indexes.items():
+                if (' unique ' not in val.lower()):
+                    processed_indexes[key] = val
+                else:
+                    self.warn(f"Can\'t have UNIQUE indexes while partitioning tables in PgSQL. Skipping \"{key}\"")
+            self.indexes = processed_indexes
 
 
     def process(self) -> Tuple[int]:
