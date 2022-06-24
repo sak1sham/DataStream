@@ -75,9 +75,11 @@ class PgSQLSaver:
         if(exists):
             ## Drop indexes if exist (except primary key index)
             for index_name, index_def in indexes.items():
-                if(index_name != f"{table}_pkey"):
+                if "_pkey" not in index_name.lower():
                     with conn.cursor() as curs:
-                        curs.execute(f"DROP INDEX IF EXISTS {index_name};")
+                        sql_stmt = f"DROP INDEX IF EXISTS \"{index_name}\";"
+                        self.inform(sql_stmt)
+                        curs.execute(sql_stmt)
                         conn.commit()
             self.inform("Dropped indexes")
         conn.close()
@@ -357,6 +359,7 @@ class PgSQLSaver:
             conn.commit()
         conn.close()
         self.inform(f"Deleted {table_name} from PgSQL schema {self.schema}")
+
 
     def get_n_cols(self, table_name: str = None) -> int:
         if(self.user_defined_schema):

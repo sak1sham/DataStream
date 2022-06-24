@@ -17,22 +17,22 @@ mapping = {
             's3_bucket_name': 'database-migration-service-prod',
             'destination_type': 'redshift'
         },
-        'ec_1': {
+        # 'ec2_1': {
+        #     "db_name": "cmdb",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "dms2.citymall.dev",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "schema": "public",
+        #     'destination_type': 'pgsql'
+        # },
+        'ec2_2':  {
             "db_name": "cmdb",
             "password": os.getenv('DB_PASSWORD'),
-            "url": "dms2.citymall.dev",
+            "url": "dms1.citymall.dev",
             "username": os.getenv('DB_USERNAME'),
             "schema": "public",
             'destination_type': 'pgsql'
         },
-        # 'ec_2':  {
-        #     "db_name": "dms",
-        #     "password": os.getenv('DB_PASSWORD'),
-        #     "url": "dms1.citymall.dev",
-        #     "username": os.getenv('DB_USERNAME'),
-        #     "schema": "cm_clevertap",
-        #     'destination_type': 'pgsql'
-        # },
         # 'ec2_3': {
         #     "db_name": "cmdb",
         #     "password": os.getenv('DB_PASSWORD'),
@@ -45,7 +45,7 @@ mapping = {
     
     "apis": [
         {
-            'api_name':'cm_clevertap_cx_app_events',
+            'api_name':'cx_app_events',
             'project_name': 'cx_app',
             'event_names': '*',
             'start_day': '-1',

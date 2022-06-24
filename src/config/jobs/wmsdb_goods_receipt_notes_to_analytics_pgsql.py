@@ -50,8 +50,6 @@ mapping = {
             },
             "improper_bookmarks": False,
             "mode": "mirroring",
-            "partition_col": "created_at",
-            "partition_col_format": "datetime",
             "primary_key": "transaction_group_id",
             "primary_key_datatype": "int",
             "table_name": "goods_receipt_notes",

@@ -11,22 +11,30 @@ mapping = {
         'password': os.getenv('DB_PASSWORD')
     },
     "destination": {
-        'ec2_1': {
-            "db_name": "crmdb",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "dms2.citymall.dev",
-            "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
-            "schema": "public"
-        },
+        # 'ec2_1': {
+        #     "db_name": "cmdb",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "dms2.citymall.dev",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "destination_type": "pgsql",
+        #     "schema": "crm"
+        # },
         'ec2_2': {
-            "db_name": "crmdb",
+            "db_name": "cmdb",
             "password": os.getenv('DB_PASSWORD'),
             "url": "dms1.citymall.dev",
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
-            "schema": "public"
-        }
+            "schema": "crm"
+        },
+        # 'ec2_3': {
+        #     "db_name": "cmdb",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "dms3.citymall.dev",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "destination_type": "pgsql",
+        #     "schema": "crm"
+        # }
     },
     'tables': [
         {
@@ -35,8 +43,6 @@ mapping = {
             'primary_key': 'call_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',
-            'partition_col': 'created_at',
-            'partition_col_format': 'datetime',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
             'batch_size': 10000,

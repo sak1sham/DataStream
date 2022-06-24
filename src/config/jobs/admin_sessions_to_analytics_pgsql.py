@@ -5,14 +5,14 @@ load_dotenv()
 
 mapping = {
     "destination": {
-        'ec2_1': {
-            "db_name": "cmdb",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "dms2.citymall.dev",
-            "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
-            "schema": "public"
-        },
+        # 'ec2_1': {
+        #     "db_name": "cmdb",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "dms2.citymall.dev",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "destination_type": "pgsql",
+        #     "schema": "public"
+        # },
         'ec2_2': {
             "db_name": "cmdb",
             "password": os.getenv('DB_PASSWORD'),
@@ -21,14 +21,14 @@ mapping = {
             "destination_type": "pgsql",
             "schema": "public"
         },
-        'ec2_3': {
-            "db_name": "cmdb",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "dms3.citymall.dev",
-            "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
-            "schema": "public"
-        }
+        # 'ec2_3': {
+        #     "db_name": "cmdb",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "dms3.citymall.dev",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "destination_type": "pgsql",
+        #     "schema": "public"
+        # }
     },
     "source": {
         "db_name": "cmdb",
@@ -51,8 +51,6 @@ mapping = {
             },
             "improper_bookmarks": False,
             "mode": "mirroring",
-            "partition_col": "created_at",
-            "partition_col_format": "datetime",
             "primary_key": "id",
             "primary_key_datatype": "uuid",
             "table_name": "admin_sessions",
