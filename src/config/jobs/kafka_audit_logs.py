@@ -1,22 +1,25 @@
 from typing import Dict
 import json
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
         'source_type': 'kafka',
-        'kafka_username': 'kafka-client-user',
-        'kafka_password': 'JjZXllrTsb6KgOVM',
+        'kafka_username': os.getenv('KAFKA_USERNAME'),
+        'kafka_password': os.getenv('KAFKA_PASSWORD'),
         'consumer_group_id': 'dms_kafka_consumer_group_kafka',
-        'kafka_server': 'b-2.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-3.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-1.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-4.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-5.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096,b-6.cm-live-cluster.3980tb.c4.kafka.ap-south-1.amazonaws.com:9096',
+        'kafka_server': os.getenv('KAFKA_BOOTSTRAP_SERVER'),
         'db_name': 'audit_logs'
     },
-    'destination': {
-        'destination_type': 's3',
-        'specifications': [
-            {
-                's3_bucket_name': 'dms-kafka',
-            }
-        ]
+    'destination': { 
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'dms-kafka',
+            's3_suffix': '_2'
+        }
     },
     'topics': [
         {
@@ -35,7 +38,6 @@ mapping = {
                 'date': 'datetime',
             },
             'cron': 'self-managed',
-            'to_partition': True,
             'partition_col': 'date',
             'partition_col_format': ['datetime'],
             'col_rename': {
@@ -44,11 +46,11 @@ mapping = {
         },
     ],
     'testing': {
-        'test_type': 'sql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'test_type': 'pgsql',
+        'url': os.getenv('CMDB_URL'),
         'db_name': 'cmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma',
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD'),
         'table_name': 'audit_logs',
         'field_to_compare': 'created_at',
         'field_format': 'datetime',

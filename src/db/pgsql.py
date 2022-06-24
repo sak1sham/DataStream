@@ -1,4 +1,4 @@
-from helper.util import convert_to_datetime, convert_to_dtype, get_athena_dtypes
+from helper.util import convert_to_datetime, convert_to_dtype, get_athena_dtypes, convert_to_dtype_strict
 from db.encr_db import get_data_from_encr_db, get_last_run_cron_job, set_last_run_cron_job, set_last_migrated_record, get_last_migrated_record, get_last_migrated_record_prev_job, delete_metadata_from_mongodb, save_recovery_data, get_recovery_data, delete_recovery_data, get_job_records, save_job_data, get_job_mb
 from helper.exceptions import *
 from helper.logger import logger
@@ -50,10 +50,8 @@ class PGSQLMigrate:
             else:
                 self.stop_time = datetime.datetime.combine(datetime.datetime.now(tz=self.tz_info).date() + datetime.timedelta(days=1), settings['cut_off_time']).astimezone(tz=self.tz_info)
             self.inform(f"Cut-off time specified. Will be stopping after {str(self.stop_time)}")
-        
-        if('specifications' not in self.db['destination'].keys() or not self.db['destination']['specifications'] or not isinstance(self.db['destination']['specifications'], list)):
-            raise IncorrectMapping("Destination specifications should be supplied as an instance of list")
-        
+        self.indexes = {}
+
 
     def inform(self, message: str = None) -> None:
         logger.inform(s = f"{self.curr_mapping['unique_id']}: {message}")
@@ -74,23 +72,12 @@ class PGSQLMigrate:
         '''
         self.last_run_cron_job = get_last_run_cron_job(self.curr_mapping['unique_id'])
         self.curr_run_cron_job = pytz.utc.localize(datetime.datetime.utcnow())
-
-        self.saver_list: List[DMS_exporter] = []
-        list_destinations = self.db['destination']['specifications']
-        self.db['destination'].pop('specifications')
-        self.saver_list: List[DMS_exporter] = []
-        for destination in list_destinations:
-            self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
-            for key in destination.keys():
-                self.db['destination'][key] = destination[key]
-            self.saver_list.append(DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id']))
+        self.saver = DMS_exporter(db = self.db, uid = self.curr_mapping['unique_id'])
         
-        self.db['destination'] = {'destination_type': self.db['destination']['destination_type']}
-        self.db['destination']['specifications'] = list_destinations
 
     def save_job_working_data(self, table_name: str = None, status: bool = True) -> None:
         self.curr_megabytes_processed = self.curr_megabytes_processed/1e6
-        total_records = self.saver_list[0].count_n_records(table_name = table_name)
+        total_records = self.saver.count_n_records(table_name = table_name)
         total_time = (datetime.datetime.utcnow() - self.start_time).total_seconds()
         total_megabytes = 0
         if(self.n_insertions + self.n_updations > 0):
@@ -172,35 +159,24 @@ class PGSQLMigrate:
             Function to add partition columns to dataframe if specified in migration_mapping.
         '''
         self.partition_for_parquet = []
-        if('partition_col' in self.curr_mapping.keys()):
-            if(isinstance(self.curr_mapping['partition_col'], str)):
-                self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+        if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and self.db['destination']['destination_type'] == 's3'):
             if('partition_col_format' not in self.curr_mapping.keys()):
-                self.curr_mapping['partition_col_format'] = ['str']
-            if(isinstance(self.curr_mapping['partition_col_format'], str)):
-                self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
-            while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
-                self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
-            for i in range(len(self.curr_mapping['partition_col'])):
-                col = self.curr_mapping['partition_col'][i].lower()
-                col_form = self.curr_mapping['partition_col_format'][i]
-                parq_col = f"parquet_format_{col}"
-                if(col == 'migration_snapshot_date' or col_form == 'datetime'):
-                    self.partition_for_parquet.extend([f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"])
-                    temp = df[col].apply(lambda x: convert_to_datetime(x, self.tz_info))
-                    df[f"{parq_col}_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
-                    df[f"{parq_col}_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
-                    df[f"{parq_col}_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
-                elif(col_form == 'str'):
-                    self.partition_for_parquet.extend([parq_col])
-                    df[parq_col] = df[col].astype(str)
-                elif(col_form == 'int'):
-                    self.partition_for_parquet.extend([parq_col])
-                    df[parq_col] = df[col].fillna(0).astype(int)
-                else:
-                    raise UnrecognizedFormat(f"{str(col_form)}. Partition_col_format can be int, str or datetime.") 
-        else:
-            self.warn(message="Unable to find partition_col. Continuing without partitioning.")
+                self.curr_mapping['partition_col_format'] = 'str'
+            parq_col = f"parquet_format_{self.curr_mapping['partition_col'].lower()}"
+            if(self.curr_mapping['partition_col'].lower() == 'migration_snapshot_date' or self.curr_mapping['partition_col_format'] == 'datetime'):
+                self.partition_for_parquet = [f"{parq_col}_year", f"{parq_col}_month", f"{parq_col}_day"]
+                temp = df[self.curr_mapping['partition_col'].lower()].apply(lambda x: convert_to_datetime(x, self.tz_info))
+                df[f"{parq_col}_year"] = temp.dt.year.astype('float64', copy=False).astype(str)
+                df[f"{parq_col}_month"] = temp.dt.month.astype('float64', copy=False).astype(str)
+                df[f"{parq_col}_day"] = temp.dt.day.astype('float64', copy=False).astype(str)
+            elif(self.curr_mapping['partition_col_format'] == 'str'):
+                self.partition_for_parquet = [parq_col]
+                df[parq_col] = df[self.curr_mapping['partition_col'].lower()].astype(str)
+            elif(self.curr_mapping['partition_col_format'] == 'int'):
+                self.partition_for_parquet = [parq_col]
+                df[parq_col] = df[self.curr_mapping['partition_col'].lower()].fillna(0).astype(int)
+            else:
+                raise UnrecognizedFormat(f"{str(self.curr_mapping['partition_col_format'])}. Partition_col_format can be int, str or datetime.") 
         return df
 
 
@@ -215,11 +191,13 @@ class PGSQLMigrate:
         '''
         df['migration_snapshot_date'] = self.curr_run_cron_job
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            self.add_partitions(df)
-        df_insert = convert_to_dtype(df, col_dtypes)
+        self.add_partitions(df)
+        if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+            df = convert_to_dtype_strict(df=df, schema=col_dtypes)
+        else:
+            df = convert_to_dtype(df=df, schema=col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
-        return {'name': table_name, 'df_insert': df_insert, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
+        return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
 
     def inserting_data(self, df: dftype = pd.DataFrame({}), table_name: str = None, col_dtypes: Dict[str, str] = {}, mode: str = None) -> Dict[str, Any]:
@@ -238,8 +216,7 @@ class PGSQLMigrate:
         
         ## Adding partition if required
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            self.add_partitions(df)
+        self.add_partitions(df)
  
         ## Adding a primary key "unique_migration_record_id" for every record
         df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
@@ -249,7 +226,10 @@ class PGSQLMigrate:
             df, _ = self.distribute_records(collection_encr, df, mode='insert')
 
         ## Convert to required data types and return
-        df = convert_to_dtype(df, col_dtypes)
+        if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+            df = convert_to_dtype_strict(df=df, schema=col_dtypes)
+        else:
+            df = convert_to_dtype(df=df, schema=col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
         return {'name': table_name, 'df_insert': df, 'df_update': pd.DataFrame({}), 'dtypes': dtypes}
 
@@ -268,8 +248,7 @@ class PGSQLMigrate:
 
         ## Adding partition if required
         self.partition_for_parquet = []
-        if('to_partition' in self.curr_mapping.keys() and self.curr_mapping['to_partition']):
-            self.add_partitions(df)
+        self.add_partitions(df)
 
         ## Adding a primary key "unique_migration_record_id" for every record
         df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
@@ -279,7 +258,10 @@ class PGSQLMigrate:
             _, df = self.distribute_records(collection_encr, df, mode='update')
         
         ## Convert to required data types and return
-        df = convert_to_dtype(df, col_dtypes)
+        if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+            df = convert_to_dtype_strict(df=df, schema=col_dtypes)
+        else:
+            df = convert_to_dtype(df=df, schema=col_dtypes)
         dtypes = get_athena_dtypes(col_dtypes)
         return {'name': table_name, 'df_insert': pd.DataFrame({}), 'df_update': df, 'dtypes': dtypes}
 
@@ -320,8 +302,10 @@ class PGSQLMigrate:
                 else:
                     self.warn("logging_flag works only in logging mode.")
             processed_data['json_cols'] = self.json_cols
-            for saver_i in self.saver_list:
-                saver_i.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
+            processed_data['strict'] = True if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']) else False
+            processed_data['partition_col'] = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and 'partition_col_format' in self.curr_mapping.keys() and self.curr_mapping['partition_col_format'] == 'datetime' else None
+            processed_data['indexes'] = self.indexes
+            self.saver.save(processed_data = processed_data, primary_keys = primary_keys, c_partition = c_partition)
 
 
     def get_list_tables(self) -> List[str]:
@@ -341,12 +325,14 @@ class PGSQLMigrate:
                 user = self.db['source']['username'],
                 password = self.db['source']['password']
             )
-            try:            
+            try:  
+                table_names = []          
                 with conn.cursor() as curs:
                     curs.execute(sql_stmt)
                     rows = curs.fetchall()
                     table_names = [str(f"{t[0]}.{t[1]}") for t in rows]
-                    return table_names
+                conn.close()
+                return table_names
             except Exception as e:
                 raise ProcessingError("Caught some exception while getting list of all tables.") from e
         except ProcessingError:
@@ -392,6 +378,18 @@ class PGSQLMigrate:
             col_dtypes['migration_snapshot_date'] = 'datetime'
         return col_dtypes
 
+    def mask_columns(self, df: dftype, columns: List[tuple] = []) -> dftype:
+        if len(columns) == 0:
+            return df
+        for each_element in columns:
+            masking_column, masking_column_data_type, masking_digits = each_element
+            if masking_column in df.columns:
+                if masking_column_data_type == "str":
+                    df[masking_column] = df[masking_column].apply(lambda x: x[:-masking_digits] + "X"*(masking_digits))
+                elif masking_column_data_type == "int" or masking_column == "float":
+                    multiplier = pow(10, masking_digits)
+                    df[masking_column] = df[masking_column].apply(lambda x: (x//multiplier)*multiplier)
+        return df
     
     def process_sql_query(self, table_name: str = None, sql_stmt: str = None, mode: str = "dumping", sync_mode: int = 1) -> None:
         '''
@@ -412,10 +410,11 @@ class PGSQLMigrate:
             )
             try:
                 self.col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
-                with conn.cursor('cursor-name', scrollable = True) as curs:
+                cursor_name = self.curr_mapping['unique_id'].replace('_', '-').replace('.', '-')
+                with conn.cursor(cursor_name, scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
-                    self.inform("Executed the sql statement")
+                    self.inform("Executed the pgsql statement")
                     _ = curs.fetchone()
                     columns = [desc[0] for desc in curs.description]
                     ## Now, we have the names of the columns. Next, go back right to the starting of table (-1) and fetch records from the cursor in batches.
@@ -440,6 +439,8 @@ class PGSQLMigrate:
                             break
                         else:
                             data_df = pd.DataFrame(rows, columns = columns)
+                            if "masking_columns" in self.curr_mapping and len(self.curr_mapping["masking_columns"])>0 :
+                                data_df = self.mask_columns(data_df, self.curr_mapping["masking_columns"])
                             if(mode == "dumping"):
                                 ## In Dumping mode, resume mode is not supported
                                 ## Processes the data in the batch and save that batch
@@ -552,6 +553,7 @@ class PGSQLMigrate:
                 raise
             except Exception as e:
                 raise ProcessingError("Caught some exception while processing records.") from e
+            conn.close()
         except Sigterm as e:
             raise    
         except ProcessingError:
@@ -583,11 +585,13 @@ class PGSQLMigrate:
             else:
                 sql_stmt = f"SELECT max({self.curr_mapping['primary_key']}) as curr_max_pkey FROM {table_name}"
             try:
+                curr_max_pkey = ''
                 with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
                     curr_max_pkey = curs.fetchone()[0]
-                    return curr_max_pkey
+                conn.close()
+                return curr_max_pkey
             except Exception as e:
                 raise ProcessingError("Caught some exception while finding maximum value of primary_key till now.") from e
         except ProcessingError:
@@ -613,7 +617,8 @@ class PGSQLMigrate:
         sql_stmt = f"SELECT * FROM {table_name}"
         if('fetch_data_query' in self.curr_mapping.keys() and self.curr_mapping['fetch_data_query'] and len(self.curr_mapping['fetch_data_query']) > 0):
             raise IncorrectMapping("Can not have custom query (fetch_data_query) in logging or syncing mode.")
-       
+        self.warn(f"Kindly check that the primary key {self.curr_mapping['primary_key']} in table {table_name} is always auto-incremental. Logging mode doesn\'t support random primary keys")
+        
         if(self.curr_mapping['primary_key_datatype'] == 'int'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = -2147483648
@@ -623,13 +628,6 @@ class PGSQLMigrate:
             curr = str(curr)
             last = str(last)
             sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= {last} AND {self.curr_mapping['primary_key']} <= {curr}"
-        elif(self.curr_mapping['primary_key_datatype'] == 'str'):
-            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
-            last = ""
-            curr = str(self.get_last_pkey(table_name = table_name))
-            if(last_rec):
-                last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= \'{last}\' AND {self.curr_mapping['primary_key']} <= \'{curr}\'"
         elif(self.curr_mapping['primary_key_datatype'] == 'datetime'):
             last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
             last = datetime.datetime(2000, 1, 1, 0, 0, 0, 0, self.tz_info)
@@ -641,13 +639,8 @@ class PGSQLMigrate:
             if(last_rec):
                 last = pytz.utc.localize(last_rec['record_id']).astimezone(self.tz_info)
             sql_stmt += f" WHERE Cast({self.curr_mapping['primary_key']} as timestamp) >= Cast(\'{last.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp) AND Cast({self.curr_mapping['primary_key']} as timestamp) <= Cast(\'{curr.strftime('%Y-%m-%d %H:%M:%S')}\' as timestamp)"
-        elif(self.curr_mapping['primary_key_datatype'] == 'uuid'):
-            last_rec = get_last_migrated_record(self.curr_mapping['unique_id'])
-            last = '00000000-0000-0000-0000-000000000000'
-            curr = str(self.get_last_pkey(table_name = table_name))
-            if(last_rec):
-                last = str(last_rec['record_id'])
-            sql_stmt += f" WHERE {self.curr_mapping['primary_key']} >= Cast(\'{last}\' as uuid) AND {self.curr_mapping['primary_key']} <= Cast(\'{curr}\' as uuid)"
+        elif(self.curr_mapping['primary_key_datatype'] in ['str', 'uuid']):
+            raise IncorrectMapping(f"Primary key cant be of type {self.curr_mapping['primary_key_datatype']} in logging mode")
         else:
             IncorrectMapping("primary_key_datatype can either be str, or int or datetime.")
         sql_stmt += f" ORDER BY {self.curr_mapping['primary_key']}"
@@ -853,7 +846,7 @@ class PGSQLMigrate:
 
 
     def preprocess_table(self, table_name: str = None) -> None:
-        n_columns_destination = self.saver_list[0].get_n_cols(table_name=table_name)
+        n_columns_destination = self.saver.get_n_cols(table_name=table_name)
         try:
             conn = psycopg2.connect(
                 host = self.db['source']['url'],
@@ -862,36 +855,31 @@ class PGSQLMigrate:
                 password = self.db['source']['password']
             )
             col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
+            conn.close()
             n_columns_pgsql = len(col_dtypes) + 1
             ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
             ## In case of dumping, migration_snapshot_date is present
             ## we also need to account for those columns which are partitioned
-            if('partition_col' in self.curr_mapping.keys()):
-                if(isinstance(self.curr_mapping['partition_col'], str)):
-                    self.curr_mapping['partition_col'] = [self.curr_mapping['partition_col']]
+            if('partition_col' in self.curr_mapping.keys() and self.db['destination']['destination_type'] == 's3'):
                 if('partition_col_format' not in self.curr_mapping.keys()):
-                    self.curr_mapping['partition_col_format'] = ['str']
-                if(isinstance(self.curr_mapping['partition_col_format'], str)):
-                    self.curr_mapping['partition_col_format'] = [self.curr_mapping['partition_col_format']]
-                while(len(self.curr_mapping['partition_col']) > len(self.curr_mapping['partition_col_format'])):
-                    self.curr_mapping['partition_col_format'] = self.curr_mapping['partition_col_format'].append('str')
-                for i in range(len(self.curr_mapping['partition_col'])):
-                    col = self.curr_mapping['partition_col'][i].lower()
-                    col_form = self.curr_mapping['partition_col_format'][i]
-                    if(col == 'migration_snapshot_date' or col_form == 'datetime'):
-                        n_columns_pgsql += 3
-                    elif(col_form == 'str'):
-                        n_columns_pgsql += 1
-                    elif(col_form == 'int'):
-                        n_columns_pgsql += 1
+                    self.curr_mapping['partition_col_format'] = 'str'
+                if(self.curr_mapping['partition_col'].lower() == 'migration_snapshot_date' or self.curr_mapping['partition_col_format'] == 'datetime'):
+                    n_columns_pgsql += 3
+                elif(self.curr_mapping['partition_col_format'] == 'str'):
+                    n_columns_pgsql += 1
+                elif(self.curr_mapping['partition_col_format'] == 'int'):
+                    n_columns_pgsql += 1
+            self.inform(f"n_columns (source) = {n_columns_pgsql} and n_columns (destination) = {n_columns_destination}")
             if(n_columns_destination > 0 and n_columns_pgsql != n_columns_destination):
                 self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
-                for saver_i in self.saver_list:
-                    saver_i.drop_table(table_name=table_name)
+                self.saver.drop_table(table_name=table_name)
                 delete_metadata_from_mongodb(self.curr_mapping['unique_id'])
                 self.inform("Data is deleted, now starting migration again.")
+            elif(n_columns_destination == 0):
+                delete_metadata_from_mongodb(self.curr_mapping['unique_id'])
+                self.inform('No discrepancy, lets start the migration')
             else:
-                self.inform('No discrepancy, let\'s start the migration')
+                self.inform('No discrepancy, lets start the migration')
         except ProcessingError as e:
             raise Exception("Unable to verify datatypes of table from source and destination.") from e
 
@@ -900,6 +888,9 @@ class PGSQLMigrate:
         '''
             primary key dtype can be str, datetime, int, uuid
         '''
+        if(primary_key_dtype in ['uuid', 'str']):
+            self.warn("Can't mirror/delete records when primary key is of datatype (string) or (uuid). Primary key needs to be auto-incremental for mirroring mode.")
+            return
         sql_stmt = f"SELECT {primary_key} FROM {table_name} ORDER BY {primary_key}"
         self.inform(sql_stmt)
         conn = psycopg2.connect(
@@ -910,12 +901,53 @@ class PGSQLMigrate:
         )
         with conn.cursor('cursor-mirroring-primary-keys', scrollable = True) as curs:
             curs.execute(sql_stmt)
-            self.inform("Executed the sql statement to get primary keys")
-            pkeys = curs.fetchmany(self.batch_size)
-            data_df = pd.DataFrame(pkeys, columns = [primary_key])
-            data_df = convert_to_dtype(df = data_df, schema = {primary_key: primary_key_dtype})
-            for saver_i in self.saver_list:
-                saver_i.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
+            self.inform("Executed the pgsql statement to get primary keys")
+            while(1):
+                pkeys = curs.fetchmany(self.batch_size)
+                if(pkeys):
+                    data_df = pd.DataFrame(pkeys, columns = [primary_key])
+                    if('strict' in self.curr_mapping.keys() and self.curr_mapping['strict']):
+                        data_df = convert_to_dtype_strict(df = data_df, schema = {primary_key: primary_key_dtype})
+                    else:
+                        data_df = convert_to_dtype(df = data_df, schema = {primary_key: primary_key_dtype})
+                    self.saver.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
+                else:
+                    break
+        conn.close()
+        
+
+    def get_indexes(self, table: str = None) -> None:
+        schema_name = 'public'
+        table_name = table
+        x = table.split('.')
+        if(len(x) > 1):
+            schema_name = x[0]
+            table_name = x[1]
+
+        sql_stmt = f'''
+            SELECT indexname, indexdef
+            FROM pg_indexes
+            WHERE
+            schemaname = '{schema_name}'
+            AND
+            tablename = '{table_name}';
+        '''
+        conn = psycopg2.connect(
+            host = self.db['source']['url'],
+            database = self.db['source']['db_name'],
+            user = self.db['source']['username'],
+            password = self.db['source']['password']
+        )
+
+        self.indexes = {}
+        with conn.cursor('getting-indexes', scrollable = True) as curs:
+            curs.execute(sql_stmt)
+            self.inform("Executed the pgsql statement to get indexes")
+            recs = curs.fetchall()
+            if(recs):
+                df = pd.DataFrame(recs, columns = ['index_name', 'index_def'])
+                self.indexes = dict(zip(df['index_name'], df['index_def']))
+        conn.close()
 
 
     def process(self) -> Tuple[int]:
@@ -974,6 +1006,7 @@ class PGSQLMigrate:
                     self.warn(message="Can not migrate table with table_name: {table_name}")
                     continue
                 if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
+                    self.get_indexes(table_name)
                     self.preprocess_table(table_name)
                 self.set_basic_job_params(table_name)
                 if(self.curr_mapping['mode'] == 'dumping'):
@@ -1001,15 +1034,13 @@ class PGSQLMigrate:
                 
         self.inform(message="Overall migration complete.")
         if(self.curr_mapping['mode'] == 'dumping' and 'expiry' in self.curr_mapping.keys() and self.curr_mapping['expiry']):
-            for saver_i in self.saver_list:
-                saver_i.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
+            self.saver.expire(expiry = self.curr_mapping['expiry'], tz_info = self.tz_info)
             self.inform(message="Expired data removed.")
 
         self.postprocess()
         self.inform(message="Post processing completed.")
 
-        for saver_i in self.saver_list:
-            saver_i.close()
+        self.saver.close()
         self.inform(message="Hope to see you again :')")
 
         return (self.n_insertions, self.n_updations)

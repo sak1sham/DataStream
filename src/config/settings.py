@@ -2,7 +2,6 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 import datetime
-import pytz
 
 settings = {
     'fastapi_server': False,
@@ -16,11 +15,10 @@ settings = {
     'dashboard_store': {
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),
-        'collection_name': 'dms_history'
+        'collection_name': os.getenv('DASHBOARD_COLLECTION_NAME')
     },
     'slack_notif': {
-        'slack_token': 'xoxb-667683339585-3192552509475-C0xJXwmmUUwrIe4FYA0pxv2N',
-        'channel': "C035WQHD291"
+        'slack_token': os.getenv('SLACK_TOKEN'),
+        'channel': os.getenv('SLACK_CHANNEL')
     },
-    'cut_off_time': datetime.time(hour=9, minute=0, second=0),
 }

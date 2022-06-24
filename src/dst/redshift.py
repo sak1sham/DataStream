@@ -9,8 +9,11 @@ from helper.util import utc_to_local
 
 class RedshiftSaver:
     def __init__(self, db_source: Dict[str, Any] = {}, db_destination: Dict[str, Any] = {}, unique_id: str = "", is_small_data: bool = False) -> None:
+        self.source_type = db_source['source_type']
+        if(self.source_type == 'pgsql'):
+            self.source_type = 'sql'
         # s3_location is required as a staging area to push into redshift
-        self.s3_location = f"s3://{db_destination['s3_bucket_name']}/Redshift/{db_source['source_type']}/{db_source['db_name']}/"
+        self.s3_location = f"s3://{db_destination['s3_bucket_name']}/Redshift/{self.source_type}/{db_source['db_name']}/"
         self.unique_id = unique_id
         self.conn = redshift_connector.connect(
             host = db_destination['host'],
@@ -18,10 +21,11 @@ class RedshiftSaver:
             user = db_destination['user'],
             password = db_destination['password']
         )
-        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{db_source['source_type']}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
+        self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{self.source_type}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
         self.is_small_data = is_small_data
         self.name_ = ""
         self.table_list = []
+        self.max_pkey_del = None
 
     def inform(self, message: str = "") -> None:
         logger.inform(s = f"{self.unique_id}: {message}")
@@ -36,7 +40,7 @@ class RedshiftSaver:
     def save(self, processed_data: Dict[str, Any] = None, primary_keys: List[str] = None) -> None:
         if(not self.name_ or not(self.name_ == processed_data['name'])):
             self.table_list.extend(processed_data['name']) 
-        self.name_ = processed_data['name']
+        self.name_ = processed_data['name'].replace('.', '_').replace('-', '_')
         file_name = f"{self.s3_location}{self.name_}/"
         
         if 'filename' in processed_data:
@@ -111,6 +115,7 @@ class RedshiftSaver:
 
 
     def delete_table(self, table_name: str = None) -> None:
+        table_name = table_name.replace('.', '_').replace('-', '_')
         query = f"DROP TABLE {self.schema}.{table_name};"
         self.inform(query)
         with self.conn.cursor() as cursor:
@@ -120,6 +125,7 @@ class RedshiftSaver:
 
 
     def get_n_cols(self, table_name: str = None) -> int:
+        table_name = table_name.replace('.', '_').replace('-', '_')
         query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
         self.inform(query)
         df = wr.redshift.read_sql_query(
@@ -131,6 +137,7 @@ class RedshiftSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
+            table_name = table_name.replace('.', '_').replace('-', '_')
             sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
             df = wr.redshift.read_sql_query(
@@ -145,6 +152,7 @@ class RedshiftSaver:
 
     def count_n_records(self, table_name: str = None) -> int:
         try:
+            table_name = table_name.replace('.', '_').replace('-', '_')
             if(self.is_exists(table_name=table_name)):
                 sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
                 self.inform(sql_query)
@@ -183,14 +191,18 @@ class RedshiftSaver:
     
     
     def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
+        table_name = table_name.replace('.', '_').replace('-', '_')
         if(data_df.shape[0]):
             pkey_max = data_df[primary_key].max()
             if(primary_key_dtype == 'int'):
                 str_pkey = str(pkey_max)
+                self.max_pkey_del = "-2147483648" if self.max_pkey_del is None else self.max_pkey_del
             elif(primary_key_dtype in ['str', 'uuid']):
                 str_pkey = f"'{pkey_max}'"
+                self.max_pkey_del = "''" if self.max_pkey_del is None else self.max_pkey_del
             else:
                 str_pkey = f"CAST('{str_pkey.strftime('%Y-%m-%d %H:%M:%S')}' as timestamp)"
+                self.max_pkey_del = f"CAST('2000-01-01 00:00:00' as timestamp)" if self.max_pkey_del is None else self.max_pkey_del
             
             start = True
             del_pkeys_list = ""
@@ -207,14 +219,14 @@ class RedshiftSaver:
                 else:
                     del_pkeys_list = f"{del_pkeys_list}, {key_str}"
             
-            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} not in ({del_pkeys_list})"
+            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} > {self.max_pkey_del} AND {primary_key} not in ({del_pkeys_list})"
             self.inform(sql_stmt)
             with self.conn.cursor() as cursor:
                 cursor.execute(sql_stmt)
                 self.conn.commit()
 
             self.inform(f"Deleted some records from destination which no longer exist at source.")
-            self.conn.close()
+            self.max_pkey_del = str_pkey
 
     def close(self):
         self.conn.close()

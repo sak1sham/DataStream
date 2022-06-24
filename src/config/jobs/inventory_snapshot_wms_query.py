@@ -86,27 +86,29 @@ with all_products as (
   from all_products ap left join inventory i on i.warehouse_name = ap.warehouse_name and i.sku_id = ap.sku_id
 '''
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
-        'source_type': 'sql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'source_type': 'pgsql',
+        'url': os.getenv('CMDB_URL'),
         'db_name': 'cmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod' 
-            }
-        ]
-    }, 
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod',
+            's3_suffix': '_2'
+        }
+    },
     'tables': [
         {
             'table_name': 'inventory_snapshot_wms_query',
             'cron': 'self-managed',
-            'to_partition': True,
             'partition_col': 'migration_snapshot_date',
             'partition_col_format': 'datetime',
             'mode': 'dumping',

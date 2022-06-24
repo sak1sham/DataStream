@@ -1,24 +1,50 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     "source": {
         "source_type": "api",
         "db_name": "clevertap"
     },
     "destination": {
-        'destination_type': 'redshift',
-        'specifications': [
-            {
-                'host': 'cm-redshift-1.cyl4ilkelm5m.ap-south-1.redshift.amazonaws.com',
-                'database': 'cmwh',
-                'user': 'cmadmin',
-                'password': 'kgDzH6Zy5xZ6HHx',
-                'schema': 'cm_clevertap',
-                's3_bucket_name': 'database-migration-service-prod',
-            }
-        ]
+        'redshift': {
+            'host': os.getenv('REDSHIFT_URL'),
+            'database': 'cmwh',
+            'user': os.getenv('REDSHIFT_USER'),
+            'password': os.getenv('REDSHIFT_PASSWORD'),
+            'schema': 'cm_clevertap',
+            's3_bucket_name': 'database-migration-service-prod',
+            'destination_type': 'redshift'
+        },
+        'ec2_1': {
+            "db_name": "dms",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms2.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "schema": "public",
+            'destination_type': 'pgsql'
+        },
+        'ec2_2':  {
+            "db_name": "dms",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms1.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "schema": "public",
+            'destination_type': 'pgsql'
+        },
+        'ec2_3': {
+            "db_name": "cmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms3.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        }
     },
     "apis": [
         {
-            'api_name':'cl_app_events',
+            'api_name':'cm_clevertap_cl_app_events',
             'project_name': 'cl_app',
             'event_names': '*',
             'start_day': '-1',

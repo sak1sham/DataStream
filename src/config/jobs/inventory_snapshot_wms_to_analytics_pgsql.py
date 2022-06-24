@@ -1,27 +1,40 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
-        'source_type': 'sql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'source_type': 'pgsql',
+        'url': os.getenv('CMDB_URL'),
         'db_name': 'cmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     "destination": {
-        "destination_type": "pgsql",
-        "specifications": [
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "3.108.43.163",
-                "username": "saksham_garg"
-            },
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "13.233.225.181",
-                "username": "saksham_garg"
-            }
-        ]
+        'ec2_1': {
+            "db_name": "cmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms2.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        },
+        'ec2_2': {
+            "db_name": "cmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms1.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        },
+        'ec2_3': {
+            "db_name": "cmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms3.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        }
     },
     'tables': [
         {
@@ -31,6 +44,7 @@ mapping = {
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'batch_size': 10000,
+            'strict': True,
             'grace_updation_lag': {
                 'days': 1
             },

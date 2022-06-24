@@ -1,38 +1,31 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = { 
     'source': { 
-        'source_type': 'sql', 
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com', 
+        'source_type': 'pgsql', 
+        'url': os.getenv('CMDB_URL'), 
         'db_name': 'cmdb', 
-        'username': 'saksham_garg', 
-        'password': '3y5HMs^2qy%&Kma' 
+        'username': os.getenv('DB_USERNAME'), 
+        'password': os.getenv('DB_PASSWORD') 
     }, 
     'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod' 
-            }
-        ]
-    }, 
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod' 
+        }
+    },
     'tables': [ 
         {
             'table_name': 'poll_submissions', 
             'cron': 'self-managed', 
-            'mode': 'syncing',
+            'mode': 'logging',
             'primary_key': 'id',
-            'primary_key_datatype': 'int',
-            'to_partition': True, 
+            'primary_key_datatype': 'int', 
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
-            'bookmark': 'updated_at_for_pipeline', 
-            'improper_bookmarks': False, 
             'batch_size': 10000, 
-            'buffer_updation_lag': {
-                'hours': 2,
-            } ,
-            'grace_updation_lag': {
-                'days': 1
-            },
         },
     ]
 }

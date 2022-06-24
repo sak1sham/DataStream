@@ -3,6 +3,7 @@ import datetime
 import pytz
 from typing import List, Dict, Any, NewType, Tuple
 import pandas as pd
+import numpy as np
 from config.settings import settings
 
 from helper.logger import logger
@@ -182,6 +183,8 @@ def typecast_df_to_schema(df: dftype, schema: Dict[str, Any]) -> dftype:
 def convert_jsonb_to_string(x: Any) -> str:
     if(isinstance(x, list) or isinstance(x, dict)):
         return json.dumps(x)
+    if(not x or pd.isna(x)):
+        return np.nan
     else:
         try:
             x = str(x)
@@ -191,6 +194,8 @@ def convert_jsonb_to_string(x: Any) -> str:
             return None
 
 def convert_range_to_str(r) -> str:
+    if(not r or pd.isna(r)):
+        return np.nan
     if(r.isempty):
         return ""
     left = "None"
@@ -217,7 +222,7 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
         for col in df.columns.tolist():
             if(col in schema.keys()):
                 dtype = schema[col].lower()
-                if(dtype == 'jsonb' or dtype == 'json'):
+                if(dtype == 'jsonb' or dtype == 'json' or dtype.startswith('arr')):
                     df[col] = df[col].fillna('').apply(lambda x: convert_jsonb_to_string(x))
                     df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
                 elif(dtype.startswith('timestamp') or dtype.startswith('date')):
@@ -238,6 +243,44 @@ def convert_to_dtype(df: dftype, schema: Dict[str, Any]) -> dftype:
                     df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
             else:
                 df[col] = df[col].fillna('').astype(str, copy=False, errors='ignore')
+        df = df.reindex(sorted(df.columns), axis=1)
+    return df
+
+
+def convert_to_dtype_strict(df: dftype, schema: Dict[str, Any]) -> dftype:
+    '''
+        In this function, we don't replace any null values with templates, instead keep null values intact
+        Disclamer: The datatype of the column might not be as expected. This is unsafe in case of data pipelines to S3(Athena) or Redshift
+    '''
+    tz_ = pytz.utc
+    if('timezone' in settings.keys() and settings['timezone']):
+        tz_ = pytz.timezone(settings['timezone'])
+    if(df.shape[0]):
+        for col in df.columns.tolist():
+            if(col in schema.keys()):
+                dtype = schema[col].lower()
+                if(dtype == 'jsonb' or dtype == 'json' or dtype.startswith('arr')):
+                    df[col] = df[col].fillna(np.nan).apply(lambda x: convert_jsonb_to_string(x))
+                elif(dtype.startswith('timestamp') or dtype.startswith('date')):
+                    df[col] = df[col].apply(lambda x: convert_to_datetime(x, tz_))
+                elif(dtype == 'boolean' or dtype == 'bool'):
+                    df[col] = df[col].astype(bool, copy=False, errors='ignore')
+                elif(dtype == 'bigint' or dtype == 'integer' or dtype == 'smallint' or dtype == 'bigserial' or dtype == 'smallserial' or dtype.startswith('serial') or dtype.startswith('int')):
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    df[col] = df[col].fillna(np.nan)
+                elif(dtype == 'double precision' or dtype.startswith('numeric') or dtype == 'real' or dtype == 'double' or dtype == 'money' or dtype.startswith('decimal') or dtype.startswith('float')):
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    df[col] = df[col].fillna(np.nan)
+                elif(dtype == 'cidr' or dtype == 'inet' or dtype == 'macaddr' or dtype == 'uuid' or dtype == 'xml'):
+                    df[col] = df[col].apply(lambda x: str(x) if not pd.isna(x) else np.nan)
+                elif('range' in dtype):
+                    df[col] = df[col].apply(convert_range_to_str).apply(lambda x: str(x) if not pd.isna(x) else np.nan)
+                elif('interval' in dtype):
+                    df[col] = df[col].apply(lambda x: str(x) if not pd.isna(x) else np.nan)
+                else:
+                    df[col] = df[col].apply(lambda x: str(x) if not pd.isna(x) else np.nan)
+            else:
+                df[col] = df[col].apply(lambda x: str(x) if not pd.isna(x) else np.nan)
         df = df.reindex(sorted(df.columns), axis=1)
     return df
 

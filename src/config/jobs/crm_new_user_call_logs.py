@@ -1,19 +1,21 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
-        'source_type': 'sql',
-        'url': 'crmdb.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'source_type': 'pgsql',
+        'url': os.getenv('CRMDB_URL'),
         'db_name': 'crmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     'destination': { 
-        'destination_type': 's3', 
-        'specifications': [
-            {
-                's3_bucket_name': 'database-migration-service-prod' 
-            }
-        ]
-    }, 
+        's3': {
+            'destination_type': 's3', 
+            's3_bucket_name': 'database-migration-service-prod' 
+        }
+    },
     'tables': [
         {
             'table_name': 'user_call_logs',
@@ -21,7 +23,6 @@ mapping = {
             'primary_key': 'call_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',
-            'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at_for_pipeline',

@@ -1,38 +1,46 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
-        'source_type': 'sql',
-        'url': 'cmdb-rr.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'source_type': 'pgsql',
+        'url': os.getenv('CMDB_URL'),
         'db_name': 'cmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     "destination": {
-        "destination_type": "pgsql",
-        "specifications": [
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "3.108.43.163",
-                "username": "saksham_garg"
-            },
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "13.233.225.181",
-                "username": "saksham_garg"
-            }
-        ]
+        'ec2_1': {
+            "db_name": "cmdb",
+            "schema": "public",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms2.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+        },
+        'ec2_2': {
+            "db_name": "cmdb",
+            "schema": "public",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms1.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+        }
     },
     'tables': [
         {
             'table_name': 'routes',
             'cron': 'self-managed',
-            'mode': 'syncing',
+            'mode': 'mirroring', 
+            'partition_col': 'started_at',
+            "partition_col_format": "datetime",
             'primary_key': 'id',
             'primary_key_datatype': 'int',
             'bookmark': 'updated_at_for_pipeline',
             'improper_bookmarks': False,
-            'batch_size': 10000,
+            'batch_size': 1000,
+            'strict': True,
             'grace_updation_lag': {
                 'days': 1
             },

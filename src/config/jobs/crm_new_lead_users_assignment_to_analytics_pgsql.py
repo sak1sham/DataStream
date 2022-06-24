@@ -1,41 +1,46 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 mapping = {
     'source': {
-        'source_type': 'sql',
-        'url': 'crmdb.cbo3ijdmzhje.ap-south-1.rds.amazonaws.com',
+        'source_type': 'pgsql',
+        'url': os.getenv('CRMDB_URL'),
         'db_name': 'crmdb',
-        'username': 'saksham_garg',
-        'password': '3y5HMs^2qy%&Kma'
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
     "destination": {
-        "destination_type": "pgsql",
-        "specifications": [
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "3.108.43.163",
-                "username": "saksham_garg"
-            },
-            {
-                "db_name": "dms",
-                "password": "3y5HMs^2qy%&Kma",
-                "url": "13.233.225.181",
-                "username": "saksham_garg"
-            }
-        ]
+        'ec2_1': {
+            "db_name": "crmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms2.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        },
+        'ec2_2': {
+            "db_name": "crmdb",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "dms1.citymall.dev",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        }
     },
     'tables': [
         {
             'table_name': 'lead_users_assignment',
-            'mode': 'syncing',
+            'mode': 'mirroring',
             'primary_key': 'assignment_id',
             'primary_key_datatype': 'int',
             'cron': 'self-managed',
-            'to_partition': True,
             'partition_col': 'created_at',
             'partition_col_format': 'datetime',
             'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 10000,
+            'strict': True,
             'buffer_updation_lag':{
                 'hours': 2,
             },
