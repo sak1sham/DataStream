@@ -17,15 +17,15 @@ mapping = {
             's3_bucket_name': 'database-migration-service-prod',
             'destination_type': 'redshift'
         },
-        'ec_1': {
-            "db_name": "cmdb",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "dms2.citymall.dev",
-            "username": os.getenv('DB_USERNAME'),
-            "schema": "public",
-            'destination_type': 'pgsql'
-        },
-        'ec_2':  {
+        # 'ec2_1': {
+        #     "db_name": "cmdb",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "dms2.citymall.dev",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "schema": "public",
+        #     'destination_type': 'pgsql'
+        # },
+        'ec2_2':  {
             "db_name": "cmdb",
             "password": os.getenv('DB_PASSWORD'),
             "url": "dms1.citymall.dev",
@@ -33,19 +33,19 @@ mapping = {
             "schema": "public",
             'destination_type': 'pgsql'
         },
-        'ec2_3': {
-            "db_name": "cmdb",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "dms3.citymall.dev",
-            "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
-            "schema": "public"
-        }
+        # 'ec2_3': {
+        #     "db_name": "cmdb",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "dms3.citymall.dev",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "destination_type": "pgsql",
+        #     "schema": "public"
+        # }
     },
     
     "apis": [
         {
-            'api_name':'cm_clevertap_cx_app_events',
+            'api_name':'cx_app_events',
             'project_name': 'cx_app',
             'event_names': ['Push Impressions'],
             'start_day': '-1',

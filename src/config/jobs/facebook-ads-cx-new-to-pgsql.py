@@ -22,14 +22,14 @@ mapping = {
             's3_bucket_name': 'database-migration-service-prod',
             'destination_type': 'redshift'
         },
-        'ec_1': {
-            "db_name": "cmdb",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "dms2.citymall.dev",
-            "username": os.getenv('DB_USERNAME'),
-            "schema": "public",
-            'destination_type': 'pgsql'
-        },
+        # 'ec_1': {
+        #     "db_name": "cmdb",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "dms2.citymall.dev",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "schema": "public",
+        #     'destination_type': 'pgsql'
+        # },
         'ec_2':  {
             "db_name": "cmdb",
             "password": os.getenv('DB_PASSWORD'),
@@ -38,19 +38,19 @@ mapping = {
             "schema": "public",
             'destination_type': 'pgsql'
         },
-        'ec2_3': {
-            "db_name": "cmdb",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "dms3.citymall.dev",
-            "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
-            "schema": "public"
-        }
+        # 'ec2_3': {
+        #     "db_name": "cmdb",
+        #     "password": os.getenv('DB_PASSWORD'),
+        #     "url": "dms3.citymall.dev",
+        #     "username": os.getenv('DB_USERNAME'),
+        #     "destination_type": "pgsql",
+        #     "schema": "public"
+        # }
 
     },
     "apis": [
         {
-            'api_name': 'fb_cx_ads_insights',
+            'api_name': 'ads_insights',
             'project_name': 'facebook_ads_cx_new',
             'start_day': '-1',
             'end_day': '-1',
@@ -326,7 +326,7 @@ mapping = {
         },
 
         {
-            'api_name': 'fb_cx_ads_campaigns',
+            'api_name': 'ads_campaigns',
             'project_name': 'facebook_ads_cx_new',
             'start_day': '-1',
             'end_day': '-1',
