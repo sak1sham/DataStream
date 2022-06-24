@@ -75,12 +75,11 @@ class PgSQLSaver:
         if(exists):
             ## Drop indexes if exist (except primary key index)
             for index_name, index_def in indexes.items():
-                if(index_name != f"{table}_pkey"):
-                    with conn.cursor() as curs:
-                        sql_stmt = f"DROP INDEX IF EXISTS {index_name};"
-                        self.inform(sql_stmt)
-                        curs.execute(sql_stmt)
-                        conn.commit()
+                with conn.cursor() as curs:
+                    sql_stmt = f"DROP INDEX IF EXISTS {index_name};"
+                    self.inform(sql_stmt)
+                    curs.execute(sql_stmt)
+                    conn.commit()
             self.inform("Dropped indexes")
         conn.close()
         return exists

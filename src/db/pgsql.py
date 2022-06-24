@@ -953,14 +953,14 @@ class PGSQLMigrate:
                     df = pd.DataFrame(recs, columns = ['index_name', 'index_def'])
                     self.indexes = dict(zip(df['index_name'], df['index_def']))
             conn.close()
-        if('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col']):
-            processed_indexes = {}
-            for key, val in self.indexes.items():
-                if (' unique ' not in val.lower()):
-                    processed_indexes[key] = val
-                else:
-                    self.warn(f"Can\'t have UNIQUE indexes while partitioning tables in PgSQL. Skipping \"{key}\"")
-            self.indexes = processed_indexes
+
+        processed_indexes = {}
+        for key, val in self.indexes.items():
+            if ('_pkey' in val.lower() or ('partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] and ' unique ' not in val.lower())):
+                processed_indexes[key] = val
+            else:
+                self.warn(f"Can\'t have UNIQUE indexes while partitioning tables in PgSQL. Skipping \"{key}\"")
+        self.indexes = processed_indexes
 
 
     def process(self) -> Tuple[int]:
