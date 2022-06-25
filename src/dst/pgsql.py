@@ -335,10 +335,8 @@ class PgSQLSaver:
 
 
     def delete_table(self, table_name: str = None) -> None:
-        schema_name = 'public'
         x = table_name.split('.')
         if(len(x) > 1):
-            schema_name = x[0]
             table_name = x[1]
         else:
             table_name = x[0]
