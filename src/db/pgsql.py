@@ -866,7 +866,7 @@ class PGSQLMigrate:
             partition_prev = self.saver.get_partition_col(table_name)
             self.inform(f'partition_prev = {partition_prev} and partition_now = {partition_now}')
             self.inform(f"n_columns (source) = {n_columns_pgsql} and n_columns (destination) = {n_columns_destination}")
-            if(n_columns_destination > 0 and (n_columns_pgsql != n_columns_destination or partition_now==partition_prev)):
+            if(n_columns_destination > 0 and (n_columns_pgsql != n_columns_destination or partition_now!=partition_prev)):
                 self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
                 self.saver.drop_table(table_name=table_name)
                 delete_metadata_from_mongodb(self.curr_mapping['unique_id'])

@@ -6,7 +6,7 @@ import datetime
 settings = {
     'fastapi_server': False,
     'timezone': 'Asia/Kolkata',
-    'notify': True,
+    'notify': False,
     'encryption_store': {
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),

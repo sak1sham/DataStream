@@ -392,8 +392,8 @@ class PgSQLSaver:
             cursor.execute(query)
             recs = cursor.fetchall()
             if(recs):
-                df = pd.DataFrame(cursor.fetchall(), columns=['schema', 'table_name', 'partition_key'])
-                ans = df.iloc[0][3]
+                df = pd.DataFrame(recs, columns=['schema', 'table_name', 'partition_key'])
+                ans = df.iloc[0][2]
                 ans = ans.lower().replace('RANGE', '').replace('(', '').replace(')', '').replace(' ', '')
         conn.close()
         return ans
