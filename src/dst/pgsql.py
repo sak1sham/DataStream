@@ -398,6 +398,19 @@ class PgSQLSaver:
         return ans
 
 
+    def process_indexes(self, indexes: Dict[str, str] = {}, schema_name: str = None) -> Dict[str, str]:
+        processed_dict = {}
+        for key, val in indexes.items():
+            val = val.lower()
+            on = val.find(' on ') + 4
+            first = val[:on]
+            second = val[on:]
+            second = second.replace(schema_name.lower(), self.schema.lower(), 1)
+            val = first + second
+            processed_dict[key] = val
+        return processed_dict
+
+
     def get_n_cols(self, table_name: str = None) -> int:
         schema_name = 'public'
         x = table_name.split('.')

@@ -913,10 +913,10 @@ class PGSQLMigrate:
 
 
     def get_indexes(self, table: str = None) -> None:
+        schema_name = 'public'
         if('indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict)):
             self.indexes = self.curr_mapping['indexes']
         else:
-            schema_name = 'public'
             table_name = table
             x = table.split('.')
             if(len(x) > 1):
@@ -955,6 +955,7 @@ class PGSQLMigrate:
             else:
                 self.warn(f"Can\'t have UNIQUE indexes while partitioning tables in PgSQL. Skipping \"{key}\"")
         self.indexes = processed_indexes
+        self.indexes = self.saver.process_indexes(indexes = self.indexes, schema_name = schema_name)
 
 
     def process(self) -> Tuple[int]:
@@ -1012,8 +1013,9 @@ class PGSQLMigrate:
                 if(table_name.count('.') >= 2):
                     self.warn(message="Can not migrate table with table_name: {table_name}")
                     continue
-                if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
+                if(self.db['destination']['destination_type'] == 'pgsql'):
                     self.get_indexes(table_name)
+                if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
                     self.preprocess_table(table_name)
                 self.set_basic_job_params(table_name)
                 if(self.curr_mapping['mode'] == 'dumping'):
