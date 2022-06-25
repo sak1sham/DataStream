@@ -434,10 +434,8 @@ class PgSQLSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
-            schema_name = 'public'
             x = table_name.split('.')
             if(len(x) > 1):
-                schema_name = x[0]
                 table_name = x[1]
             else:
                 table_name = x[0]
@@ -469,10 +467,8 @@ class PgSQLSaver:
 
     def count_n_records(self, table_name: str = None) -> int:
         try:
-            schema_name = 'public'
             x = table_name.split('.')
             if(len(x) > 1):
-                schema_name = x[0]
                 table_name = x[1]
             else:
                 table_name = x[0]
