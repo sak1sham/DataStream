@@ -258,7 +258,6 @@ class PgSQLSaver:
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
 
-        
         x = self.name_.split('.')
         if(len(x) > 1):
             self.name_ = x[1]
