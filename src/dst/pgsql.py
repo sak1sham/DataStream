@@ -38,7 +38,6 @@ class PgSQLSaver:
             self.inform("Successfully tested connection with destination db.")
 
         self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{self.source_type}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
-        self.user_defined_schema = True if 'schema' in db_destination.keys() and db_destination['schema'] else False
         self.name_ = ""
         self.table_list = []
         self.table_exists = None
@@ -259,13 +258,11 @@ class PgSQLSaver:
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
 
-        if(self.user_defined_schema):
-            x = self.name_.split('.')
-            if(len(x) > 1):
-                self.name_ = x[1]
-            else:
-                self.name_ = x[0]
-
+        
+        x = self.name_.split('.')
+        if(len(x) > 1):
+            self.name_ = x[1]
+        
         logging_flag = False
         if('logging_flag' in processed_data.keys() and processed_data['logging_flag']):
             logging_flag = True
