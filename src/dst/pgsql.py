@@ -393,7 +393,7 @@ class PgSQLSaver:
             if(recs):
                 df = pd.DataFrame(recs, columns=['schema', 'table_name', 'partition_key'])
                 ans = df.iloc[0][2]
-                ans = ans.lower().replace('RANGE', '').replace('(', '').replace(')', '').replace(' ', '')
+                ans = ans.lower().replace('range', '').replace('(', '').replace(')', '').replace(' ', '')
         conn.close()
         return ans
 
