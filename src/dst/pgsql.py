@@ -360,10 +360,8 @@ class PgSQLSaver:
 
     
     def get_partition_col(self, table_name: str = None) -> str:
-        schema_name = 'public'
         x = table_name.split('.')
         if(len(x) > 1):
-            schema_name = x[0]
             table_name = x[1]
         else:
             table_name = x[0]
@@ -412,10 +410,8 @@ class PgSQLSaver:
 
 
     def get_n_cols(self, table_name: str = None) -> int:
-        schema_name = 'public'
         x = table_name.split('.')
         if(len(x) > 1):
-            schema_name = x[0]
             table_name = x[1]
         else:
             table_name = x[0]
