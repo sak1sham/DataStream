@@ -38,7 +38,6 @@ class PgSQLSaver:
             self.inform("Successfully tested connection with destination db.")
 
         self.schema = db_destination['schema'] if 'schema' in db_destination.keys() and db_destination['schema'] else (f"{self.source_type}_{db_source['db_name']}_dms").replace('-', '_').replace('.', '_')
-        self.user_defined_schema = True if 'schema' in db_destination.keys() and db_destination['schema'] else False
         self.name_ = ""
         self.table_list = []
         self.table_exists = None
@@ -259,13 +258,10 @@ class PgSQLSaver:
             self.table_list.extend(processed_data['name'])
         self.name_ = processed_data['name']
 
-        if(self.user_defined_schema):
-            x = self.name_.split('.')
-            if(len(x) > 1):
-                self.name_ = x[1]
-            else:
-                self.name_ = x[0]
-
+        x = self.name_.split('.')
+        if(len(x) > 1):
+            self.name_ = x[1]
+        
         logging_flag = False
         if('logging_flag' in processed_data.keys() and processed_data['logging_flag']):
             logging_flag = True
@@ -339,12 +335,11 @@ class PgSQLSaver:
 
 
     def delete_table(self, table_name: str = None) -> None:
-        if(self.user_defined_schema):
-            x = table_name.split('.')
-            if(len(x) > 1):
-                table_name = x[1]
-            else:
-                table_name = x[0]
+        x = table_name.split('.')
+        if(len(x) > 1):
+            table_name = x[1]
+        else:
+            table_name = x[0]
         table_name = table_name.replace('.', '_').replace('-', '_')
         query = f"DROP TABLE  IF EXISTS {self.schema}.{table_name};"
         self.inform(query)
@@ -360,14 +355,63 @@ class PgSQLSaver:
         conn.close()
         self.inform(f"Deleted {table_name} from PgSQL schema {self.schema}")
 
+    
+    def get_partition_col(self, table_name: str = None) -> str:
+        x = table_name.split('.')
+        if(len(x) > 1):
+            table_name = x[1]
+        else:
+            table_name = x[0]
+        
+        table_name = table_name.replace('.', '_').replace('-', '_')
+        query = f'''
+            select c.relnamespace::regnamespace::text as schema,
+            c.relname as table_name, 
+            pg_get_partkeydef(c.oid) as partition_key
+            from   pg_class c
+            where  c.relkind = 'p'
+            and c.relname = '{table_name.lower()}'
+            and c.relnamespace::regnamespace::text = '{self.schema.lower()}'
+        '''
+        self.inform(query)
+        conn = psycopg2.connect(
+            host=self.db_destination['url'],
+            database=self.db_destination['db_name'],
+            user=self.db_destination['username'],
+            password=self.db_destination['password']
+        )
+        ans = None
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            recs = cursor.fetchall()
+            if(recs):
+                df = pd.DataFrame(recs, columns=['schema', 'table_name', 'partition_key'])
+                ans = df.iloc[0][2]
+                ans = ans.lower().replace('range', '').replace('(', '').replace(')', '').replace(' ', '')
+        conn.close()
+        return ans
+
+
+    def process_indexes(self, indexes: Dict[str, str] = {}, schema_name: str = None) -> Dict[str, str]:
+        processed_dict = {}
+        for key, val in indexes.items():
+            val = val.lower()
+            on = val.find(' on ') + 4
+            first = val[:on]
+            second = val[on:]
+            second = second.replace(schema_name.lower(), self.schema.lower(), 1)
+            val = first + second
+            processed_dict[key] = val
+        return processed_dict
+
 
     def get_n_cols(self, table_name: str = None) -> int:
-        if(self.user_defined_schema):
-            x = table_name.split('.')
-            if(len(x) > 1):
-                table_name = x[1]
-            else:
-                table_name = x[0]
+        x = table_name.split('.')
+        if(len(x) > 1):
+            table_name = x[1]
+        else:
+            table_name = x[0]
+        
         table_name = table_name.replace('.', '_').replace('-', '_')
         query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
         self.inform(query)
@@ -377,6 +421,7 @@ class PgSQLSaver:
             user=self.db_destination['username'],
             password=self.db_destination['password']
         )
+        df = pd.DataFrame({})
         with conn.cursor() as cursor:
             cursor.execute(query)
             df = pd.DataFrame(cursor.fetchall(), columns=['count'])
@@ -386,12 +431,11 @@ class PgSQLSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
-            if(self.user_defined_schema):
-                x = table_name.split('.')
-                if(len(x) > 1):
-                    table_name = x[1]
-                else:
-                    table_name = x[0]
+            x = table_name.split('.')
+            if(len(x) > 1):
+                table_name = x[1]
+            else:
+                table_name = x[0]
             table_name = table_name.replace('.', '_').replace('-', '_')
             sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
@@ -419,12 +463,11 @@ class PgSQLSaver:
 
     def count_n_records(self, table_name: str = None) -> int:
         try:
-            if(self.user_defined_schema):
-                x = table_name.split('.')
-                if(len(x) > 1):
-                    table_name = x[1]
-                else:
-                    table_name = x[0]
+            x = table_name.split('.')
+            if(len(x) > 1):
+                table_name = x[1]
+            else:
+                table_name = x[0]
             table_name = table_name.replace('.', '_').replace('-', '_')
             if(self.is_exists(table_name=table_name)):
                 sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
@@ -478,12 +521,11 @@ class PgSQLSaver:
 
  
     def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
-        if(self.user_defined_schema):
-            x = table_name.split('.')
-            if(len(x) > 1):
-                table_name = x[1]
-            else:
-                table_name = x[0]
+        x = table_name.split('.')
+        if(len(x) > 1):
+            table_name = x[1]
+        else:
+            table_name = x[0]
         table_name = table_name.replace('.', '_').replace('-', '_')
         if(data_df.shape[0]):
             pkey_max = data_df[primary_key].max()

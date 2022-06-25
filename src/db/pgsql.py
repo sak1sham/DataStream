@@ -862,17 +862,11 @@ class PGSQLMigrate:
             ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
             ## In case of dumping, migration_snapshot_date is present
             ## we also need to account for those columns which are partitioned
-            if('partition_col' in self.curr_mapping.keys() and self.db['destination']['destination_type'] == 's3'):
-                if('partition_col_format' not in self.curr_mapping.keys()):
-                    self.curr_mapping['partition_col_format'] = 'str'
-                if(self.curr_mapping['partition_col'].lower() == 'migration_snapshot_date' or self.curr_mapping['partition_col_format'] == 'datetime'):
-                    n_columns_pgsql += 3
-                elif(self.curr_mapping['partition_col_format'] == 'str'):
-                    n_columns_pgsql += 1
-                elif(self.curr_mapping['partition_col_format'] == 'int'):
-                    n_columns_pgsql += 1
+            partition_now = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] else None
+            partition_prev = self.saver.get_partition_col(table_name)
+            self.inform(f'previous partitions = {partition_prev} and specified partitions = {partition_now}')
             self.inform(f"n_columns (source) = {n_columns_pgsql} and n_columns (destination) = {n_columns_destination}")
-            if(n_columns_destination > 0 and n_columns_pgsql != n_columns_destination):
+            if(n_columns_destination > 0 and (n_columns_pgsql != n_columns_destination or partition_now!=partition_prev)):
                 self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
                 self.saver.drop_table(table_name=table_name)
                 delete_metadata_from_mongodb(self.curr_mapping['unique_id'])
@@ -919,10 +913,10 @@ class PGSQLMigrate:
 
 
     def get_indexes(self, table: str = None) -> None:
+        schema_name = 'public'
         if('indexes' in self.curr_mapping.keys() and isinstance(self.curr_mapping['indexes'], dict)):
             self.indexes = self.curr_mapping['indexes']
         else:
-            schema_name = 'public'
             table_name = table
             x = table.split('.')
             if(len(x) > 1):
@@ -961,6 +955,7 @@ class PGSQLMigrate:
             else:
                 self.warn(f"Can\'t have UNIQUE indexes while partitioning tables in PgSQL. Skipping \"{key}\"")
         self.indexes = processed_indexes
+        self.indexes = self.saver.process_indexes(indexes = self.indexes, schema_name = schema_name)
 
 
     def process(self) -> Tuple[int]:
@@ -1018,8 +1013,9 @@ class PGSQLMigrate:
                 if(table_name.count('.') >= 2):
                     self.warn(message="Can not migrate table with table_name: {table_name}")
                     continue
-                if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
+                if(self.db['destination']['destination_type'] == 'pgsql'):
                     self.get_indexes(table_name)
+                if(self.db['destination']['destination_type'] in ['redshift', 'pgsql']):
                     self.preprocess_table(table_name)
                 self.set_basic_job_params(table_name)
                 if(self.curr_mapping['mode'] == 'dumping'):
