@@ -13,3 +13,4 @@ Dockerfile
 .dockerignore
 tmp
 temp_test.pydeployment/
+.github/
