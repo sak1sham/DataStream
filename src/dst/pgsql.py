@@ -339,14 +339,16 @@ class PgSQLSaver:
 
 
     def delete_table(self, table_name: str = None) -> None:
-        if(self.user_defined_schema):
-            x = table_name.split('.')
-            if(len(x) > 1):
-                table_name = x[1]
-            else:
-                table_name = x[0]
+        schema_name = 'public'
+        x = table_name.split('.')
+        if(len(x) > 1):
+            schema_name = x[0]
+            table_name = x[1]
+        else:
+            table_name = x[0]
+        schema_name = self.schema
         table_name = table_name.replace('.', '_').replace('-', '_')
-        query = f"DROP TABLE  IF EXISTS {self.schema}.{table_name};"
+        query = f"DROP TABLE  IF EXISTS {schema_name}.{table_name};"
         self.inform(query)
         conn = psycopg2.connect(
             host=self.db_destination['url'],
@@ -360,16 +362,27 @@ class PgSQLSaver:
         conn.close()
         self.inform(f"Deleted {table_name} from PgSQL schema {self.schema}")
 
+    
+    def get_partition_col(self, table_name: str = None) -> str:
+        schema_name = 'public'
+        x = table_name.split('.')
+        if(len(x) > 1):
+            schema_name = x[0]
+            table_name = x[1]
+        else:
+            table_name = x[0]
+        schema_name = self.schema
 
-    def get_n_cols(self, table_name: str = None) -> int:
-        if(self.user_defined_schema):
-            x = table_name.split('.')
-            if(len(x) > 1):
-                table_name = x[1]
-            else:
-                table_name = x[0]
         table_name = table_name.replace('.', '_').replace('-', '_')
-        query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{self.schema}\' AND table_name = \'{table_name}\''
+        query = f'''
+            select c.relnamespace::regnamespace::text as schema,
+            c.relname as table_name, 
+            pg_get_partkeydef(c.oid) as partition_key
+            from   pg_class c
+            where  c.relkind = 'p'
+            and c.relname = '{table_name.lower()}'
+            and c.relnamespace::regnamespace::text = '{schema_name.lower()}'
+        '''
         self.inform(query)
         conn = psycopg2.connect(
             host=self.db_destination['url'],
@@ -377,6 +390,38 @@ class PgSQLSaver:
             user=self.db_destination['username'],
             password=self.db_destination['password']
         )
+        ans = None
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            recs = cursor.fetchall()
+            if(recs):
+                df = pd.DataFrame(cursor.fetchall(), columns=['schema', 'table_name', 'partition_key'])
+                ans = df.iloc[0][3]
+                ans = ans.lower().replace('RANGE', '').replace('(', '').replace(')', '').replace(' ', '')
+        conn.close()
+        return ans
+
+
+    def get_n_cols(self, table_name: str = None) -> int:
+        schema_name = 'public'
+        x = table_name.split('.')
+        if(len(x) > 1):
+            schema_name = x[0]
+            table_name = x[1]
+        else:
+            table_name = x[0]
+        schema_name = self.schema
+
+        table_name = table_name.replace('.', '_').replace('-', '_')
+        query = f'SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = \'{schema_name}\' AND table_name = \'{table_name}\''
+        self.inform(query)
+        conn = psycopg2.connect(
+            host=self.db_destination['url'],
+            database=self.db_destination['db_name'],
+            user=self.db_destination['username'],
+            password=self.db_destination['password']
+        )
+        df = pd.DataFrame({})
         with conn.cursor() as cursor:
             cursor.execute(query)
             df = pd.DataFrame(cursor.fetchall(), columns=['count'])
@@ -386,14 +431,16 @@ class PgSQLSaver:
 
     def is_exists(self, table_name: str = None) -> bool:
         try:
-            if(self.user_defined_schema):
-                x = table_name.split('.')
-                if(len(x) > 1):
-                    table_name = x[1]
-                else:
-                    table_name = x[0]
+            schema_name = 'public'
+            x = table_name.split('.')
+            if(len(x) > 1):
+                schema_name = x[0]
+                table_name = x[1]
+            else:
+                table_name = x[0]
+            schema_name = self.schema
             table_name = table_name.replace('.', '_').replace('-', '_')
-            sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{self.schema}\' AND TABLE_NAME = \'{table_name}\';'
+            sql_query = f'SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = \'{schema_name}\' AND TABLE_NAME = \'{table_name}\';'
             self.inform(sql_query)
             conn = psycopg2.connect(
                 host=self.db_destination['url'],
@@ -419,15 +466,17 @@ class PgSQLSaver:
 
     def count_n_records(self, table_name: str = None) -> int:
         try:
-            if(self.user_defined_schema):
-                x = table_name.split('.')
-                if(len(x) > 1):
-                    table_name = x[1]
-                else:
-                    table_name = x[0]
+            schema_name = 'public'
+            x = table_name.split('.')
+            if(len(x) > 1):
+                schema_name = x[0]
+                table_name = x[1]
+            else:
+                table_name = x[0]
+            schema_name = self.schema
             table_name = table_name.replace('.', '_').replace('-', '_')
             if(self.is_exists(table_name=table_name)):
-                sql_query = f'SELECT COUNT(*) as count FROM {self.schema}.{table_name}'
+                sql_query = f'SELECT COUNT(*) as count FROM {schema_name}.{table_name}'
                 self.inform(sql_query)
                 conn = psycopg2.connect(
                     host=self.db_destination['url'],
@@ -478,12 +527,14 @@ class PgSQLSaver:
 
  
     def mirror_pkeys(self, table_name: str = None, primary_key: str = None, primary_key_dtype: str = None, data_df: pd.DataFrame = None):
-        if(self.user_defined_schema):
-            x = table_name.split('.')
-            if(len(x) > 1):
-                table_name = x[1]
-            else:
-                table_name = x[0]
+        schema_name = 'public'
+        x = table_name.split('.')
+        if(len(x) > 1):
+            schema_name = x[0]
+            table_name = x[1]
+        else:
+            table_name = x[0]
+        schema_name = self.schema
         table_name = table_name.replace('.', '_').replace('-', '_')
         if(data_df.shape[0]):
             pkey_max = data_df[primary_key].max()
@@ -512,7 +563,7 @@ class PgSQLSaver:
                 else:
                     del_pkeys_list = f"{del_pkeys_list}, {key_str}"
 
-            sql_stmt = f"DELETE FROM {self.schema}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} > {self.max_pkey_del} AND {primary_key} not in ({del_pkeys_list})"
+            sql_stmt = f"DELETE FROM {schema_name}.{table_name} WHERE {primary_key} <= {str_pkey} AND {primary_key} > {self.max_pkey_del} AND {primary_key} not in ({del_pkeys_list})"
             self.inform(sql_stmt)
 
             conn = psycopg2.connect(

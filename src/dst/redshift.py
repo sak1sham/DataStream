@@ -148,6 +148,10 @@ class RedshiftSaver:
         except Exception as e:
             self.err("Unable to check the presence of the table at destination.")
             raise
+    
+    
+    def get_partition_col(self, table_name: str = None) -> str:
+        return None
 
 
     def count_n_records(self, table_name: str = None) -> int:

@@ -862,17 +862,11 @@ class PGSQLMigrate:
             ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
             ## In case of dumping, migration_snapshot_date is present
             ## we also need to account for those columns which are partitioned
-            if('partition_col' in self.curr_mapping.keys() and self.db['destination']['destination_type'] == 's3'):
-                if('partition_col_format' not in self.curr_mapping.keys()):
-                    self.curr_mapping['partition_col_format'] = 'str'
-                if(self.curr_mapping['partition_col'].lower() == 'migration_snapshot_date' or self.curr_mapping['partition_col_format'] == 'datetime'):
-                    n_columns_pgsql += 3
-                elif(self.curr_mapping['partition_col_format'] == 'str'):
-                    n_columns_pgsql += 1
-                elif(self.curr_mapping['partition_col_format'] == 'int'):
-                    n_columns_pgsql += 1
+            partition_now = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] else None
+            partition_prev = self.saver.get_partition_col(table_name)
+            self.inform(f'partition_prev = {partition_prev} and partition_now = {partition_now}')
             self.inform(f"n_columns (source) = {n_columns_pgsql} and n_columns (destination) = {n_columns_destination}")
-            if(n_columns_destination > 0 and n_columns_pgsql != n_columns_destination):
+            if(n_columns_destination > 0 and (n_columns_pgsql != n_columns_destination or partition_now==partition_prev)):
                 self.warn("There is a mismatch in columns present in source and destination. Deleting data from destination and encr-db and then re-migrating.")
                 self.saver.drop_table(table_name=table_name)
                 delete_metadata_from_mongodb(self.curr_mapping['unique_id'])

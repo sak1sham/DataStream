@@ -41,6 +41,9 @@ class DMS_exporter:
             raise IncorrectMapping("Can't have mirroring mode with destination S3")
         self.saver.mirror_pkeys(table_name, primary_key, primary_key_dtype, data_df)
 
+    def get_partition_col(self, table_name: str = None) -> str:
+        return self.saver.get_partition_col(table_name=table_name)
+
     def expire(self, expiry: Dict[str, int] = None, tz_info: Any = None):
         if(expiry):
             self.saver.expire(expiry, tz_info)
