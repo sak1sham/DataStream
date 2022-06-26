@@ -2,7 +2,7 @@
 
 ## Introduction
 
-A data migration service with multiple capabilities for creating pipelines seamlessly:
+A Data Migration Service (DMS) with multiple capabilities for creating pipelines seamlessly:
 1. Migrate data from PgSQL, MongoDB, API services, Kafka Consumer
 2. Store data into Amazon S3, Redshift or a PgSQL database
 3. 3 Modes of operation (Dumping, Logging and Syncing)
