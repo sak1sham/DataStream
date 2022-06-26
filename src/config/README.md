@@ -1,29 +1,34 @@
-# How to write your own Migration Mapping
+# Settings
 
-Migration mapping is a dict of specifications for each pipeline. Each specification consist of source, destination and data_properties. Each specification is structured in following format:
-```
-{
-    "job_1_unique_id": pipeline_format_1,
-    "job_2_unique_id": pipeline_format_2,
-    .
-    .
-    .
-    "job_n_unique_id": pipeline_format_n
-    "fastapi_server": True (Bool, Optional, Default=False)
-}
-```
+```fastapi_server```: (bool) Whether the fastapi server needs to be kept running in background. Jobs can be scheduled only if this field is set to True. Default=False
 
-Note:
-1. No need to change the encryption_store variable
-2. No need to remove any imported libraries
-3. Unique_id can't be "fastapi_server". It is a reserved keyword.
+```timezone```: (str) the default timezone that DMS script considers. As per pytz specifications. Default='Asia/Kolkata'.
+
+```notify```: (bool) Whether slack notifications need to be setup. Notified after completion of any migration, or when migration stops due to some exception. Default=False
+
+```encryption_store```: (Dict[str, str]) Required. Connection to a MongoDB type database. All information about running jobs (example - last run time, last primary key inserted, etc.) is stored here. ```url```, ```db_name```, ```collection_name``` needs to be set as keys within this dictionary.
+
+```dashboard_store```: (Dict[str, str]) Required. Connection to a MongoDB type database. All information about (un)finished jobs (example - total records migrated, storage size, time taken, etc.) is stored here. ```url```, ```db_name```, ```collection_name``` needs to be set as keys within this dictionary. The information stored in this location can help in creating a visibility dashboard for all running jobs.
+
+```slack_notif```: (Dict[str, str]). Credentials for slack notifications. Need to be provided in case slack_notify is set to True. All information about finished jobs are notified here. The unfinished jobs are also notified with a properly formatted exception message. ```slack_token```, ```channel``` needs to be set as keys within this dictionary. Default={}
+
+```cut_off_time```: (datetime.time, without timezone) If provided, will shut down the running jobs once the current time reaches cutoff time. Default=None
+
+Check out [this sample file](../../sample_config/settings.py) to learn how to create your own settings.
+
+# Job Mapping
+
+## Intro
+
+```primary_key```: The data field which is uniquely represents some record/document within a table/collection/api. For example: id, roll_number, etc
+
+```bookmark```: A datetime type data field present in every record/document, which gets automatically changed to NOW() whenever that record/document is modified. For example: updated_at, modified_at, etc.
 
 ## Specifying pipeline_format
 pipeline_format is a dictionary with following properties:
 1. source
 2. destination
 3. tables, or collections or api as per source['source_type'] (Data structuring)
-4. timezone
 
 ### Source
 ```

@@ -1,8 +1,8 @@
-# Data Migration Service
+# DataStream
 
 ## Introduction
 
-A migration service with multiple capabilities for creating data pipelines seamlessly:
+A Data Migration Service (DMS) with multiple capabilities for creating pipelines seamlessly:
 1. Migrate data from PgSQL, MongoDB, API services, Kafka Consumer
 2. Store data into Amazon S3, Redshift or a PgSQL database
 3. 3 Modes of operation (Dumping, Logging and Syncing)
@@ -32,57 +32,28 @@ pip-compile
 pip-sync
 ```
 
-These commands with first create a ```requirements.txt``` file, and then do the required installations.
+A ```requirements.txt``` file is first created, and then all required installations are performed.
 
 Once the installations are done, we are just 1 step away from starting creating our data pipelines.
 
 ### Configuring settings
 
-This DMS can be customized as per the requirements by creating a settings file (```src/config/settings.py```). For a sample on how to create settings file, check [this file](sample_config/settings.py).
+This DMS can be customized as per the requirements by creating a settings file (```src/config/settings.py```). Check out [this sample file](sample_config/settings.py) to learn how to create your own settings. The meaning for each settings field is documented [here](src/config/README.md).
 
 ### Creating Data Pipelines
 
-All configuration files are stored inside folder ```src/config```
-1. The Data Pipelines are created and stored inside folder ```src/config/jobs```
-2. The general script settings can be customized in ```src/config/settings.py``` file
+Check out [this documentation](src/config/README.md) to learn to create your own new data pipelines. A new data pipeline is created by adding a new file inside ```src/config/jobs/``` with a ```.py``` extension. The name of the file represents the unique id for the pipeline. Some sample mappings are present inside the ```src/config/jobs/``` folder.
 
-The documentation to create Data Pipelines is present [here](src/config/README.md).
+### Starting the Migration
 
+Now suppose you have created the following job mappings for your data pipelines: ```job_1.py```, ```job_2.py```, ```job_3.py```. You can start your migration by calling the ```main.py``` script from within the ```src``` folder. Pass in the file name(s) of the job(s) to be run as command line arguments.
 
-2. Modify the ```CMD``` command in ```Dockerfile``` as per requirements. Also, set the environment variables in ```docker-compose.yml``` file.
-```
-ENCR_MONGO_URL=<Temp_Mongo_DB_URL>
-DB_NAME=<Temp_Mongo_DB_Name>
-COLLECTION_NAME=<Temp_Mongo_DB_Collection_Name>
-PORT=<Uvicorn_Server_Port>
-HOST=<Uvicorn_Server_Host>
-AWS_ACCESS_KEY_ID=<AWS_ACCESS_KEY_ID>
-AWS_SECRET_ACCESS_KEY=<AWS_SECRET_ACCESS_KEY>
+```python
+## To run (or scheduled run) a single data pipeline: job_1.py
+python main.py job_1
 ```
 
-- ENCR_MONGO_URL, DB_NAME, COLLECTION_NAME: Some records from your source_database are saved temprarily (SHA256 encrypted) in a temporary mongoDB collection. These parameters specify the credentials and names for that temporary Mongo Database.
-- PORT, HOST: needed to run uvicorn server
-- AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY: Credentials to save files to destination.
-
-3. Use docker-compose to run service
-```bash
-docker-compose build
+```python
+## To run (or scheduled run) the job_1.py, job_2.py and job_3.py data pipelines together
+python main.py job_1 job_2 job_3
 ```
-```bash
-docker-compose up
-```
-
-This system can convert common datetime string columns to datetime columns.
-
-## DEPLOYMENT ON KUBERNETES
-
-1. create a new docker file in deployment/dockerfiles
-2. update the path of the new docker file created in github workflows
-3. create a new workflow file with different name and app name in the file
-4. update the environment variables in the deployment/env/prod/config.production.yaml
-
-
-## Visualizing jobs through DMS Dashboard
-1. ```pip install streamlit```
-2. ```cd src```
-3. ```streamlit run dashboard.py```
