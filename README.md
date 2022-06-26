@@ -46,12 +46,14 @@ The documentation to create new data pipelines is present [here](src/config/READ
 
 ### Starting the Migration
 
-Once you have created your job mappings (data pipelines), you can start your migration by calling the ```main.py``` script, along with the file name(s) of the job to be run.
+Now suppose you have created the following job mappings for your data pipelines: ```job_1.py```, ```job_2.py```, ```job_3.py```. You can start your migration by calling the ```main.py``` script from within the ```src``` folder, along with the file name(s) of the job to be run.
 
 ```python
 python main.py job_1
+## To run (or scheduled run) the job_1.py data pipeline
 ```
 or,
 ```python
 python main.py job_1 job_2 job_3
+## To run (or scheduled run) the job_1.py, job_2.py and job_3.py data pipeline together
 ```
