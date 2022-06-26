@@ -44,3 +44,14 @@ This DMS can be customized as per the requirements by creating a settings file (
 
 The documentation to create new data pipelines is present [here](src/config/README.md). A new data pipeline is created by adding a new file inside ```src/config/jobs/``` with a ```.py``` extension. The name of the file represents the unique id for the pipeline. Some sample mappings are present inside the ```src/config/jobs/``` folder.
 
+### Starting the Migration
+
+Once you have created your job mappings (data pipelines), you can start your migration by calling the ```main.py``` script, along with the file name(s) of the job to be run.
+
+```python
+python main.py job_1
+```
+or,
+```python
+python main.py job_1 job_2 job_3
+```
