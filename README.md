@@ -32,7 +32,7 @@ pip-compile
 pip-sync
 ```
 
-These commands with first create a ```requirements.txt``` file, and then do the required installations.
+A ```requirements.txt``` file is first created, and then all required installations are performed.
 
 Once the installations are done, we are just 1 step away from starting creating our data pipelines.
 
