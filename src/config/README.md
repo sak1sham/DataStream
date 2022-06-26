@@ -1,6 +1,6 @@
 # Settings
 
-```fastapi_server```: (bool) Whether the fastapi server needs to be kept running in background. Jobs can be scheduled only if fastapi_server is set to True. Default=False
+```fastapi_server```: (bool) Whether the fastapi server needs to be kept running in background. Jobs can be scheduled only if this field is set to True. Default=False
 
 ```timezone```: (str) the default timezone that DMS script considers. As per pytz specifications. Default='Asia/Kolkata'.
 
