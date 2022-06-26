@@ -14,7 +14,7 @@
 
 ```cut_off_time```: (datetime.time, without timezone) If provided, will shut down the running jobs once the current time reaches cutoff time. Default=None
 
-Check out [these sample files](sample_config/settings.py) to learn how to create your own settings.
+Check out [these sample files](../../sample_config/settings.py) to learn how to create your own settings.
 
 Migration mapping is a dict of specifications for each pipeline. Each specification consist of source, destination and data_properties. Each specification is structured in following format:
 ```
