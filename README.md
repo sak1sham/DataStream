@@ -42,7 +42,7 @@ This DMS can be customized as per the requirements by creating a settings file (
 
 ### Creating Data Pipelines
 
-The documentation to create new data pipelines is present [here](src/config/README.md). A new data pipeline is created by adding a new file inside ```src/config/jobs/``` with a ```.py``` extension. The name of the file represents the unique id for the pipeline. Some sample mappings are present inside the ```src/config/jobs/``` folder.
+Check out [this](src/config/README.md) documentation to learn to create your own new data pipelines. A new data pipeline is created by adding a new file inside ```src/config/jobs/``` with a ```.py``` extension. The name of the file represents the unique id for the pipeline. Some sample mappings are present inside the ```src/config/jobs/``` folder.
 
 ### Starting the Migration
 
