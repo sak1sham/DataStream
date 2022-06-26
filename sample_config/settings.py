@@ -8,7 +8,7 @@ settings = {
     'fastapi_server': False,        ## Setting FastAPI server will help in checking the health of the script by pinging at /health route. Here, we have disabled that option. To enable it, set it as True
     'timezone': 'Asia/Kolkata',     ## Timezone in which the data operates
     'notify': True,                 ## We want the script to send a notification once a migration is completed
-    'encryption_store': {           ## Encryption settings are essential for the working of the script. 
+    'encryption_store': {           ## Encryption settings are essential to store the information about jobs running. 
         'url': os.getenv('ENCR_MONGO_URL'),
         'db_name': os.getenv('DB_NAME'),
         'collection_name': os.getenv('COLLECTION_NAME')
