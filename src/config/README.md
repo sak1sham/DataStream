@@ -16,30 +16,19 @@
 
 Check out [this sample file](../../sample_config/settings.py) to learn how to create your own settings.
 
-Migration mapping is a dict of specifications for each pipeline. Each specification consist of source, destination and data_properties. Each specification is structured in following format:
-```
-{
-    "job_1_unique_id": pipeline_format_1,
-    "job_2_unique_id": pipeline_format_2,
-    .
-    .
-    .
-    "job_n_unique_id": pipeline_format_n
-    "fastapi_server": True (Bool, Optional, Default=False)
-}
-```
+# Job Mapping
 
-Note:
-1. No need to change the encryption_store variable
-2. No need to remove any imported libraries
-3. Unique_id can't be "fastapi_server". It is a reserved keyword.
+## Intro
+
+```primary_key```: The data field which is uniquely represents some record/document within a table/collection/api. For example: id, roll_number, etc
+
+```bookmark```: A datetime type data field present in every record/document, which gets automatically changed to NOW() whenever that record/document is modified. For example: updated_at, modified_at, etc.
 
 ## Specifying pipeline_format
 pipeline_format is a dictionary with following properties:
 1. source
 2. destination
 3. tables, or collections or api as per source['source_type'] (Data structuring)
-4. timezone
 
 ### Source
 ```
