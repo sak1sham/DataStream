@@ -5,8 +5,8 @@ load_dotenv()
 mapping = { 
     'source': { 
         'source_type': 'pgsql', 
-        'url': os.getenv('CMDB_URL'), 
-        'db_name': 'cmdb', 
+        'url': os.getenv('SOURCE_DB_URL'), 
+        "db_name": "database-name", 
         'username': os.getenv('DB_USERNAME'), 
         'password': os.getenv('DB_PASSWORD') 
     }, 

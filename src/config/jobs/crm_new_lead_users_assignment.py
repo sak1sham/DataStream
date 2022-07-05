@@ -6,7 +6,7 @@ mapping = {
     'source': {
         'source_type': 'pgsql',
         'url': os.getenv('CRMDB_URL'),
-        'db_name': 'crmdb',
+        "db_name": "database-name",
         'username': os.getenv('DB_USERNAME'),
         'password': os.getenv('DB_PASSWORD')
     },

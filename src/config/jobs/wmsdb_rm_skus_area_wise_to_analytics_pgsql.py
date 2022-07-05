@@ -5,27 +5,27 @@ load_dotenv()
 mapping = {
     "destination": {
         'ec2_1': {
-            "db_name": "wmsdb",
+            "db_name": "db-name",
             "schema": "public",
             "password": os.getenv('DB_PASSWORD'),
-            "url": "dms2.citymall.dev",
+            "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
         },
         'ec2_2': {
-            "db_name": "wmsdb",
+            "db_name": "db-name",
             "schema": "public",
             "password": os.getenv('DB_PASSWORD'),
-            "url": "dms1.citymall.dev",
+            "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
         }
     },
     "source": {
-        "db_name": "wmsdb",
+        "db_name": "db-name",
         "password": os.getenv('DB_PASSWORD'),
         "source_type": "pgsql",
-        "url": os.getenv('CMDB_URL'),
+        "url": os.getenv('SOURCE_DB_URL'),
         "username": os.getenv('DB_USERNAME')
     },
     "tables": [

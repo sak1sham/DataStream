@@ -10,10 +10,10 @@ mapping = {
         }
     },
     "source": {
-        "db_name": "wmsdb",
+        "db_name": "db-name",
         "password": os.getenv('DB_PASSWORD'),
         "source_type": "pgsql",
-        "url": os.getenv('CMDB_URL'),
+        "url": os.getenv('SOURCE_DB_URL'),
         "username": os.getenv('DB_USERNAME')
     },
     "tables": [

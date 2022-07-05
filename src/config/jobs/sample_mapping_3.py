@@ -5,20 +5,20 @@ load_dotenv()
 mapping = {
     'source': {
         'source_type': 'pgsql',
-        'url': os.getenv('CMDB_URL'),
-        'db_name': 'cmdb',
+        'url': os.getenv('SOURCE_DB_URL'),
+        'db_name': 'my-source-db-name',
         'username': os.getenv('DB_USERNAME'),
         'password': os.getenv('DB_PASSWORD')
     },
     'destination': { 
         's3': {
             'destination_type': 's3', 
-            's3_bucket_name': 'database-migration-service-prod' 
+            's3_bucket_name': 's3-bucket-name' 
         }
     },
     'tables': [
         {
-            'table_name': 'order_actions',
+            'table_name': 'my-table-name',
             'mode': 'logging',
             'primary_key': 'id',
             'primary_key_datatype': 'int',

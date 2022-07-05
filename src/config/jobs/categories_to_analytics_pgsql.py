@@ -5,32 +5,32 @@ load_dotenv()
 mapping = {
     'source': {
         'source_type': 'pgsql',
-        'url': os.getenv('CMDB_URL'),
-        'db_name': 'cmdb',
+        'url': os.getenv('SOURCE_DB_URL'),
+        "db_name": "database-name",
         'username': os.getenv('DB_USERNAME'),
         'password': os.getenv('DB_PASSWORD')
     },
     "destination": {
         'ec2_1': {
-            "db_name": "cmdb",
+            "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
-            "url": "dms2.citymall.dev",
+            "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
             "schema": "public"
         },
         'ec2_2': {
-            "db_name": "cmdb",
+            "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
-            "url": "dms1.citymall.dev",
+            "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
             "schema": "public"
         },
         'ec2_3': {
-            "db_name": "cmdb",
+            "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
-            "url": "dms3.citymall.dev",
+            "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
             "destination_type": "pgsql",
             "schema": "public"

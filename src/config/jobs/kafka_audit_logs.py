@@ -47,8 +47,8 @@ mapping = {
     ],
     'testing': {
         'test_type': 'pgsql',
-        'url': os.getenv('CMDB_URL'),
-        'db_name': 'cmdb',
+        'url': os.getenv('SOURCE_DB_URL'),
+        "db_name": "database-name",
         'username': os.getenv('DB_USERNAME'),
         'password': os.getenv('DB_PASSWORD'),
         'table_name': 'audit_logs',
