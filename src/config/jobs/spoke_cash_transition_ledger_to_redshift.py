@@ -14,10 +14,10 @@ mapping = {
         'redshift': {
             'destination_type': 'redshift',
             'host': os.getenv('REDSHIFT_URL'),
-            'database': 'cmwh',
+            'database': 'redshift-db-name',
             'user': os.getenv('REDSHIFT_USER'),
             'password': os.getenv('REDSHIFT_PASSWORD'),
-            's3_bucket_name': 'database-migration-service-prod',
+            's3_bucket_name': 's3-bucket-name',
         }
     },
     'tables': [            

@@ -10,14 +10,14 @@ mapping = {
     "destination": {
         'redshift': {
             'host': os.getenv('REDSHIFT_URL'),
-            'database': 'cmwh',
+            'database': 'redshift-db-name',
             'user': os.getenv('REDSHIFT_USER'),
             'password': os.getenv('REDSHIFT_PASSWORD'),
             'schema': 'cm_clevertap',
-            's3_bucket_name': 'database-migration-service-prod',
+            's3_bucket_name': 's3-bucket-name',
             'destination_type': 'redshift'
         },
-        'ec2_1': {
+        'destination_1': {
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
@@ -25,7 +25,7 @@ mapping = {
             "schema": "public",
             'destination_type': 'pgsql'
         },
-        'ec2_2':  {
+        'destination_2':  {
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
@@ -33,7 +33,7 @@ mapping = {
             "schema": "public",
             'destination_type': 'pgsql'
         },
-        'ec2_3': {
+        'destination_3': {
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",

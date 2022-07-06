@@ -3,46 +3,59 @@ from dotenv import load_dotenv
 load_dotenv()
 
 mapping = {
-    "destination": {
-        'ec2_1': {
-            "db_name": "database-name",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "destination.connection.url",
-            "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
-            "schema": "public"
-        },
-        'ec2_2': {
-            "db_name": "database-name",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "destination.connection.url",
-            "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
-            "schema": "public"
-        },
-        'ec2_3': {
-            "db_name": "database-name",
-            "password": os.getenv('DB_PASSWORD'),
-            "url": "destination.connection.url",
-            "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
-            "schema": "public"
-        }
-    },
-    "source": {
+    'source': {
+        'source_type': 'pgsql',
+        'url': os.getenv('SOURCE_DB_URL'),
         "db_name": "database-name",
-        "password": os.getenv('DB_PASSWORD'),
-        "source_type": "pgsql",
-        "url": os.getenv('SOURCE_DB_URL'),
-        "username": os.getenv('DB_USERNAME')
+        'username': os.getenv('DB_USERNAME'),
+        'password': os.getenv('DB_PASSWORD')
     },
-    "tables": [
-        {
-            "batch_size": 10000,
-            'strict': True,
-            "cron": "self-managed",
-            "mode": "dumping",
-            "table_name": "product_inventory_wms"
+    "destination": {
+        'destination_1': {
+            "db_name": "database-name",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "destination.connection.url",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        },
+        'destination_2': {
+            "db_name": "database-name",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "destination.connection.url",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
+        },
+        'destination_3': {
+            "db_name": "database-name",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "destination.connection.url",
+            "username": os.getenv('DB_USERNAME'),
+            "destination_type": "pgsql",
+            "schema": "public"
         }
+    },
+    'tables': [            
+        {
+            'table_name': 'my_table_name',
+            'cron': 'self-managed',
+            'mode': 'mirroring',
+            'primary_key': 'id',
+            'primary_key_datatype': 'int',
+            'bookmark': 'updated_at_for_pipeline',
+            'improper_bookmarks': False,
+            'batch_size': 10000,
+            'strict': True,
+            'col_rename': {
+                'tag': 'tag_'
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
+            },
+            'grace_updation_lag': {
+                'days': 1
+            },
+        },
     ]
 }

@@ -20,29 +20,38 @@ mapping = {
             's3_bucket_name': 's3-bucket-name',
         }
     },
-    'tables': [
+    'tables': [            
         {
-            'table_name': 'ofd_items',
+            'table_name': 'orders',
             'cron': 'self-managed',
             'mode': 'syncing',
-            'primary_key': 'id',
+            'primary_key': 'order_id',
             'primary_key_datatype': 'int',
-            'bookmark': 'updated_at_for_pipeline',
+            'bookmark': 'updated_at',
             'improper_bookmarks': False,
             'batch_size': 100000,
             'lob_fields_length': {
-                'shipments': 65535,
-                'order_item_status': 3036,
-                'route_name': 3036,
-                'spoke_name': 3036,
-                'delivery_boy_username': 3036,
+                'review_c1': 65535,
+                'review_c2': 65535,
+                'tags': 65535,
+                'tracking_info': 65535,
+                'extra_info': 65535,
+                'order_error_details': 65535,
+                'payment_status': 3036,
+                'address_pincode': 3036,
+                'rp_order_id': 3036,
+                'c1_formatted_address': 10240,
+                'order_rescheduled_reason': 3036,
+                'address_name': 3036,
+                'order_state': 3036,
+                'payment_id': 3036,
+            },
+            'buffer_updation_lag':{
+                'hours': 2,
             },
             'grace_updation_lag': {
                 'days': 1
             },
-            'buffer_updation_lag':{
-                'hours': 2,
-            }
         },
     ]
 }

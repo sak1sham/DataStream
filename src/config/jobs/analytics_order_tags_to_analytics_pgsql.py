@@ -11,7 +11,7 @@ mapping = {
         'password': os.getenv('DB_PASSWORD')
     },
     "destination": {
-        'ec2_1': {
+        'destination_1': {
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
@@ -19,7 +19,7 @@ mapping = {
             "destination_type": "pgsql",
             "schema": "analytics"
         },
-        'ec2_2': {
+        'destination_2': {
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
@@ -27,7 +27,7 @@ mapping = {
             "destination_type": "pgsql",
             "schema": "analytics"
         },
-        'ec2_3': {
+        'destination_3': {
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",

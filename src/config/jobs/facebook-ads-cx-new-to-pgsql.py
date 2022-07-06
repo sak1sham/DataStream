@@ -15,11 +15,11 @@ mapping = {
         
         'redshift': {
             'host': os.getenv('REDSHIFT_URL'),
-            'database': 'cmwh',
+            'database': 'redshift-db-name',
             'user': os.getenv('REDSHIFT_USER'),
             'password': os.getenv('REDSHIFT_PASSWORD'),
             'schema': 'facebook_ads_cx_new',
-            's3_bucket_name': 'database-migration-service-prod',
+            's3_bucket_name': 's3-bucket-name',
             'destination_type': 'redshift'
         },
         # 'ec_1': {
@@ -38,7 +38,7 @@ mapping = {
             "schema": "public",
             'destination_type': 'pgsql'
         },
-        # 'ec2_3': {
+        # 'destination_3': {
         #     "db_name": "database-name",
         #     "password": os.getenv('DB_PASSWORD'),
         #     "url": "destination.connection.url",
