@@ -24,11 +24,23 @@ Check out [this sample file](../../sample_config/settings.py) to learn how to cr
 
 ```bookmark```: A datetime type data field present in every record/document, which gets automatically changed to NOW() whenever that record/document is modified. For example: updated_at, modified_at, etc.
 
-## Specifying pipeline_format
-pipeline_format is a dictionary with following properties:
+## Mapping file format
+pipeline_format is a dictionary with following keys:
 1. source
 2. destination
-3. tables, or collections or api as per source['source_type'] (Data structuring)
+3. tables (for source pgsql), or collections (for source mongodb), or apis (for source api), or topics (for source kafka)
+
+For example:
+```python
+mapping = {
+    'source': {
+        'source_type': 'pgsql'
+        ...
+    },
+    'destination': {...},
+    'tables': [...]
+}
+```
 
 ### Source
 ```
