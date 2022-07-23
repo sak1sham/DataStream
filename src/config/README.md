@@ -176,6 +176,7 @@ mapping = {
             ## str: Required: "self-managed" or a specific cron-schedule like '* * * * * 7-19 */1 0' (Refer Notes 1)
             ## If cron is self-managed, the script will start immediately, without any internal scheduler.
             ## If a specific cron is provided (As per Notes 1), the script will use APScheduler to interally schedule the migration
+            ## Jobs can be scheduled only when fastapi server is enabled in settings. Otherwise, an external scheduler can be used (like kubernetes) with fastapi server disabled and cron set to 'self-managed'
 
             "mode": "mirroring",
             ## str: Required, Mode of migration: dumping, logging, syncing, or mirroring
@@ -255,6 +256,7 @@ mapping = {
             ## str: Required: "self-managed" or a specific cron-schedule like '* * * * * 7-19 */1 0' (Refer Notes 1)
             ## If cron is self-managed, the script will start immediately, without any internal scheduler.
             ## If a specific cron is provided (As per Notes 1), the script will use APScheduler to interally schedule the migration
+            ## Jobs can be scheduled only when fastapi server is enabled in settings. Otherwise, an external scheduler can be used (like kubernetes) with fastapi server disabled and cron set to 'self-managed'
 
             "mode": "syncing",
             ## str: Required, Mode of migration: dumping, logging, or syncing
@@ -336,6 +338,7 @@ mapping = {
             ## str: Required: "self-managed" or a specific cron-schedule like '* * * * * 7-19 */1 0' (Refer Notes 1)
             ## If cron is self-managed, the script will start immediately, without any internal scheduler.
             ## If a specific cron is provided (As per Notes 1), the script will use APScheduler to interally schedule the migration
+            ## Jobs can be scheduled only when fastapi server is enabled in settings. Otherwise, an external scheduler can be used (like kubernetes) with fastapi server disabled and cron set to 'self-managed'
 
             "batch_size": 10000,
             ## int: Optional, the size of the batch/chunks. Default=10000
@@ -408,8 +411,3 @@ Once new records are available at the source, they are migrated and appended to 
 However to check for updations in the existing records, we need to have a field in the data (for example: updated_at, update_timestamp, etc.) which changes its value to latest timestamp whenever the record is updated. 
 For the purpose of maintaining such column, sometimes triggers are added at the source database. [Refer this](https://stackoverflow.com/questions/70268251/trigger-function-to-update-timestamp-attribute-when-any-value-in-the-table-is-up).
 Bookmarks are needed only in case mode of operation is syncing, or mirroring. In case of logging or dumping mode, we are not checking for updates, hence there is no need of bookmarks.
-
-## Notes:
-1. If fastapi server is started, then data can migrated on scheduled basis, as well as immediate basis (i.e., migrating data just once).
-2. If fastapi server is not started, then data can only be migrated on immediate basis (i.e., migrating data just once). To run scheduled jobs in such cases, an external scheduler is required.
-3. In case of pgsql, we can migrate all tables of database by passing 'table_name' as '*'. We can also add a list of tables to exclude them in such cases.
