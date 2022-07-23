@@ -141,6 +141,7 @@ mapping = {
     'destination': {...},
     'tables': [
         ## tables is a list. Each element of this list corresponds to a table specification (dictionary)
+        ## Here just a single table is specified for the sake of simplicity.
         {
             ## Table 1
             "table_name": "my_table",
@@ -174,6 +175,16 @@ mapping = {
             "primary_key_datatype": "uuid",
             ## str: Required for all except dumping mode
             ## This specified the datatype of the primary_key, can be str, uuid, int, or datetime
+            
+            'partition_col': 'created_at',
+            ## str or False: Optional (Default=False). Useful when destination is pgsql or s3.
+            ## If False, the data won't be partitioned at destination
+            ## Otherwise, data partitioning will be performed. 
+            ## For destionation is pgsql, only datetime partitions are useful, and the monthly partitions will be created from 2015-2030
+
+            'partition_col_format': 'datetime',
+            ## str: Optional (Default = str): can be datetime, int, or str
+            ## The datatype of the partition column at source
             
             "buffer_updation_lag": {
                 "hours": 2
