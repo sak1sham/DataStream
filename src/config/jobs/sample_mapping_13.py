@@ -9,36 +9,36 @@ mapping = {
     },
     "destination": {
         'destination_redshift': {
+            'destination_type': 'redshift',
             'host': os.getenv('REDSHIFT_URL'),
             'database': 'redshift-db-name',
             'user': os.getenv('REDSHIFT_USER'),
             'password': os.getenv('REDSHIFT_PASSWORD'),
             'schema': 'cm_clevertap',
             's3_bucket_name': 's3-bucket-name',
-            'destination_type': 'redshift'
         },
         'destination_1': {
+            'destination_type': 'pgsql',
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
             "schema": "public",
-            'destination_type': 'pgsql'
         },
         'destination_2':  {
+            'destination_type': 'pgsql',
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
             "schema": "public",
-            'destination_type': 'pgsql'
         },
         'destination_3': {
+            "destination_type": "pgsql",
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
             "schema": "public"
         }
     },

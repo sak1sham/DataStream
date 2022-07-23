@@ -22,27 +22,27 @@ mapping = {
             'destination_type': 'redshift'
         },
         'ec_1': {
+            'destination_type': 'pgsql',
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
             "schema": "public",
-            'destination_type': 'pgsql'
         },
         'ec_2':  {
+            'destination_type': 'pgsql',
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
             "schema": "public",
-            'destination_type': 'pgsql'
         },
         'destination_3': {
+            "destination_type": "pgsql",
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
             "schema": "public"
         }
 

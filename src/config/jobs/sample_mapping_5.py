@@ -5,27 +5,27 @@ load_dotenv()
 mapping = {
     "destination": {
         'destination_1': {
+            "destination_type": "pgsql",
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
             "schema": "public"
         },
         'destination_2': {
+            "destination_type": "pgsql",
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
             "schema": "public"
         },
         'destination_3': {
+            "destination_type": "pgsql",
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
-            "destination_type": "pgsql",
             "schema": "public"
         }
     },

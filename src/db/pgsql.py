@@ -383,13 +383,17 @@ class PGSQLMigrate:
         if len(columns) == 0:
             return df
         for each_element in columns:
-            masking_column, masking_column_data_type, masking_digits = each_element
-            if masking_column in df.columns:
-                if masking_column_data_type == "str":
-                    df[masking_column] = df[masking_column].apply(lambda x: x[:-masking_digits] + "X"*(masking_digits))
-                elif masking_column_data_type == "int" or masking_column == "float":
-                    multiplier = pow(10, masking_digits)
-                    df[masking_column] = df[masking_column].apply(lambda x: (x//multiplier)*multiplier)
+            masking_column, masking_digits = each_element
+            if masking_column in self.col_dtypes:
+                masking_column_data_type = self.col_dtypes[masking_column]
+                if masking_column in df.columns:
+                    if masking_column_data_type == "text":
+                        df[masking_column] = df[masking_column].fillna('').astype(str)
+                        df[masking_column] = df[masking_column].apply(lambda x: x[:-masking_digits] + "X"*(masking_digits))
+                    elif masking_column_data_type == "bigint":
+                        multiplier = pow(10, masking_digits)
+                        df[masking_column] = pd.to_numeric(df[masking_column], errors='coerce').fillna(0).astype(int)
+                        df[masking_column] = df[masking_column].apply(lambda x: (x//multiplier)*multiplier)
         return df
 
 
@@ -408,10 +412,12 @@ class PGSQLMigrate:
                 host = self.db['source']['url'],
                 database = self.db['source']['db_name'],
                 user = self.db['source']['username'],
-                password = self.db['source']['password']
+                password = self.db['source']['password'],
+                **settings['keepalive_kwargs']
             )
             try:
-                self.col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
+                if not self.col_dtypes:
+                    self.col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
                 cursor_name = self.curr_mapping['unique_id'].replace('_', '-').replace('.', '-')
                 with conn.cursor(cursor_name, scrollable = True) as curs:
                     curs.itersize = 2
@@ -554,6 +560,7 @@ class PGSQLMigrate:
             except Sigterm as e:
                 raise
             except Exception as e:
+                self.saver.close()
                 raise ProcessingError("Caught some exception while processing records.") from e
             conn.close()
         except Sigterm as e:
@@ -588,6 +595,7 @@ class PGSQLMigrate:
                 sql_stmt = f"SELECT max({self.curr_mapping['primary_key']}) as curr_max_pkey FROM {table_name}"
             try:
                 curr_max_pkey = ''
+                self.inform(sql_stmt)
                 with conn.cursor('cursor-name', scrollable = True) as curs:
                     curs.itersize = 2
                     curs.execute(sql_stmt)
@@ -856,9 +864,9 @@ class PGSQLMigrate:
                 user = self.db['source']['username'],
                 password = self.db['source']['password']
             )
-            col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
+            self.col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
             conn.close()
-            n_columns_pgsql = len(col_dtypes) + 1
+            n_columns_pgsql = len(self.col_dtypes) + 1
             ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
             ## In case of dumping, migration_snapshot_date is present
             ## we also need to account for those columns which are partitioned
@@ -1032,11 +1040,14 @@ class PGSQLMigrate:
                 self.inform(message = f"Migration completed for table {str(table_name)}")
         except KeyboardInterrupt:
             self.save_job_working_data(curr_table_processed, status=False)
+            self.saver.close()
             raise
         except Sigterm as e:
+            self.saver.close()
             raise
         except Exception as e:
             self.save_job_working_data(curr_table_processed, status=False)
+            self.saver.close()
             raise
         else:
             self.save_job_working_data(curr_table_processed)
