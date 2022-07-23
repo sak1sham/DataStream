@@ -68,7 +68,7 @@ For Kafka as source
 ```python
 'source': {
     'source_type': 'kafka', 
-    ## str: Required, can be pgsql, mongo, api, or kafka
+    ## str: Required
     
     'kafka_server': 'my.connection.url',  
     ## str: Required, server for kafka connection
@@ -415,31 +415,16 @@ Writing Cron expression as per guidelines at [APScheduler docs](https://apschedu
 For example: '* * * * * 7-19 */1 0' represents every minute between 7AM to 7PM.
 
 ## 2. What are the three modes of operation?
-1. Dumping: When we are dumping data, snapshots of the datastore are captured at regular intervals. We maintain multiple copies of the tables
-2. Logging: Logging is the mode where the data is only being added to the source table, and we assume no updations are ever performed. Only new records are migrated.
-3. Syncing: Where all new records is migrated, and all updations are also mapped to destination. If a record is deleted at source, it's NOT deleted at destination
+1. Dumping: When we are dumping data, snapshots of the datastore are captured every time and migrated to destination. Thus, we maintain multiple copies of the source data. This mode of operation adds a column "migration_snapshot_date" which is a timestamp of when the migration was done for a particular record.
+2. Logging: In this mode of operation, we migrate new records from source to the destination. The existing records are not updated even when they are updated at source. We assume that data will never be updated at source. If data is deleted at source, it won't be deleted at destination
+3. Syncing: Check all new records, as well as update existing ones. If data is deleted at source, it won't be deleted at destination
+3. Mirroring: Check all new records, update existing ones, as well as delete non-existing ones. A complete mirror image of the source data is maintained at destination. This mode is not available in S3 destination.
 
 ## 3. What are Bookmarks?
 Once new records are available at the source, they are migrated and appended to the data at destination. 
 However to check for updations in the existing records, we need to have a field in the data (for example: updated_at, update_timestamp, etc.) which changes its value to latest timestamp whenever the record is updated. 
 For the purpose of maintaining such column, sometimes triggers are added at the source database. [Refer this](https://stackoverflow.com/questions/70268251/trigger-function-to-update-timestamp-attribute-when-any-value-in-the-table-is-up).
 Bookmarks are needed only in case mode of operation is syncing, or mirroring. In case of logging or dumping mode, we are not checking for updates, hence there is no need of bookmarks.
-
-## 2. Specifying data types in MongoDB fields
-Only specify if the field belongs to one of the following category:
-1. 'bool'
-2. 'float'
-3. 'int'
-4. 'datetime'
-Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string. By default, datetime is converted to strings in MongoDB processing.
-
-## 3. Partition Columns formats
-'int' or 'str' (Default) or 'datetime', or list of these formats for different columns.
-
-## 4. Data Dumping
-
-True or False. If set to true, it adds a column 'migration_snapshot_date' to data, which stores the datetime of migration. Without updation checks, it simply dumps the data into destination. If set to true, one can also partition data based on 'migration_snapshot_date'.
-
 
 ## Notes:
 1. If fastapi server is started, then data can migrated on scheduled basis, as well as immediate basis (i.e., migrating data just once).
