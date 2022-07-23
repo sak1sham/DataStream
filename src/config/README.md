@@ -45,37 +45,79 @@ mapping = {
 ### Source
 ```python
 'source': {
-    'source_type': 'mongo', ## str: Required, can be pgsql, mongo, api, or kafka,
-    'url': 'my.connection.url',  ## str: Required, url for the data source
-    'db_name': 'my-db-name',  ## str: Required, name of source dabatase. In case of kafka, a dummy db_name can be provided
-    'username': '', ## str: Optional, username to connect to the db
-    'password': ''  ## str: Optional, password to connect to the db
+    'source_type': 'mongo', 
+    ## str: Required, can be pgsql, mongo, api, or kafka,
+    
+    'url': 'my.connection.url',  
+    ## str: Required, url for the data source
+    
+    'db_name': 'my-db-name',  
+    ## str: Required, name of source dabatase. In case of kafka, a dummy db_name can be provided
+    
+    'username': '', 
+    ## str: Optional, username to connect to the db
+    
+    'password': ''  
+    ## str: Optional, password to connect to the db
 },
 ```
 
 ### Destination
 ```python
-'destination': {        ## Zero or more destinations can be provided, as key-value pairs of unique-names and respective destination specifications
-    "dest-1": {         ## First destination. 'dest-1' is a user-defined and unique name for the destination
-        'destination_type': 's3',   ## str: Required, type of destination (from s3, redshift, pgsql)
-        's3_bucket_name': 'my-s3-bucket-name',  ## str: Required when destination_type is 's3' otherwise optional, name of s3-bucket which will be used to store data at destination
-        's3_suffix': 'my_suffix'    ## str: Optional, the suffix to be added to name of table (Athena, and S3 folder) at destination
+'destination': {        
+    ## Zero or more destinations can be provided, as key-value pairs of unique-names and respective destination specifications
+    
+    ## First destination. 'dest-1' is a user-defined and unique name for the destination
+    "dest-1": {         
+        'destination_type': 's3',   
+        ## str: Required, type of destination (from s3, redshift, pgsql)
+        
+        's3_bucket_name': 'my-s3-bucket-name',  
+        ## str: Required when destination_type is 's3' otherwise optional, name of s3-bucket which will be used to store data at destination
+        
+        's3_suffix': 'my_suffix'    
+        ## str: Optional, the suffix to be added to name of table (Athena, and S3 folder) at destination
     },
-    "my_dest_2": {      ## Second destination. 'my_dest_2' is a user-defined and unique name for the destination
-        'destination_type': 'redshift',   ## str: Required, type of destination (from s3, redshift, pgsql)
+    
+    ## Second destination. 'my_dest_2' is a user-defined and unique name for the destination
+    "my_dest_2": {      
+        'destination_type': 'redshift',   
+        ## str: Required, type of destination (from s3, redshift, pgsql)
+        
         'host': 'examplecluster.abc123xyz789.us-west-1.redshift.amazonaws.com',  ## str: Required, host url to connect to redshift
-        'database': 'redshift-db-name',     ## str: Required, database to connect in redshift
-        'user': os.getenv('REDSHIFT_USER'), ## str: Required, username credentials for redshift connection
-        'password': os.getenv('REDSHIFT_PASSWORD'), ## str: Required, password credentials for redshift connection
-        's3_bucket_name': 's3-bucket-name', ## str: Required, for faster migration, the data is first saved to s3 bucket and then transferred to redshift. No data will be stored here, but is required as a middleware
+        
+        'database': 'redshift-db-name',     
+        ## str: Required, database to connect in redshift
+        
+        'user': os.getenv('REDSHIFT_USER'), 
+        ## str: Required, username credentials for redshift connection
+        
+        'password': os.getenv('REDSHIFT_PASSWORD'), 
+        ## str: Required, password credentials for redshift connection
+        
+        's3_bucket_name': 's3-bucket-name', 
+        ## str: Required, for faster migration, the data is first saved to s3 bucket and then transferred to redshift. No data will be stored here, but is required as a middleware
     }
-    'pgsql_destination_3': {    ## Third destination. 'pgsql_destination_3' is a user-defined and unique name for the destination
-        "destination_type": "pgsql",    ## str: Required, type of destination (from s3, redshift, pgsql)
-        "url": "destination.connection.url",    ## str: Required, host url to connect to destination
-        "db_name": "database-name",     ## str: Required, database to connect in destination pgsql
-        "username": os.getenv('DB_USERNAME'),   ## str: Required, credentials for destination connection
-        "password": os.getenv('DB_PASSWORD'),   ## str: Required, credentials for destination connection
-        "schema": "public"  ## str: Optional, schema to migrate to at destination. If not provided, data is migrated to a new schema: {source_name}_{source_db_name}_dms. For example - if schema is not provided here, the data will be migrated to mongo_my-db-name_dms
+    
+    ## Third destination. 'pgsql_destination_3' is a user-defined and unique name for the destination
+    'pgsql_destination_3': {    
+        "destination_type": "pgsql",    
+        ## str: Required, type of destination (from s3, redshift, pgsql)
+        
+        "url": "destination.connection.url",    
+        ## str: Required, host url to connect to destination
+        
+        "db_name": "database-name",     
+        ## str: Required, database to connect in destination pgsql
+        
+        "username": os.getenv('DB_USERNAME'),   
+        ## str: Required, credentials for destination connection
+        
+        "password": os.getenv('DB_PASSWORD'),   
+        ## str: Required, credentials for destination connection
+        
+        "schema": "public"  
+        ## str: Optional, schema to migrate to at destination. If not provided, data is migrated to a new schema: {source_name}_{source_db_name}_dms. For example - if schema is not provided here, the data will be migrated to mongo_my-db-name_dms
     },
 },
 ```
