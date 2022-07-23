@@ -43,22 +43,26 @@ mapping = {
 ```
 
 ### Source
-```
+```python
 'source': {
-    'source_type': 'mongo' or 'pgsql' or 'api', or 'kafka',
-    'url': '' (the url to connect to the data source)
-    'db_name': '' (name of dabatase for mongoDB and pgsql sources),
+    'source_type': 'mongo' (can be pgsql, mongo, api, or kafka),
+    'url': '' (url for the data source)
+    'db_name': '' (name of source dabatase),
     'username': '' (Optional),
     'password': '' (Optional)
 },
 ```
 
 ### Destination
-```
+```python
 'destination': {
-    'destination_type': 's3' or 'redshift',
-    'host': '',
-    'database': '',
+    "dest-1": {
+        ## 1st destination
+        'destination_type': 's3',
+        'host': '',
+        'database': '',
+
+    }
     'user': '',
     'password': '',
     's3_bucket_name': '',
