@@ -17,30 +17,22 @@ mapping = {
             's3_bucket_name': 's3-bucket-name',
             'destination_type': 'redshift'
         },
-        # 'destination_1': {
-        #     "db_name": "database-name",
-        #     "password": os.getenv('DB_PASSWORD'),
-        #     "url": "destination.connection.url",
-        #     "username": os.getenv('DB_USERNAME'),
-        #     "schema": "public",
-        #     'destination_type': 'pgsql'
-        # },
-        'destination_2':  {
+        'destination_1': {
+            'destination_type': 'pgsql',
             "db_name": "database-name",
             "password": os.getenv('DB_PASSWORD'),
             "url": "destination.connection.url",
             "username": os.getenv('DB_USERNAME'),
             "schema": "public",
-            'destination_type': 'pgsql'
         },
-        # 'destination_3': {
-        #     "db_name": "database-name",
-        #     "password": os.getenv('DB_PASSWORD'),
-        #     "url": "destination.connection.url",
-        #     "username": os.getenv('DB_USERNAME'),
-        #     "destination_type": "pgsql",
-        #     "schema": "public"
-        # }
+        'destination_2':  {
+            'destination_type': 'pgsql',
+            "db_name": "database-name",
+            "password": os.getenv('DB_PASSWORD'),
+            "url": "destination.connection.url",
+            "username": os.getenv('DB_USERNAME'),
+            "schema": "public",
+        }
     },
     
     "apis": [
