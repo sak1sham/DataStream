@@ -14,7 +14,7 @@
 
 ```cut_off_time```: (datetime.time, without timezone) If provided, will shut down the running jobs once the current time reaches cutoff time. Default=None
 
-Check out [this sample file](../../sample_config/settings.py) to learn how to create your own settings.
+Check out [this sample file](../../sample_settings/settings.py) to learn how to create your own settings.
 
 # Job Mapping
 
