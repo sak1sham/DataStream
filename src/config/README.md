@@ -390,23 +390,6 @@ In addition to the mapping, we also need to specify 2 functions: ```get_table_na
 As function name says, ```get_table_name``` returns the name of the destination table for a given record. In case only a single table is maintained at destination, a constant string can be returned.
 ```process_dict``` function allows us to customize the record as per requirements. In case the data has to be saved without modifications, then the record can be returned as is.
 
-## fastapi_server
-(Bool): default = False. If user sets 'fastapi_server' to True, a uvicorn server is started.
-
-## timezone
-(Str): default = 'Asia/Kolkata'. Used for processing dates in given timezone, using last_run_cron_job, etc. For mongo as the source, this service saves dates in UTC timezone, and for pgsql as the source, this service saves dates without changing their timezone.
-
-## notify
-(Bool): default = False. If provided, slack_notif option is enabled, where we can provide details of the slack channels, and slack_token
-
-
-# slack_notif
-This is a dict type object with following details:
-1. slack_token: Unique slack token for this data_migration_service application
-2. channel: unique ID of the channel we want to post to
-
-Note: We need to add the bot created for slack API to the channel we want to post to, or provide the necessary permissions.
-
 # Notes
 
 ## 1. Writing Cron Expressions
