@@ -29,6 +29,7 @@ pipeline_format is a dictionary with following keys:
 1. source
 2. destination
 3. tables (for source pgsql), or collections (for source mongodb), or apis (for source api), or topics (for source kafka)
+4. Whenever kafka is a source, an additional key "redis" needs to be provided to temporarily cache data
 
 For example:
 ```python
@@ -43,10 +44,11 @@ mapping = {
 ```
 
 ### Source
+For MongoDB and PgSQL as sources
 ```python
 'source': {
     'source_type': 'mongo', 
-    ## str: Required, can be pgsql, mongo, api, or kafka,
+    ## str: Required, can be pgsql, mongo
     
     'url': 'my.connection.url',  
     ## str: Required, url for the data source
@@ -59,6 +61,29 @@ mapping = {
     
     'password': ''  
     ## str: Optional, password to connect to the db
+},
+```
+
+For Kafka as source
+```python
+'source': {
+    'source_type': 'kafka', 
+    ## str: Required
+    
+    'kafka_server': 'my.connection.url',  
+    ## str: Required, server for kafka connection
+    
+    'db_name': 'my-db-name',  
+    ## str: Required, A dummy database name, required to make a schema at destination
+    
+    'kafka_username': '', 
+    ## str: Optional, username to connect to the kafka server
+    
+    'kafka_password': '',
+    ## str: Optional, password to connect to the kafka server
+
+    'consumer_group_id': "you_consumer_group_id"
+    ## str: Required to consume data from source's topic
 },
 ```
 
@@ -153,7 +178,7 @@ mapping = {
             ## If a specific cron is provided (As per Notes 1), the script will use APScheduler to interally schedule the migration
 
             "mode": "mirroring",
-            ## str: Reqruired, Mode of migration: dumping, logging syncing, or mirroring
+            ## str: Required, Mode of migration: dumping, logging, syncing, or mirroring
             ## Refer Notes 2 for understanding the 4 modes of operations.
             
             "batch_size": 10000,
@@ -208,46 +233,162 @@ mapping = {
 }
 ```
 #### Collections
+If source type is Mongo, then the "collections" specification needs to be provided to identify the collection characteristics at source
 
-#### apis
-If source is PGSQL, we need to provide a field ```tables```, which is a list of table_specifications. Table_specifications shall be in following format:
-```
-{
-    'table_name': str,
-    'bookmark': False or 'field_name' (optional, Default=False, for example - 'updated_at'),
-    'primary_key': string of records (Required, if logging or syncing mode),
-    'primary_key_datatype': 'str' or 'int' or 'datetime' (Required, if logging or syncing mode),
-    'exclude_tables': [] (Optional, List[str] or str, list of table names to exclude from entire database),
-    'cron': '* * * * * 7-19 */1 0' or 'self-managed' (Refer Notes 1),
-    'partition_col': False or 'column-name' (str or list of str),
-    'partition_col_format': '' (Optional, Refer Notes 3),
-    'mode': 'syncing' or 'logging' or 'dumping',
-    'improper_bookmarks': True/False (default = True)
-    'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True)
-}
-```
-
-If source is MongoDB, we need to provide a field ```collections```, which is a list of collection_specifications. Collection_specifications shall be in following format:
-```
-{
-    'collection_name': '',
-    'fields': {
-        'field_1': 'int' (Refer Notes 2),
-        'field_2': 'complex', 
+"collections": List[Dict[str, Any]]
+```python
+mapping = {
+    'source': {
+        'source_type': 'pgsql'
         ...
-    } (Optional),
-    'bookmark': False or 'field_name' (optional, for example - 'updated_at'),
-    'archive': "Mongodb_query" or False,
-    'cron': '* * * * * 7-19 */1 0' (Refer Notes 1),
-    'partition_col': False or '' name of the field (str or list of str),
-    'partition_col_format': '' (Optional, Refer Notes 3),
-    'expiry': {'days': 30, 'hours': 5} (dict, Optional, used only when is_dump = True),
-    'mode': 'syncing' or 'logging' or 'dumping',
-    'improper_bookmarks': true/false,
-    'batch_size': int,
-    'time_delay': int (delay between each batch migration)
+    },
+    'destination': {...},
+    'collections': [
+        ## collections is a list. Each element of this list corresponds to a collection specification (dictionary)
+        ## Here just a single collection is specified for the sake of simplicity. Refer jobs\sample_mapping_2.py for specifying multiple collections
+        {
+            ## collection 1
+            "collection_name": "my_collection",
+            ## str: Required, Name of the collection at source
+
+            "cron": "self-managed",
+            ## str: Required: "self-managed" or a specific cron-schedule like '* * * * * 7-19 */1 0' (Refer Notes 1)
+            ## If cron is self-managed, the script will start immediately, without any internal scheduler.
+            ## If a specific cron is provided (As per Notes 1), the script will use APScheduler to interally schedule the migration
+
+            "mode": "syncing",
+            ## str: Required, Mode of migration: dumping, logging, or syncing
+            ## Refer Notes 2 for understanding the three modes of operations.
+            
+            "batch_size": 10000,
+            ## int: Optional, the size of the batch/chunks. Default=10000
+
+            'time_delay': 2 
+            ## int: Optional. Seconds to delay between migration of each batch migration
+            
+            "bookmark": "updated_at",
+            ## str: Required if mode is syncing, otherwise Optional
+            ## Refer Notes 3 for understanding what are bookmarks
+            
+            "improper_bookmarks": False,
+            ## bool: Optional (Default = False)
+            ## set this as true in case the bookmark fields at source have datetimes in any other standard format (like string)
+            
+            'partition_col': 'created_at',
+            ## str or False: Optional (Default=False). Useful when destination is pgsql or s3.
+            ## If False, the data won't be partitioned at destination
+            ## Otherwise, data partitioning will be performed. 
+            ## For destionation is pgsql, only datetime partitions are useful, and the monthly partitions will be created from 2015-2030
+
+            'partition_col_format': 'datetime',
+            ## str: Optional (Default = str): can be datetime, int, or str
+            ## The datatype of the partition column at source
+            
+            "buffer_updation_lag": {
+                "hours": 2
+            },
+            ## Dict[str, int]: Optional. In case the data is frequently updated, this helps in double-checking the records updated between (migration_start_time - buffer_updation_lag) to (migration_start_time), where migration_start_time is the time of start of migration 
+            ## hours, days and minutes can be specified
+
+            "grace_updation_lag": {
+                "days": 1
+            },
+            ## Dict[str, int]: Optional. In case the data is frequently updated, this helps in double-checking the records updated in the grace_updation_lag before the previous successful migration
+            ## For example, here days = 1, and if we are running this script on a daily basis, and the job was successful yesterday, then today it will again check for all updates which happened day-before-yeterday to yesterday
+            ## hours, days and minutes can be specified
+            
+            "fields": {
+                'created_at': 'datetime',
+                'is_available': 'bool',
+                'priority': 'int',
+                'amount': 'float',
+                ...
+            }
+            ## Dict[str, str]: Optional. By default all fields are considered as strings, and get stringified
+            ## field-type can be datetime, bool, int or float
+            ## If source is not present in the specified datatype, an attempt is made to type-cast data
+            ## If type-casting is not possible, default values (int: 0, float: null, datetime: pd.NaT, bool: null) are provided
+        }
+    ]
 }
 ```
+
+#### Topics
+If source type is Kafka, then the "topics" specification needs to be provided to identify the incoming topic characteristics. Sample mapping can be referred to [here](jobs\sample_mapping_18.py)
+
+"topics": List[Dict[str, Any]] 
+```python
+mapping = {
+    'source': {
+        'source_type': 'pgsql'
+        ...
+    },
+    'destination': {...},
+    'topics': [
+        ## topics is a list. Each element of this list corresponds to a topic specification (dictionary)
+        ## Here just a single topic is specified for the sake of simplicity
+        {
+            ## topic 1
+            "topic_name": "my_topic",
+            ## str: Required, Name of the topic at source
+
+            "cron": "self-managed",
+            ## str: Required: "self-managed" or a specific cron-schedule like '* * * * * 7-19 */1 0' (Refer Notes 1)
+            ## If cron is self-managed, the script will start immediately, without any internal scheduler.
+            ## If a specific cron is provided (As per Notes 1), the script will use APScheduler to interally schedule the migration
+
+            "batch_size": 10000,
+            ## int: Optional, the size of the batch/chunks. Default=10000
+
+            'partition_col': 'created_at',
+            ## str or False: Optional (Default=False). Useful when destination is pgsql or s3.
+            ## If False, the data won't be partitioned at destination
+            ## Otherwise, data partitioning will be performed. 
+            ## For destionation is pgsql, only datetime partitions are useful, and the monthly partitions will be created from 2015-2030
+
+            'partition_col_format': 'datetime',
+            ## str: Optional (Default = str): can be datetime, int, or str
+            ## The datatype of the partition column at source
+            
+            "fields": {
+                'created_at': 'datetime',
+                'is_available': 'bool',
+                'priority': 'int',
+                'amount': 'float',
+                ...
+            }
+            ## Dict[str, str]: Optional. By default all fields are considered as strings, and get stringified
+            ## field-type can be datetime, bool, int or float
+            ## If source is not present in the specified datatype, an attempt is made to type-cast data
+            ## If type-casting is not possible, default values (int: 0, float: null, datetime: pd.NaT, bool: null) are provided
+
+            'col_rename': {
+                'field_x': 'new_field_x',
+                'my_field': 'my_new_field,
+                ...
+            }
+            ## Dict[str, str]: Optional
+            ## 1-1 mapping for the fields/columns which need to be renamed at destination
+        }
+    ],
+
+    ## In addition to source, destination, topics we also REQUIRE 'redis' when kafka is a source
+    ## This is required to do cache the records in redis memory until a batch size is reached
+    ## and then migrate the full batch, together to the destination
+    ## This is significantly faster than migrating every record immediately and independently on consumption 
+    'redis': {
+        'url': 'redis-url',
+        ## str: Required, URL of the redis db to connect to
+
+        'password': 'redis-password'
+        ## str: Required, password credentials
+    }
+}
+```
+
+In addition to the mapping, we also need to specify 2 functions: ```get_table_name(record)``` and ```process_dict(record)```. 
+As function name says, ```get_table_name``` returns the name of the destination table for a given record. In case only a single table is maintained at destination, a constant string can be returned.
+```process_dict``` function allows us to customize the record as per requirements. In case the data has to be saved without modifications, then the record can be returned as is.
 
 ## fastapi_server
 (Bool): default = False. If user sets 'fastapi_server' to True, a uvicorn server is started.
@@ -274,31 +415,16 @@ Writing Cron expression as per guidelines at [APScheduler docs](https://apschedu
 For example: '* * * * * 7-19 */1 0' represents every minute between 7AM to 7PM.
 
 ## 2. What are the three modes of operation?
-1. Dumping: When we are dumping data, snapshots of the datastore are captured at regular intervals. We maintain multiple copies of the tables
-2. Logging: Logging is the mode where the data is only being added to the source table, and we assume no updations are ever performed. Only new records are migrated.
-3. Syncing: Where all new records is migrated, and all updations are also mapped to destination. If a record is deleted at source, it's NOT deleted at destination
+1. Dumping: When we are dumping data, snapshots of the datastore are captured every time and migrated to destination. Thus, we maintain multiple copies of the source data. This mode of operation adds a column "migration_snapshot_date" which is a timestamp of when the migration was done for a particular record.
+2. Logging: In this mode of operation, we migrate new records from source to the destination. The existing records are not updated even when they are updated at source. We assume that data will never be updated at source. If data is deleted at source, it won't be deleted at destination
+3. Syncing: Check all new records, as well as update existing ones. If data is deleted at source, it won't be deleted at destination
+3. Mirroring: Check all new records, update existing ones, as well as delete non-existing ones. A complete mirror image of the source data is maintained at destination. This mode is not available in S3 destination.
 
 ## 3. What are Bookmarks?
 Once new records are available at the source, they are migrated and appended to the data at destination. 
 However to check for updations in the existing records, we need to have a field in the data (for example: updated_at, update_timestamp, etc.) which changes its value to latest timestamp whenever the record is updated. 
 For the purpose of maintaining such column, sometimes triggers are added at the source database. [Refer this](https://stackoverflow.com/questions/70268251/trigger-function-to-update-timestamp-attribute-when-any-value-in-the-table-is-up).
 Bookmarks are needed only in case mode of operation is syncing, or mirroring. In case of logging or dumping mode, we are not checking for updates, hence there is no need of bookmarks.
-
-## 2. Specifying data types in MongoDB fields
-Only specify if the field belongs to one of the following category:
-1. 'bool'
-2. 'float'
-3. 'int'
-4. 'datetime'
-Other standard types are taken care of. Lists and dictionaries are stringified. If not specified, all types are by default converted to string. By default, datetime is converted to strings in MongoDB processing.
-
-## 3. Partition Columns formats
-'int' or 'str' (Default) or 'datetime', or list of these formats for different columns.
-
-## 4. Data Dumping
-
-True or False. If set to true, it adds a column 'migration_snapshot_date' to data, which stores the datetime of migration. Without updation checks, it simply dumps the data into destination. If set to true, one can also partition data based on 'migration_snapshot_date'.
-
 
 ## Notes:
 1. If fastapi server is started, then data can migrated on scheduled basis, as well as immediate basis (i.e., migrating data just once).
