@@ -31,7 +31,7 @@ pipeline_format is a dictionary with following keys:
 3. tables (for source pgsql), or collections (for source mongodb), or apis (for source api), or topics (for source kafka)
 
 For example:
-```python
+```
 mapping = {
     'source': {
         'source_type': 'pgsql'
@@ -43,13 +43,13 @@ mapping = {
 ```
 
 ### Source
-```python
+```
 'source': {
-    'source_type': 'mongo' (can be pgsql, mongo, api, or kafka),
-    'url': '' (url for the data source)
-    'db_name': '' (name of source dabatase),
-    'username': '' (Optional),
-    'password': '' (Optional)
+    'source_type': 'mongo' (str: Required, can be pgsql, mongo, api, or kafka),
+    'url': '' (str: Required, url for the data source)
+    'db_name': '' (str: Required, name of source dabatase. In case of kafka, a dummy db_name is provided.),
+    'username': '' (str: Optional, username to connect to the db),
+    'password': '' (str: Optional, password to connect to the db)
 },
 ```
 
@@ -57,15 +57,15 @@ mapping = {
 ```python
 'destination': {
     "dest-1": {
-        ## 1st destination
+        ## 1st destination. dest-1 is a user-defined and unique name for the destination
         'destination_type': 's3',
-        'host': '',
-        'database': '',
-
+        's3_bucket_name': 'my-s3-bucket-name',
+        's3_suffix': 'my_suffix' (str: optional, the)
     }
+    'host': '',
+    'database': '',
     'user': '',
     'password': '',
-    's3_bucket_name': '',
     'schema': ''
 },
 ```
