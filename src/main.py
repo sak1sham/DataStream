@@ -90,13 +90,15 @@ def get_batch_size(s) -> Tuple[int]:
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    is_fastapi = False
-    if('fastapi_server' in settings.keys() and settings['fastapi_server']):
-        is_fastapi = True
+    is_fastapi = True if 'fastapi_server' in settings.keys() and settings['fastapi_server'] else False
     if('timezone' in settings.keys() and settings['timezone']):
         tz__ = settings['timezone']
     n = len(args)
     if(n > 0):
+        if(args[0] == "__test__"):
+            logger.inform("Testing: successful.")
+            logger.inform("You are now ready to customize and run this migration service, by add mappings to config/jobs/ and modifying config/settings.py as per requirements.")
+            exit(0)
         ## If some command line arguments are provided, process only that data
         i = 0
         while(i < n):
