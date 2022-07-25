@@ -61,7 +61,7 @@ python main.py __test__
 
 Although the script seems to be starting-up fine, you will need to setup a mongodb collection to run any job. This will be used as a storage for jobs' information.
 
-You need to create a ```.env``` file to store these credentials as environment variables (Highly recommended), however you can also hard-code these inside the files. [settings](src/config/settings.py) file also needs to be modified to be able to access the mongoDB URLs. Refer [this documentation](src/config//README.md) to learn what each field in the settings file corresponds to.
+You can create a ```.env``` file to store these credentials as environment variables (Highly recommended), or can hard-code these inside the files (Not recommended). [settings](src/config/settings.py) file also needs to be modified to be able to access the mongoDB URLs. Refer [this documentation](src/config//README.md) to learn what each field in the settings file corresponds to.
 
 ## Running the tests
 
