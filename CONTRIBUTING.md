@@ -43,7 +43,7 @@ pip3 install pip-tools
 pip-compile
 ```
 
-5. Once the ```requirements.txt``` file is setup, we are ready to install all libraries.
+5. Once the ```requirements.txt``` file is created, we are ready to install all libraries.
 
 ```
 pip-sync
@@ -89,7 +89,7 @@ Add additional notes about how to deploy this on a live system
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
@@ -97,16 +97,10 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
+* **Saksham Garg, Mukesh Bhati, Anchit Tandon** - *Initial work*
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/sak1sham/DataStream/graphs/contributors) who participated in this project.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
+This project is licensed under the GPL-3.0 license - see the [LICENSE.md](LICENSE.md) file for details
