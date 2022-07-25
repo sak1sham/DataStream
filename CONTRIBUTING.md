@@ -79,13 +79,34 @@ Give an example
 
 ## Deployment
 
-Add additional notes about how to deploy this on a live system
+Additional notes about how to deploy this on a live system. It's best to run the script inside an isolated container. We can make use of docker. Create a new file ```Dockerfile``` in the root directory, and copy the following contents.
+
+```
+FROM python:3.8
+
+RUN pip3 install --upgrade pip==21.2.4
+
+RUN pip3 --no-cache-dir install --upgrade awscli &&\
+    pip3 install pip-tools
+
+COPY requirements.in .
+
+RUN pip-compile &&\
+    pip-sync
+
+COPY ./src /src
+WORKDIR "/src"
+
+CMD python main.py my_job_1 my_job_2
+```
+
+Here, replace the my_job_1, my_job_2 with the name (.py file name) of your jobs inside src/config/jobs/
+
+Once this dockerfile is created, refer [this](https://docs.docker.com/get-started/02_our_app/) documentation to create an image and run a container using this file. 
 
 ## Built With
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+* [Python 3](https://www.python.org/downloads/release/python-380/) - The bread-and-butter of this script
 
 ## Contributing
 
