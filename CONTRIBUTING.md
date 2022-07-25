@@ -112,7 +112,7 @@ CMD python main.py my_job_1 my_job_2
 
 Here, replace the my_job_1, my_job_2, etc. with the name (.py file name) of your jobs inside src/config/jobs/
 
-Once this dockerfile is created, refer [this](https://docs.docker.com/get-started/02_our_app/) documentation to create an image and run a container using this file. 
+You can refer to [this documentation](https://docs.docker.com/get-started/02_our_app/) to create an image and run a container using the dockerfile you just created. 
 
 In case you want to run the script without any isolated environment, i.e., directly on your local system, you can do so by following the [prerequisites](#prerequisites) and [installation](#installing) instructions. Then, you can directly run the following commands.
 
