@@ -1,9 +1,10 @@
-from dst.redshift import RedshiftSaver
-from dst.s3 import s3Saver
-from dst.pgsql import PgSQLSaver
+from dst.redshift.redshift import RedshiftSaver
+from dst.s3.s3 import s3Saver
+from dst.pgsql.pgsql import PgSQLSaver
 from helper.exceptions import *
 from typing import List, Dict, Any
 import pandas as pd
+
 class DMS_exporter:
     def __init__(self, db: Dict[str, Any] = None, uid: str = None, partition: List[str] = None) -> None:
         self.type = db['destination']['destination_type']

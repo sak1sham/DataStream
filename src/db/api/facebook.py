@@ -26,7 +26,6 @@ class FacebookManager:
         self.event_names = []
         self.tz_info = pytz.timezone(tz_str)
         self.fb_account = AdAccount(self.ad_account_id)
-        # super().__init__(self.project_name)
 
     def parse_json_to_dict(self, insights_json: list):
         list_of_insights = []
@@ -101,7 +100,6 @@ class FacebookManager:
         return final_campaigns_df
 
     def cleaned_processed_data(self, curr_mapping: Dict[str, Any], dst_saver: DMS_exporter, start_date: datetime):
-
         year = start_date.strftime('%Y')
         month = start_date.strftime('%m')
         day = start_date.strftime('%d')

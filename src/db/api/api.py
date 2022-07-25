@@ -1,5 +1,5 @@
-from db.clevertap import ClevertapManager
-from db.facebook import FacebookManager
+from db.api.clevertap import ClevertapManager
+from db.api.facebook import FacebookManager
 from helper.logger import logger
 from typing import Dict, Any, List
 import pytz

@@ -1,7 +1,7 @@
-from db.mongo import MongoMigrate
-from db.pgsql import PGSQLMigrate
-from db.api import APIMigrate
-from db.kafka_dms import KafkaMigrate
+from db.mongo.mongo import MongoMigrate
+from db.pgsql.pgsql import PGSQLMigrate
+from db.api.api import APIMigrate
+from db.kafka.kafka_dms import KafkaMigrate
 from notifications.slack_notify import send_message, send_error_message
 from config.settings import settings
 from helper.exceptions import IncorrectMapping, Sigterm
