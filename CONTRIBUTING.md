@@ -59,7 +59,7 @@ python main.py __test__
 
 ## Storing Information of Data-Pipelines
 
-Although the script seems to be starting-up fine. However, in order to run any job, you will need to setup a mongodb collection. This will be used as a storage for jobs' information.
+Although the script seems to be starting-up fine, you will need to setup a mongodb collection to run any job. This will be used as a storage for jobs' information.
 
 You need to create a ```.env``` file to store these credentials as environment variables (Highly recommended), however you can also hard-code these inside the files. [settings](src/config/settings.py) file also needs to be modified to be able to access the mongoDB URLs. Refer [this documentation](src/config//README.md) to learn what each field in the settings file corresponds to.
 
