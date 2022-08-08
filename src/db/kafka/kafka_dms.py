@@ -14,7 +14,7 @@ from helper.util import *
 from helper.logger import logger
 from helper.exceptions import *
 from dst.main import DMS_exporter
-from notifications.slack_notify import send_message
+from notifications.slack_notify import send_formatted_message
 
 datetype = NewType("datetype", datetime.datetime)
 dftype = NewType("dftype", pd.DataFrame)
@@ -236,8 +236,14 @@ class KafkaMigrate:
                         batch_start_time = time.time()
                         total_redis_insertion_time = 0
             except Exception as e:
-                msg = f"Caught some exception: {e}"
-                slack_token = settings['slack_notif']['slack_token']
-                slack_channel = settings['slack_notif']['channel']
-                send_message(msg = msg, channel = slack_channel, slack_token = slack_token)
+                send_formatted_message(
+                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel'],
+                    slack_token = settings['slack_notif']['slack_token'],
+                    status = False, 
+                    name = self.curr_mapping['topic_name'], 
+                    database = self.db['source']['db_name'], 
+                    db_type = self.db['source']['source_type'], 
+                    destination = self.db['destination']['destination_type'],
+                    thread = traceback.format_exc()
+                )
                 logger.err(traceback.format_exc())

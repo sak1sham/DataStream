@@ -4,7 +4,7 @@ from helper.exceptions import *
 from helper.logger import logger
 from dst.main import DMS_exporter
 from helper.sigterm import GracefulKiller, NormalKiller
-from notifications.slack_notify import send_message
+from notifications.slack_notify import send_formatted_message
 from config.settings import settings
 
 from bson.objectid import ObjectId
@@ -650,15 +650,19 @@ class MongoMigrate:
                     break
                 if(killer.kill_now):
                     self.save_job_working_data(status=False)
-                    msg = f"<!channel>Migration stopped for *{self.curr_mapping['collection_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
-                    msg += "Reason: Caught sigterm :warning:\n"
-                    ins_str = "{:,}".format(self.n_insertions)
-                    upd_str = "{:,}".format(self.n_updations)
-                    msg += f"Insertions: {ins_str}\nUpdations: {upd_str}"
-                    slack_token = settings['slack_notif']['slack_token']
-                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                     if('notify' in settings.keys() and settings['notify']):
-                        send_message(msg = msg, channel = channel, slack_token = slack_token)
+                        send_formatted_message(
+                            channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel'],
+                            slack_token = settings['slack_notif']['slack_token'],
+                            status = False, 
+                            name = self.curr_mapping['collection_name'], 
+                            database = self.db['source']['db_name'], 
+                            db_type = self.db['source']['source_type'], 
+                            destination = self.db['destination']['destination_type'], 
+                            reason = "Caught Sigterm", 
+                            insertions = self.n_insertions, 
+                            updations = self.n_updations, 
+                        )
                         self.inform('Notification sent.')
                     raise Sigterm("Ending gracefully.")
             time.sleep(self.time_delay)
@@ -737,15 +741,19 @@ class MongoMigrate:
                     break
                 if(killer.kill_now):
                     self.save_job_working_data(status=False)
-                    msg = f"<!channel>Migration stopped for *{self.curr_mapping['collection_name']}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*\n"
-                    msg += "Reason: Caught sigterm :warning:\n"
-                    ins_str = "{:,}".format(self.n_insertions)
-                    upd_str = "{:,}".format(self.n_updations)
-                    msg += f"Insertions: {ins_str}\nUpdations: {upd_str}"
-                    slack_token = settings['slack_notif']['slack_token']
-                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
                     if('notify' in settings.keys() and settings['notify']):
-                        send_message(msg = msg, channel = channel, slack_token = slack_token)
+                        send_formatted_message(
+                            channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel'],
+                            slack_token = settings['slack_notif']['slack_token'],
+                            status = False, 
+                            name = self.curr_mapping['collection_name'], 
+                            database = self.db['source']['db_name'], 
+                            db_type = self.db['source']['source_type'], 
+                            destination = self.db['destination']['destination_type'], 
+                            reason = "Caught Sigterm", 
+                            insertions = self.n_insertions, 
+                            updations = self.n_updations, 
+                        )
                         self.inform('Notification sent.')
                     raise Sigterm("Ending gracefully.")
             time.sleep(self.time_delay)
