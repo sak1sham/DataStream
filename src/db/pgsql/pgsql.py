@@ -129,10 +129,10 @@ class PGSQLMigrate:
         for i in range(df.shape[0]):
             encr = {
                 'table': self.curr_mapping['unique_id'],
-                'map_id': df.iloc[i].unique_migration_record_id,
+                'map_id': df.iloc[i][self.curr_mapping["primary_key"]],
                 'record_sha': hashlib.sha256(json.dumps(df.loc[i, :].values.tolist()).encode()).hexdigest()
             }
-            previous_records = collection_encr.find_one({'table': self.curr_mapping['unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
+            previous_records = collection_encr.find_one({'table': self.curr_mapping['unique_id'], 'map_id': df.iloc[i][self.curr_mapping["primary_key"]]})
             if(previous_records):
                 if(mode == 'insert'):
                     ## No need for those records which are updated
@@ -142,7 +142,7 @@ class PGSQLMigrate:
                         continue
                     else:
                         df_update = df_update.append(df.loc[i, :])
-                        collection_encr.delete_one({'table': self.curr_mapping['unique_id'], 'map_id': df.iloc[i].unique_migration_record_id})
+                        collection_encr.delete_one({'table': self.curr_mapping['unique_id'], 'map_id': df.iloc[i][self.curr_mapping["primary_key"]]})
                         collection_encr.insert_one(encr)
             else:
                 if(mode == 'update'):
@@ -204,7 +204,7 @@ class PGSQLMigrate:
         '''
             Function that takes in dataframe and processes it assuming only insertion is to be performed, and no updations need to be checked
                 1. Add partitions if required
-                2. Create a primary_key 'unique_migration_record_id' for every record that is inserted
+                2. Create a primary_key for every record that is inserted
                 3. Save records' hashes if bookmark is not present. This helps in finding updations in next run of job.
                 4. Final conversion of every column in dataframe to required datatypes
                 5. one-on-one mapping of datatypes with athena datatypes
@@ -217,9 +217,6 @@ class PGSQLMigrate:
         ## Adding partition if required
         self.partition_for_parquet = []
         self.add_partitions(df)
- 
-        ## Adding a primary key "unique_migration_record_id" for every record
-        df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
  
         ## If the bookmarks are not present in records, then save the hashes of records in order to check for updations when job is run again
         if(mode == 'syncing' and ('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark'])):
@@ -238,11 +235,10 @@ class PGSQLMigrate:
         '''
             Function that takes in dataframe and processes it assuming only updations are to be performed
                 1. Add partitions if required
-                2. Create a primary_key 'unique_migration_record_id' for every record that is inserted
-                3. If bookmark is not present, find the updations by comparing the records with their previous hashes (stored in previous run)
-                4. Final conversion of every column in dataframe to required datatypes
-                5. one-on-one mapping of datatypes with athena datatypes
-                6. return a processed_data object
+                2. If bookmark is not present, find the updations by comparing the records with their previous hashes (stored in previous run)
+                3. Final conversion of every column in dataframe to required datatypes
+                4. one-on-one mapping of datatypes with athena datatypes
+                5. return a processed_data object
         '''
         collection_encr = get_data_from_encr_db()
 
@@ -250,9 +246,6 @@ class PGSQLMigrate:
         self.partition_for_parquet = []
         self.add_partitions(df)
 
-        ## Adding a primary key "unique_migration_record_id" for every record
-        df['unique_migration_record_id'] = df[self.curr_mapping['primary_key']].astype(str)
-        
         ## If the records were not already filtered as per updation_date, filter them first
         if(filter and ('bookmark' not in self.curr_mapping.keys() or not self.curr_mapping['bookmark'])):
             _, df = self.distribute_records(collection_encr, df, mode='update')
@@ -289,7 +282,7 @@ class PGSQLMigrate:
             processed_data['varchar_lengths'] = self.varchar_lengths
             primary_keys = []
             if(self.curr_mapping['mode'] != 'dumping'):
-                primary_keys = ['unique_migration_record_id']
+                primary_keys = [self.curr_mapping['primary_key']]
             if(processed_data['df_insert'].shape[0]):
                 self.curr_megabytes_processed += processed_data['df_insert'].memory_usage(index=True).sum()
             if(processed_data['df_update'].shape[0]):
@@ -878,8 +871,7 @@ class PGSQLMigrate:
             )
             self.col_dtypes = self.get_column_dtypes(conn = conn, curr_table_name = table_name)
             conn.close()
-            n_columns_pgsql = len(self.col_dtypes) + 1
-            ## 1 is added because in logging and syncing operations, unique_migration_record_id is present
+            n_columns_pgsql = len(self.col_dtypes)
             ## In case of dumping, migration_snapshot_date is present
             ## we also need to account for those columns which are partitioned
             partition_now = self.curr_mapping['partition_col'] if 'partition_col' in self.curr_mapping.keys() and self.curr_mapping['partition_col'] else None
