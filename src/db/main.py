@@ -2,7 +2,7 @@ from db.mongo.mongo import MongoMigrate
 from db.pgsql.pgsql import PGSQLMigrate
 from db.api.api import APIMigrate
 from db.kafka.kafka_dms import KafkaMigrate
-from notifications.slack_notify import send_message, send_error_message
+from notifications.slack_notify import send_formatted_message
 from config.settings import settings
 from helper.exceptions import IncorrectMapping, Sigterm
 from helper.logger import logger
@@ -16,7 +16,7 @@ class DMS_importer:
     def __init__(self, db: Dict[str, Any] = {}, curr_mapping: Dict[str, Any] = {}, tz__: str = 'Asia/Kolkata') -> None:
         '''
             db = complete mapping for a particular job_id
-            curr_mapping = mapping for table/collection/api within db
+            curr_mapping = mapping for table/collection/api/topic within db
             tz__ = timezone
         '''
         self.db = db
@@ -40,17 +40,23 @@ class DMS_importer:
         try:
             start = time.time()
             result = self.obj.process()
-            end = time.time()
-            time_taken = str(datetime.timedelta(seconds=int(end-start)))
+            time_taken = str(datetime.timedelta(seconds=int(time.time()-start)))
             if('notify' in settings.keys() and settings['notify']):
-                msg = f"Migration completed for *{str(self.name)}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*:\nTotal time taken: {time_taken}\n"
-                if(isinstance(result, tuple)):
-                    msg += "Insertions: " + "{:,}".format(result[0]) + "\n"
-                    msg += "Updations: " + "{:,}".format(result[1])
+                if(not isinstance(result, tuple)):
+                    result = (-1, -1)
                 try:
-                    slack_token = settings['slack_notif']['slack_token']
-                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
-                    send_message(msg = msg, channel = channel, slack_token = slack_token)
+                    send_formatted_message(
+                        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel'],
+                        slack_token = settings['slack_notif']['slack_token'],
+                        status = True, 
+                        name = self.name, 
+                        database = self.db['source']['db_name'], 
+                        db_type = self.db['source']['source_type'], 
+                        destination = self.db['destination']['destination_type'], 
+                        time = time_taken,
+                        insertions = result[0], 
+                        updations = result[1],
+                    )
                     logger.inform(s="Notification sent successfully.")
                 except:
                     logger.err(s = "Unable to connect to slack and send the notification.")
@@ -60,12 +66,17 @@ class DMS_importer:
             logger.err(s=traceback.format_exc())
             logger.inform(s = f"{self.curr_mapping['unique_id']}: Migration stopped.\n")
             if('notify' in settings.keys() and settings['notify']):
-                msg = f"<!channel> Migration unexpectedly stopped :warning: for *{str(self.name)}* from database *{self.db['source']['db_name']}* ({self.db['source']['source_type']}) to *{self.db['destination']['destination_type']}*"
-                error_msg = traceback.format_exc()
                 try:
-                    slack_token = settings['slack_notif']['slack_token']
-                    channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel']
-                    send_error_message(msg = msg, error_msg=error_msg, channel = channel, slack_token = slack_token)
+                    send_formatted_message(
+                        channel = self.curr_mapping['slack_channel'] if 'slack_channel' in self.curr_mapping and self.curr_mapping['slack_channel'] else settings['slack_notif']['channel'],
+                        slack_token = settings['slack_notif']['slack_token'],
+                        status = False, 
+                        name = self.name, 
+                        database = self.db['source']['db_name'], 
+                        db_type = self.db['source']['source_type'], 
+                        destination = self.db['destination']['destination_type'], 
+                        thread = traceback.format_exc() 
+                    )
                     logger.inform(s="Notification sent successfully.")
                 except:
                     logger.err(s = "Unable to connect to slack and send the notification.")

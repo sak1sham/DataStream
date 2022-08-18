@@ -6,8 +6,8 @@ import pytz
 from dst.main import DMS_exporter
 from helper.util import typecast_df_to_schema, get_date_from_days
 import pandas as pd
-from helper.exceptions import APIRequestError, MissingData, IncorrectMapping
-from notifications.slack_notify import send_message
+from helper.exceptions import APIRequestError, MissingData
+from notifications.slack_notify import send_str_message
 from config.settings import settings
 from datetime import timedelta, datetime
 
@@ -50,14 +50,14 @@ class APIMigrate:
             for event_name in event_names:
                 msg += event_name + '\n'
             msg += f"for *{self.curr_mapping['project_name']}*."
-            send_message(msg=msg, channel=self.channel, slack_token=slack_token)
+            send_str_message(msg=msg, channel=self.channel, slack_token=slack_token)
             return
         if max_attempts < 3:
             msg = 'Error while processing following events: \n'
             for event_name in event_names:
                 msg += event_name + '\n'
             msg += f"for *{self.curr_mapping['project_name']}*. Will remigrate these events automatically"
-            send_message(msg=msg, channel=self.channel, slack_token=slack_token)
+            send_str_message(msg=msg, channel=self.channel, slack_token=slack_token)
 
         api_failed_events = []
         other_failed_events = []
@@ -85,13 +85,13 @@ class APIMigrate:
                     have_more_data = True if processed_data and processed_data['event_cursor'] else False
             except APIRequestError as e:
                 msg = f"Error while fetching data for event: *{event_name}* for app *{self.curr_mapping['project_name']}* from source on *{str(sync_date)}*."
-                send_message(msg=msg, channel=self.channel, slack_token=slack_token)
+                send_str_message(msg=msg, channel=self.channel, slack_token=slack_token)
                 msg += f'``` Exception: {str(e)}```'
                 self.err(msg)
                 api_failed_events.append(event_name)
             except Exception as e:
                 msg = f"Something went wrong! Could not process event *{event_name}* for project *{self.curr_mapping['project_name']}*.``` Exception: {str(e)}```"
-                send_message(msg=msg, channel=self.channel, slack_token=slack_token)
+                send_str_message(msg=msg, channel=self.channel, slack_token=slack_token)
                 self.err(msg)
                 other_failed_events.append(event_name)
         if len(api_failed_events) > 0:
@@ -121,14 +121,12 @@ class APIMigrate:
             self.save_data_to_destination(processed_data=processing_data, primary_keys=self.curr_mapping["primary_keys"])
         except APIRequestError as e:
             msg = f"Error while fetching data for table: *{self.curr_mapping['api_name']}* for app *{self.curr_mapping['project_name']}* from source on *{str(start_date)}*."
-            send_message(msg=msg, channel=self.channel,
-                         slack_token=slack_token)
+            send_str_message(msg=msg, channel=self.channel, slack_token=slack_token)
             msg += f"``` Exception: {str(e)}```"
             self.err(msg)
         except Exception as e:
             msg = f"Something went wrong! Could not process table *{self.curr_mapping['api_name']}* for project *{self.curr_mapping['project_name']}*.``` Exception: {str(e)}```"
-            send_message(msg=msg, channel=self.channel,
-                         slack_token=slack_token)
+            send_str_message(msg=msg, channel=self.channel, slack_token=slack_token)
             self.err(msg)
 
     def presetup_clevertap_process(self) -> None:
@@ -141,7 +139,7 @@ class APIMigrate:
         event_names = self.client.set_and_get_event_names(self.curr_mapping['event_names'])
         while start_date <= end_date:
             msg = f"Migration started for *{self.curr_mapping['project_name']}* events from database *{self.db['source']['db_name']}* to *{self.db['destination']['destination_type']}* for date: *{str(start_date)}*"
-            send_message(msg, self.channel, slack_token)
+            send_str_message(msg=msg, channel=self.channel, slack_token=slack_token)
             self.process_clevertap_events(event_names, start_date, 3)
             start_date += timedelta(1)
 
@@ -155,7 +153,7 @@ class APIMigrate:
         while start_date <= end_date:
             table = self.curr_mapping['project_name'] + '_' + self.curr_mapping["api_name"]
             msg = f"Migration started for *{table}* from database *{self.db['source']['db_name']}* to *{self.db['destination']['destination_type']}* for date: *{str(start_date)}*"
-            send_message(msg, self.channel, slack_token)
+            send_str_message(msg=msg, channel=self.channel, slack_token=slack_token)
             self.process_facebook_events(start_date)
             start_date += timedelta(1)
 
